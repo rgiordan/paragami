@@ -65,7 +65,7 @@ def _get_inbounds_value(lb, ub):
 
 class ArrayPattern(Pattern):
     def __init__(
-        self, name='', shape=(1, ),
+        self, shape,
         lb=-float("inf"), ub=float("inf"), bound_checking=True):
 
         self.bound_checking = bound_checking
@@ -80,7 +80,15 @@ class ArrayPattern(Pattern):
 
         free_flat_length = flat_length = int(np.product(self.__shape))
 
-        super().__init__(name, flat_length, free_flat_length)
+        super().__init__(flat_length, free_flat_length)
+
+    def __str__(self):
+        return 'Array {} ({}, {})'.format(self.__shape, self.__lb, self.__ub)
+
+    def __eq__(self, other):
+        return \
+            (self.bounds() == other.bounds()) & \
+            (self.shape() == other.shape())
 
     def serialize(self):
         return self.__val.tolist()
@@ -149,6 +157,9 @@ class ArrayPattern(Pattern):
 
     def shape(self):
         return self.__shape
+
+    def bounds(self):
+        return self.__lb, self.__ub
 
     def flat_length(self, free):
         if free:

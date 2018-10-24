@@ -18,13 +18,15 @@ import warnings
 
 
 class Pattern(object):
-    def __init__(self, name, flat_length, free_flat_length):
-        self.name = name
+    def __init__(self, flat_length, free_flat_length):
         self._flat_length = flat_length
         self._free_flat_length = free_flat_length
 
     def __str__(self):
-        return self.name
+        raise NotImplementedError()
+
+    def __eq__(self, other):
+        raise NotImplementedError()
 
     # Maybe this should be to / from JSON.
     def serialize(self):
@@ -56,14 +58,26 @@ class Pattern(object):
 # Dictionary pattern.
 
 class OrderedDictPattern(Pattern):
-    def __init__(self, name):
+    def __init__(self):
         self.__pattern_dict = OrderedDict()
-        super().__init__(name, 0, 0)
+        super().__init__(0, 0)
 
     def __str__(self):
-        return self.name + ':\n' + \
-            '\n'.join([ '\t' + str(pattern) \
-                for pattern in self.__pattern_dict.values() ])
+        pattern_strings = [
+            '\t' + key + str(self.__pattern_dict[key]) \
+            for key in self.__pattern_dict ]
+        return \
+            'OrderedDict:\n' + \
+            '\n'.join(pattern_strings)
+
+    def __eq__(self, other):
+        if self.__pattern_dict.keys() != other.keys():
+            return False
+        for pattern_name in self.__pattern_dict.keys():
+            if self.__pattern_dict[pattern_name] != \
+                other[pattern_name]:
+                return False
+        return True
 
     def __getitem__(self, key):
         return self.__pattern_dict[key]
@@ -78,6 +92,9 @@ class OrderedDictPattern(Pattern):
         self._flat_length -= pattern.flat_length(free=False)
         self._free_flat_length -= pattern.flat_length(free=True)
         self.__pattern_dict.pop(pattern_name)
+
+    def keys(self):
+        return self.__pattern_dict.keys()
 
     def empty(self, valid):
         empty_val = OrderedDict()
