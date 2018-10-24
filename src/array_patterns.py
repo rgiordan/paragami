@@ -1,4 +1,3 @@
-# This is a draft of the new API.
 from base_patterns import Pattern
 
 import autograd
@@ -66,9 +65,9 @@ def _get_inbounds_value(lb, ub):
 class ArrayPattern(Pattern):
     def __init__(
         self, shape,
-        lb=-float("inf"), ub=float("inf"), bound_checking=True):
+        lb=-float("inf"), ub=float("inf"), validate=True):
 
-        self.bound_checking = bound_checking
+        self.validate = validate
         self.__shape = shape
         self.__lb = lb
         self.__ub = ub
@@ -83,29 +82,28 @@ class ArrayPattern(Pattern):
         super().__init__(flat_length, free_flat_length)
 
     def __str__(self):
-        return 'Array {} ({}, {})'.format(self.__shape, self.__lb, self.__ub)
+        return 'Array {} (lb={}, ub={})'.format(
+            self.__shape, self.__lb, self.__ub)
 
     def __eq__(self, other):
         return \
             (self.bounds() == other.bounds()) & \
             (self.shape() == other.shape())
 
-    def serialize(self):
-        return self.__val.tolist()
-
     def empty(self, valid):
         if valid:
-            return np.full(self.__shape, _get_inbounds_value(self.__lb, self.__ub))
+            return np.full(
+                self.__shape, _get_inbounds_value(self.__lb, self.__ub))
         else:
             return np.empty(self.__shape)
 
     def validate_folded(self, folded_val):
         folded_val = np.atleast_1d(folded_val)
         if folded_val.shape != self.shape():
-            raise ValueError('Wrong size for array ' + self.name + \
+            raise ValueError('Wrong size for Array.' + \
                              ' Expected shape: ' + str(self.shape()) + \
                              ' Got shape: ' + str(folded_val.shape))
-        if self.bound_checking:
+        if self.validate:
             if (np.array(folded_val < self.__lb)).any():
                 raise ValueError('Value beneath lower bound.')
             if (np.array(folded_val > self.__ub)).any():
@@ -114,8 +112,7 @@ class ArrayPattern(Pattern):
     def _free_fold(self, free_flat_val):
         if free_flat_val.size != self._free_flat_length:
             error_string = \
-                'Wrong size for array {}.  Expected {}, got {}'.format(
-                    self.name,
+                'Wrong size for Array.  Expected {}, got {}'.format(
                     str(self._free_flat_length),
                     str(free_flat_val.size))
             raise ValueError(error_string)
@@ -129,8 +126,8 @@ class ArrayPattern(Pattern):
     def _notfree_fold(self, flat_val):
         if flat_val.size != self._flat_length:
             error_string = \
-                'Wrong size for array {}.  Expected {}, got {}'.format(
-                    self.name, str(self._flat_length), str(flat_val.size))
+                'Wrong size for Array.  Expected {}, got {}'.format(
+                    str(self._flat_length), str(flat_val.size))
             raise ValueError(error_string)
         folded_val = flat_val.reshape(self.__shape)
         self.validate_folded(folded_val)
