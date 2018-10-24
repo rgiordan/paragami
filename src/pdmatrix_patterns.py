@@ -5,13 +5,14 @@ import autograd.numpy as np
 import autograd.scipy as sp
 
 import copy
+import math
 
 from autograd.core import primitive, defvjp, defjvp
 
-import itertools
+#import itertools
 
-import scipy as osp
-from scipy.sparse import coo_matrix
+#import scipy as osp
+#from scipy.sparse import coo_matrix
 
 # Return the linear index of an element of a symmetric matrix
 # where the triangular part has been stacked into a vector.
@@ -144,6 +145,7 @@ class PDMatrixPattern(Pattern):
     def __init__(self, size, diag_lb=0.0, validate=True):
         self.__size = int(size)
         self.__diag_lb = diag_lb
+        self.validate = validate
         if diag_lb < 0:
             raise ValueError('The diagonal lower bound diag_lb must be >-= 0.')
 
@@ -156,8 +158,8 @@ class PDMatrixPattern(Pattern):
 
     def __eq__(self, other):
         return \
-            (self.__size == other.size()) &
-            (self.__diag_lb == other.diag_lb())
+            (self.size() == other.size()) & \
+            (self.diag_lb() == other.diag_lb())
 
     def size(self):
         return self.__size
@@ -177,7 +179,7 @@ class PDMatrixPattern(Pattern):
         if self.validate:
             if np.any(np.diag(folded_val) < self.__diag_lb):
                 raise ValueError('Diagonal is less than the lower bound.')
-            if not (val.transpose() == val).all():
+            if not (folded_val.transpose() == folded_val).all():
                 raise ValueError('Matrix is not symmetric')
             try:
                 chol = np.linalg.cholesky(folded_val)
@@ -210,6 +212,15 @@ class PDMatrixPattern(Pattern):
             return self._free_flatten(folded_val)
         else:
             return self._notfree_flatten(folded_val)
+
+    def fold(self, flat_val, free):
+        flat_val = np.atleast_1d(flat_val)
+        if len(flat_val.shape) != 1:
+            raise ValueError('The argument to fold must be a 1d vector.')
+        if free:
+            return self._free_fold(flat_val)
+        else:
+            return self._notfree_fold(flat_val)
 
 #
 # # In keeping with the vector version, the last two indices are indices

@@ -4,8 +4,9 @@ import unittest
 from numpy.testing import assert_array_almost_equal
 import numpy as np
 
-import array_patterns
 import base_patterns
+import array_patterns
+import pdmatrix_patterns
 
 
 def _test_pattern(
@@ -66,6 +67,24 @@ class TestPatterns(unittest.TestCase):
             self.assertTrue(
                 array_patterns.ArrayPattern((1, 2), lb=2, ub=4) !=
                 array_patterns.ArrayPattern((1, 2), lb=2))
+
+
+    def test_pdmatrix_patterns(self):
+        dim = 3
+        valid_value = np.eye(dim) * 3 + np.full((dim, dim), 0.1)
+        pattern = pdmatrix_patterns.PDMatrixPattern(dim)
+        _test_pattern(self, pattern, valid_value)
+
+        pattern = pdmatrix_patterns.PDMatrixPattern(dim, diag_lb=0.5)
+        _test_pattern(self, pattern, valid_value)
+
+        self.assertTrue(
+            pdmatrix_patterns.PDMatrixPattern(3) !=
+            pdmatrix_patterns.PDMatrixPattern(4))
+
+        self.assertTrue(
+            pdmatrix_patterns.PDMatrixPattern(3, diag_lb=2) !=
+            pdmatrix_patterns.PDMatrixPattern(3))
 
 
     def test_dictionary_patterns(self):
