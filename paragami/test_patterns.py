@@ -4,9 +4,9 @@ import unittest
 from numpy.testing import assert_array_almost_equal
 import numpy as np
 
-import paragami.base_patterns
-import paragami.array_patterns
-import paragami.pdmatrix_patterns
+from paragami import base_patterns
+from paragami import numeric_array_patterns
+from paragami import pdmatrix_patterns
 
 
 def _test_pattern(
@@ -36,37 +36,37 @@ def _test_pattern(
 
 
 class TestPatterns(unittest.TestCase):
-    def test_array_patterns(self):
+    def test_numeric_array_patterns(self):
         for test_shape in [(2, ), (2, 3), (2, 3, 4)]:
             valid_value = np.random.random(test_shape)
-            pattern = array_patterns.ArrayPattern(test_shape)
+            pattern = numeric_array_patterns.NumericArrayPattern(test_shape)
             _test_pattern(self, pattern, valid_value)
 
-            pattern = array_patterns.ArrayPattern(test_shape, lb=-1)
+            pattern = numeric_array_patterns.NumericArrayPattern(test_shape, lb=-1)
             _test_pattern(self, pattern, valid_value)
 
-            pattern = array_patterns.ArrayPattern(test_shape, ub=2)
+            pattern = numeric_array_patterns.NumericArrayPattern(test_shape, ub=2)
             _test_pattern(self, pattern, valid_value)
 
-            pattern = array_patterns.ArrayPattern(test_shape, lb=-1, ub=2)
+            pattern = numeric_array_patterns.NumericArrayPattern(test_shape, lb=-1, ub=2)
             _test_pattern(self, pattern, valid_value)
 
             # Test equality comparisons.
             self.assertTrue(
-                array_patterns.ArrayPattern((1, 2)) !=
-                array_patterns.ArrayPattern((1, )))
+                numeric_array_patterns.NumericArrayPattern((1, 2)) !=
+                numeric_array_patterns.NumericArrayPattern((1, )))
 
             self.assertTrue(
-                array_patterns.ArrayPattern((1, 2)) !=
-                array_patterns.ArrayPattern((1, 3)))
+                numeric_array_patterns.NumericArrayPattern((1, 2)) !=
+                numeric_array_patterns.NumericArrayPattern((1, 3)))
 
             self.assertTrue(
-                array_patterns.ArrayPattern((1, 2), lb=2) !=
-                array_patterns.ArrayPattern((1, 2)))
+                numeric_array_patterns.NumericArrayPattern((1, 2), lb=2) !=
+                numeric_array_patterns.NumericArrayPattern((1, 2)))
 
             self.assertTrue(
-                array_patterns.ArrayPattern((1, 2), lb=2, ub=4) !=
-                array_patterns.ArrayPattern((1, 2), lb=2))
+                numeric_array_patterns.NumericArrayPattern((1, 2), lb=2, ub=4) !=
+                numeric_array_patterns.NumericArrayPattern((1, 2), lb=2))
 
 
     def test_pdmatrix_patterns(self):
@@ -97,11 +97,11 @@ class TestPatterns(unittest.TestCase):
 
         dict_pattern = base_patterns.OrderedDictPattern()
         dict_pattern['a'] = \
-            array_patterns.ArrayPattern((2, 3, 4), lb=-1, ub=2)
+            numeric_array_patterns.NumericArrayPattern((2, 3, 4), lb=-1, ub=2)
         dict_pattern['b'] = \
-            array_patterns.ArrayPattern((5, ), lb=-1, ub=10)
+            numeric_array_patterns.NumericArrayPattern((5, ), lb=-1, ub=10)
         dict_pattern['c'] = \
-            array_patterns.ArrayPattern((5, 2), lb=-1, ub=10)
+            numeric_array_patterns.NumericArrayPattern((5, 2), lb=-1, ub=10)
 
         self.assertEqual(list(dict_pattern.keys()), ['a', 'b', 'c'])
 
@@ -121,7 +121,7 @@ class TestPatterns(unittest.TestCase):
 
         # Check adding a new element.
         dict_pattern['d'] = \
-            array_patterns.ArrayPattern((4, ), lb=-1, ub=10)
+            numeric_array_patterns.NumericArrayPattern((4, ), lb=-1, ub=10)
         dict_val = dict_pattern.random()
         _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
 

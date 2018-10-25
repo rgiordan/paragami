@@ -62,7 +62,7 @@ def _get_inbounds_value(lb, ub):
             return 0.0
 
 
-class ArrayPattern(Pattern):
+class NumericArrayPattern(Pattern):
     def __init__(
         self, shape,
         lb=-float("inf"), ub=float("inf"), validate=True):
