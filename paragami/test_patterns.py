@@ -4,9 +4,9 @@ import unittest
 from numpy.testing import assert_array_almost_equal
 import numpy as np
 
-import base_patterns
-import array_patterns
-import pdmatrix_patterns
+import paragami.base_patterns
+import paragami.array_patterns
+import paragami.pdmatrix_patterns
 
 
 def _test_pattern(
@@ -86,6 +86,8 @@ class TestPatterns(unittest.TestCase):
             pdmatrix_patterns.PDMatrixPattern(3, diag_lb=2) !=
             pdmatrix_patterns.PDMatrixPattern(3))
 
+        # TODO: test the autodiff stuff.
+
 
     def test_dictionary_patterns(self):
         def check_dict_equal(dict1, dict2):
@@ -106,12 +108,18 @@ class TestPatterns(unittest.TestCase):
         dict_val = dict_pattern.random()
         _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
 
+        # Check that it works with ordinary dictionaries, not only OrderedDict.
+        plain_dict_val = dict(dict_val)
+        _test_pattern(self, dict_pattern, plain_dict_val, check_dict_equal)
+
+        # Check deletion and non-equality.
         old_dict_pattern = copy.deepcopy(dict_pattern)
         del dict_pattern['b']
         self.assertTrue(dict_pattern != old_dict_pattern)
         dict_val = dict_pattern.random()
         _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
 
+        # Check adding a new element.
         dict_pattern['d'] = \
             array_patterns.ArrayPattern((4, ), lb=-1, ub=10)
         dict_val = dict_pattern.random()

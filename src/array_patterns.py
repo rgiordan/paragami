@@ -1,4 +1,4 @@
-from paragami.base_patterns import Pattern
+from base_patterns import Pattern
 
 import autograd
 import autograd.numpy as np

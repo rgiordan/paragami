@@ -69,7 +69,7 @@ class OrderedDictPattern(Pattern):
 
     def __str__(self):
         pattern_strings = [
-            '\t' + key + str(self.__pattern_dict[key]) \
+            '\t[' + key + '] = ' + str(self.__pattern_dict[key]) \
             for key in self.__pattern_dict ]
         return \
             'OrderedDict:\n' + \
