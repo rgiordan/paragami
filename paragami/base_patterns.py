@@ -10,6 +10,7 @@ import autograd.scipy as sp
 from autograd.core import primitive
 
 from collections import OrderedDict
+import itertools
 
 import scipy as osp
 from scipy.sparse import coo_matrix, csr_matrix, block_diag
@@ -60,9 +61,9 @@ class Pattern(object):
 
 
 ##########################
-# Dictionary pattern.
+# Dictionary of patterns.
 
-class OrderedDictPattern(Pattern):
+class PatternDict(Pattern):
     def __init__(self):
         self.__pattern_dict = OrderedDict()
         super().__init__(0, 0)
@@ -144,6 +145,92 @@ class OrderedDictPattern(Pattern):
                 pattern.flatten(folded_val[pattern_name], free)
             offset += pattern_flat_length
         return flat_val
+
+    def flat_length(self, free):
+        return self._free_flat_length if free else self._flat_length
+
+
+##########################
+# An array of a pattern.
+
+class PatternArray(Pattern):
+    def __init__(self, shape, base_pattern):
+        self.__shape = shape
+        self.__array_ranges = [ range(0, t) for t in self.__shape ]
+
+        num_elements = np.prod(self.__shape)
+        self.__base_pattern = base_pattern
+
+        # Check whether the base_pattern takes values that are numpy arrays.
+        # If they are, then the unfolded value will be a single numpy array
+        # of shape __shape + base_pattern.empty().shape.
+        # Otherwise, it will be an object array of shape __shape.
+        empty_pattern = self.__base_pattern.empty(valid=False)
+        if type(empty_pattern) is np.ndarray:
+            self.__folded_pattern_shape = empty_pattern.shape
+        else:
+            self.__folded_pattern_shape = ()
+
+        super().__init__(
+            num_elements * base_pattern.flat_length(free=False),
+            num_elements * base_pattern.flat_length(free=True))
+
+    def __str__(self):
+        return('PatternArray {} of {}'.format(
+            self.__shape, self.__base_pattern))
+
+    def shape(self):
+        return self.__shape
+
+    def base_pattern(self):
+        return self.__base_pattern
+
+    def __eq__(self, other):
+        if self.__shape != other.shape():
+            return False
+        if self.__base_pattern != other.base_pattern():
+            return False
+        return True
+
+
+    def empty(self, valid):
+        empty_pattern = self.__base_pattern.empty(valid=valid)
+        repeated_array = np.array([ empty_pattern \
+            for item in itertools.product(*self.__array_ranges)])
+        return np.reshape(
+            repeated_array, self.__shape + self.__folded_pattern_shape)
+
+    # Get a slice for the elements in a vector of length flat_length
+    # corresponding to
+    # element item of the array, where obs is a tuple indexing into the
+    # array of shape self.__shape.
+    def _stacked_obs_slice(self, item, flat_length):
+        assert len(item) == len(self.__shape)
+        linear_item = np.ravel_multi_index(item, self.__shape) * flat_length
+        return slice(linear_item, linear_item + flat_length)
+
+    def fold(self, flat_val, free):
+        flat_val = np.atleast_1d(flat_val)
+        if len(flat_val.shape) != 1:
+            raise ValueError('The argument to fold must be a 1d vector.')
+        if flat_val.size != self.flat_length(free):
+            error_string = \
+                'Wrong size for parameter {}.  Expected {}, got {}'.format(
+                    self.name, str(flat_length), str(flat_val.size))
+            raise ValueError(error_string)
+
+        flat_length = self.__base_pattern.flat_length(free)
+        folded_array = np.array([ \
+            self.__base_pattern.fold(
+                flat_val[self._stacked_obs_slice(item, flat_length)], free) \
+            for item in itertools.product(*self.__array_ranges) ])
+        return np.reshape(
+            folded_array, self.__shape + self.__folded_pattern_shape)
+
+    def flatten(self, folded_val, free):
+        return np.hstack(np.array([ \
+            self.__base_pattern.flatten(folded_val[item], free=free) \
+                for item in itertools.product(*self.__array_ranges) ]))
 
     def flat_length(self, free):
         return self._free_flat_length if free else self._flat_length

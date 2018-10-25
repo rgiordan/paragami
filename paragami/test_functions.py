@@ -13,7 +13,7 @@ from function_patterns import FlattenedFunction
 
 class TestPatterns(unittest.TestCase):
     def test_flatten_function(self):
-        pattern = paragami.OrderedDictPattern()
+        pattern = paragami.PatternDict()
         pattern['a'] = paragami.NumericArrayPattern((2, 3, 4), lb=-1, ub=2)
         pattern['b'] = paragami.NumericArrayPattern((5, ), lb=-1, ub=10)
         param_val = pattern.random()

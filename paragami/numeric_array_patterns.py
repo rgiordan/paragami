@@ -49,7 +49,7 @@ def _constrain_array(free_array, lb, ub):
 def _get_inbounds_value(lb, ub):
     assert lb < ub
     if lb > -float('inf') and ub < float('inf'):
-        return 0.5 * (ub - lb)
+        return 0.5 * (ub - lb) + lb
     else:
         if lb > -float('inf'):
             # The upper bound is infinite.

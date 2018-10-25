@@ -164,6 +164,9 @@ class PDMatrixPattern(Pattern):
     def size(self):
         return self.__size
 
+    def shape(self):
+        return (self.__size, self.__size)
+
     def diag_lb(self):
         return self.__diag_lb
 

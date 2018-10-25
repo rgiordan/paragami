@@ -95,7 +95,7 @@ class TestPatterns(unittest.TestCase):
             for key  in dict1:
                 assert_array_almost_equal(dict1[key], dict2[key])
 
-        dict_pattern = base_patterns.OrderedDictPattern()
+        dict_pattern = base_patterns.PatternDict()
         dict_pattern['a'] = \
             numeric_array_patterns.NumericArrayPattern((2, 3, 4), lb=-1, ub=2)
         dict_pattern['b'] = \
