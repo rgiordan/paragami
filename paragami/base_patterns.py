@@ -141,6 +141,14 @@ class PatternDict(Pattern):
         flat_val = np.full(flat_length, float('nan'))
         for pattern_name, pattern in self.__pattern_dict.items():
             pattern_flat_length = pattern.flat_length(free)
+            print('offset: ', offset)
+            print('pattern_flat_length: ', pattern_flat_length)
+            print('flat_val: ', flat_val)
+            print('slice: ', flat_val[offset:(offset + pattern_flat_length)] )
+            print('folded val: ', folded_val)
+            print('pattern_name: ', pattern_name)
+            print('folded_val.keys(): ', folded_val.keys())
+            print('folded val[pattern_name]: ', folded_val[pattern_name])
             flat_val[offset:(offset + pattern_flat_length)] = \
                 pattern.flatten(folded_val[pattern_name], free)
             offset += pattern_flat_length
