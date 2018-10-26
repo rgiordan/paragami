@@ -5,6 +5,12 @@ from .base_patterns import Pattern
 import autograd.numpy as np
 import autograd.scipy as sp
 
+import warnings
+
+def fxn():
+    warnings.warn("deprecated", DeprecationWarning)
+
+
 def _constrain_simplex_matrix(free_mat):
     # The first column is the reference value.  Append a column of zeros
     # to each simplex representing this reference value.
@@ -13,7 +19,10 @@ def _constrain_simplex_matrix(free_mat):
 
     # Note that autograd needs to update their logsumexp to be in special
     # not misc before this can be changed.
-    log_norm = np.expand_dims(sp.misc.logsumexp(free_mat_aug, axis=-1), axis=-1)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=DeprecationWarning)
+        log_norm = np.expand_dims(
+            sp.misc.logsumexp(free_mat_aug, axis=-1), axis=-1)
     return np.exp(free_mat_aug - log_norm)
 
 
