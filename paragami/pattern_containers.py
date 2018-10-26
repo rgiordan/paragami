@@ -5,6 +5,7 @@ import autograd.numpy as np
 
 from .base_patterns import Pattern
 
+
 ##########################
 # Dictionary of patterns.
 

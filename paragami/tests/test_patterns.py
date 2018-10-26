@@ -7,17 +7,12 @@ import numpy as np
 import collections
 
 import paragami
-from paragami import base_patterns
-from paragami import numeric_array_patterns
-from paragami import pdmatrix_patterns
-from paragami import simplex_patterns
 
-import autograd
 from autograd.test_util import check_grads
 
 
-def _test_pattern(
-    testcase, pattern, valid_value, check_equal=assert_array_almost_equal):
+def _test_pattern(testcase, pattern, valid_value,
+                  check_equal=assert_array_almost_equal):
 
     # Execute required methods.
     empty_val = pattern.empty(valid=True)
@@ -32,8 +27,8 @@ def _test_pattern(
     # Make sure to test != using a custom test.
     testcase.assertTrue(pattern == pattern)
 
-    #pattern_serial = pattern.serialize()
-    #pattern.unserialize(pattern_serial)
+    # pattern_serial = pattern.serialize()
+    # pattern.unserialize(pattern_serial)
 
     for free in [True, False]:
         flat_val = pattern.flatten(valid_value, free=free)
@@ -97,7 +92,6 @@ class TestPatterns(unittest.TestCase):
             self.assertTrue(
                 paragami.NumericArrayPattern((1, 2), lb=2, ub=4) !=
                 paragami.NumericArrayPattern((1, 2), lb=2))
-
 
     def test_pdmatrix_patterns(self):
         dim = 3
@@ -173,14 +167,18 @@ class TestPatterns(unittest.TestCase):
 
         # Check locking
         dict_pattern.lock()
+
         def delete():
             del dict_pattern['b']
+
         def add():
             dict_pattern['new'] = \
                 paragami.NumericArrayPattern((4, ))
+
         def modify():
             dict_pattern['a'] = \
                 paragami.NumericArrayPattern((4, ))
+
         self.assertRaises(ValueError, delete)
         self.assertRaises(ValueError, add)
         self.assertRaises(ValueError, modify)
@@ -204,7 +202,6 @@ class TestPatterns(unittest.TestCase):
         self.assertTrue(
             paragami.PatternArray((2, 3), array_pattern) !=
             paragami.PatternArray((2, 3), matrix_pattern))
-
 
 
 if __name__ == '__main__':
