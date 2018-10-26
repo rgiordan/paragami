@@ -11,6 +11,9 @@ from paragami import numeric_array_patterns
 from paragami import pdmatrix_patterns
 from paragami import simplex_patterns
 
+import autograd
+from autograd.test_util import check_grads
+
 
 def _test_pattern(
     testcase, pattern, valid_value, check_equal=assert_array_almost_equal):
@@ -112,8 +115,17 @@ class TestPatterns(unittest.TestCase):
             pdmatrix_patterns.PDMatrixPattern(3, diag_lb=2) !=
             pdmatrix_patterns.PDMatrixPattern(3))
 
+    def test_pdmatrix_custom_autodiff(self):
         # TODO: test the autodiff stuff.
+        x_vec = np.random.random(6)
+        x_mat = pdmatrix_patterns._unvectorize_ld_matrix(x_vec)
 
+        check_grads(
+            pdmatrix_patterns._vectorize_ld_matrix,
+            modes=['fwd', 'rev'], order=3)(x_mat)
+        check_grads(
+            pdmatrix_patterns._unvectorize_ld_matrix,
+            modes=['fwd', 'rev'], order=3)(x_vec)
 
     def test_dictionary_patterns(self):
         def check_dict_equal(dict1, dict2):
