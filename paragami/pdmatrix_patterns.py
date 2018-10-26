@@ -69,7 +69,7 @@ def _unvectorize_ld_matrix(vec):
 
 def _unvectorize_ld_matrix_vjp(g):
     assert g.shape[0] == g.shape[1]
-    return vectorize_ld_matrix(g)
+    return _vectorize_ld_matrix(g)
 
 defvjp(_unvectorize_ld_matrix,
        lambda ans, vec: lambda g: _unvectorize_ld_matrix_vjp(g))
@@ -181,10 +181,11 @@ class PDMatrixPattern(Pattern):
                 raise ValueError('Diagonal is less than the lower bound.')
             if not (folded_val.transpose() == folded_val).all():
                 raise ValueError('Matrix is not symmetric')
-            try:
-                chol = np.linalg.cholesky(folded_val)
-            except LinAlgError:
-                raise ValueError('Matrix is not positive definite.')
+            # TODO: check for positive definiteness
+            # try:
+            #     chol = onp.linalg.cholesky(folded_val)
+            # except LinAlgError:
+            #     raise ValueError('Matrix is not positive definite.')
 
     def _free_fold(self, free_flat_val):
         if free_flat_val.size != self._free_flat_length:
