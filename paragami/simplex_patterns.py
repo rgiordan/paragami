@@ -26,8 +26,8 @@ def _constrain_simplex_matrix(free_mat):
 
 
 def _unconstrain_simplex_matrix(simplex_mat):
-    return np.log(simplex_mat[0:-1:, 1:]) - \
-           np.expand_dims(np.log(simplex_mat[0:-1, 0]), axis=1)
+    return np.log(simplex_mat[..., 1:]) - \
+           np.expand_dims(np.log(simplex_mat[..., 0]), axis=-1)
 
 
 class SimplexArrayPattern(Pattern):
@@ -83,11 +83,9 @@ class SimplexArrayPattern(Pattern):
             raise ValueError('flat_val is the wrong length.')
         if free:
             free_mat = np.reshape(flat_val, self.__free_shape)
-            print('free_mat', free_mat)
-            print('free_mat.shape', free_mat.shape)
             return _constrain_simplex_matrix(free_mat)
         else:
-            folded_val = np.reshape(vec_val, self.__shape)
+            folded_val = np.reshape(flat_val, self.__shape)
             self.validate_folded(folded_val)
             return folded_val
 
