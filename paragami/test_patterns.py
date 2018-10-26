@@ -6,6 +6,7 @@ import numpy as np
 
 import collections
 
+import paragami
 from paragami import base_patterns
 from paragami import numeric_array_patterns
 from paragami import pdmatrix_patterns
@@ -49,7 +50,7 @@ class TestPatterns(unittest.TestCase):
             valid_value = \
                 valid_value / np.sum(valid_value, axis=-1, keepdims=True)
 
-            pattern = simplex_patterns.SimplexArrayPattern(
+            pattern = paragami.SimplexArrayPattern(
                 simplex_size, array_shape)
             _test_pattern(self, pattern, valid_value)
 
@@ -58,73 +59,73 @@ class TestPatterns(unittest.TestCase):
         test_shape_and_size(2, (2, ))
 
         self.assertTrue(
-            simplex_patterns.SimplexArrayPattern(3, (2, 3)) !=
-            simplex_patterns.SimplexArrayPattern(3, (2, 4)))
+            paragami.SimplexArrayPattern(3, (2, 3)) !=
+            paragami.SimplexArrayPattern(3, (2, 4)))
 
         self.assertTrue(
-            simplex_patterns.SimplexArrayPattern(4, (2, 3)) !=
-            simplex_patterns.SimplexArrayPattern(3, (2, 3)))
+            paragami.SimplexArrayPattern(4, (2, 3)) !=
+            paragami.SimplexArrayPattern(3, (2, 3)))
 
     def test_numeric_array_patterns(self):
         for test_shape in [(2, ), (2, 3), (2, 3, 4)]:
             valid_value = np.random.random(test_shape)
-            pattern = numeric_array_patterns.NumericArrayPattern(test_shape)
+            pattern = paragami.NumericArrayPattern(test_shape)
             _test_pattern(self, pattern, valid_value)
 
-            pattern = numeric_array_patterns.NumericArrayPattern(test_shape, lb=-1)
+            pattern = paragami.NumericArrayPattern(test_shape, lb=-1)
             _test_pattern(self, pattern, valid_value)
 
-            pattern = numeric_array_patterns.NumericArrayPattern(test_shape, ub=2)
+            pattern = paragami.NumericArrayPattern(test_shape, ub=2)
             _test_pattern(self, pattern, valid_value)
 
-            pattern = numeric_array_patterns.NumericArrayPattern(test_shape, lb=-1, ub=2)
+            pattern = paragami.NumericArrayPattern(test_shape, lb=-1, ub=2)
             _test_pattern(self, pattern, valid_value)
 
             # Test equality comparisons.
             self.assertTrue(
-                numeric_array_patterns.NumericArrayPattern((1, 2)) !=
-                numeric_array_patterns.NumericArrayPattern((1, )))
+                paragami.NumericArrayPattern((1, 2)) !=
+                paragami.NumericArrayPattern((1, )))
 
             self.assertTrue(
-                numeric_array_patterns.NumericArrayPattern((1, 2)) !=
-                numeric_array_patterns.NumericArrayPattern((1, 3)))
+                paragami.NumericArrayPattern((1, 2)) !=
+                paragami.NumericArrayPattern((1, 3)))
 
             self.assertTrue(
-                numeric_array_patterns.NumericArrayPattern((1, 2), lb=2) !=
-                numeric_array_patterns.NumericArrayPattern((1, 2)))
+                paragami.NumericArrayPattern((1, 2), lb=2) !=
+                paragami.NumericArrayPattern((1, 2)))
 
             self.assertTrue(
-                numeric_array_patterns.NumericArrayPattern((1, 2), lb=2, ub=4) !=
-                numeric_array_patterns.NumericArrayPattern((1, 2), lb=2))
+                paragami.NumericArrayPattern((1, 2), lb=2, ub=4) !=
+                paragami.NumericArrayPattern((1, 2), lb=2))
 
 
     def test_pdmatrix_patterns(self):
         dim = 3
         valid_value = np.eye(dim) * 3 + np.full((dim, dim), 0.1)
-        pattern = pdmatrix_patterns.PDMatrixPattern(dim)
+        pattern = paragami.PDMatrixPattern(dim)
         _test_pattern(self, pattern, valid_value)
 
-        pattern = pdmatrix_patterns.PDMatrixPattern(dim, diag_lb=0.5)
+        pattern = paragami.PDMatrixPattern(dim, diag_lb=0.5)
         _test_pattern(self, pattern, valid_value)
 
         self.assertTrue(
-            pdmatrix_patterns.PDMatrixPattern(3) !=
-            pdmatrix_patterns.PDMatrixPattern(4))
+            paragami.PDMatrixPattern(3) !=
+            paragami.PDMatrixPattern(4))
 
         self.assertTrue(
-            pdmatrix_patterns.PDMatrixPattern(3, diag_lb=2) !=
-            pdmatrix_patterns.PDMatrixPattern(3))
+            paragami.PDMatrixPattern(3, diag_lb=2) !=
+            paragami.PDMatrixPattern(3))
 
     def test_pdmatrix_custom_autodiff(self):
         # TODO: test the autodiff stuff.
         x_vec = np.random.random(6)
-        x_mat = pdmatrix_patterns._unvectorize_ld_matrix(x_vec)
+        x_mat = paragami.pdmatrix_patterns._unvectorize_ld_matrix(x_vec)
 
         check_grads(
-            pdmatrix_patterns._vectorize_ld_matrix,
+            paragami.pdmatrix_patterns._vectorize_ld_matrix,
             modes=['fwd', 'rev'], order=3)(x_mat)
         check_grads(
-            pdmatrix_patterns._unvectorize_ld_matrix,
+            paragami.pdmatrix_patterns._unvectorize_ld_matrix,
             modes=['fwd', 'rev'], order=3)(x_vec)
 
     def test_dictionary_patterns(self):
@@ -136,16 +137,16 @@ class TestPatterns(unittest.TestCase):
                 else:
                     assert_array_almost_equal(dict1[key], dict2[key])
 
-        dict_pattern = base_patterns.PatternDict()
+        dict_pattern = paragami.PatternDict()
         dict_pattern['a'] = \
-            numeric_array_patterns.NumericArrayPattern((2, 3, 4), lb=-1, ub=2)
+            paragami.NumericArrayPattern((2, 3, 4), lb=-1, ub=2)
         dict_pattern['b'] = \
-            numeric_array_patterns.NumericArrayPattern((5, ), lb=-1, ub=10)
+            paragami.NumericArrayPattern((5, ), lb=-1, ub=10)
         dict_pattern['c'] = \
-            numeric_array_patterns.NumericArrayPattern((5, 2), lb=-1, ub=10)
-        subdict = base_patterns.PatternDict()
+            paragami.NumericArrayPattern((5, 2), lb=-1, ub=10)
+        subdict = paragami.PatternDict()
         subdict['suba'] = \
-            numeric_array_patterns.NumericArrayPattern((2, ))
+            paragami.NumericArrayPattern((2, ))
         dict_pattern['d'] = subdict
 
         self.assertEqual(list(dict_pattern.keys()), ['a', 'b', 'c', 'd'])
@@ -166,7 +167,7 @@ class TestPatterns(unittest.TestCase):
 
         # Check adding a new element.
         dict_pattern['d'] = \
-            numeric_array_patterns.NumericArrayPattern((4, ), lb=-1, ub=10)
+            paragami.NumericArrayPattern((4, ), lb=-1, ub=10)
         dict_val = dict_pattern.random()
         _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
 
@@ -176,33 +177,33 @@ class TestPatterns(unittest.TestCase):
             del dict_pattern['b']
         def add():
             dict_pattern['new'] = \
-                numeric_array_patterns.NumericArrayPattern((4, ))
+                paragami.NumericArrayPattern((4, ))
         def modify():
             dict_pattern['a'] = \
-                numeric_array_patterns.NumericArrayPattern((4, ))
+                paragami.NumericArrayPattern((4, ))
         self.assertRaises(ValueError, delete)
         self.assertRaises(ValueError, add)
         self.assertRaises(ValueError, modify)
 
     def test_pattern_array(self):
-        array_pattern = numeric_array_patterns.NumericArrayPattern(
+        array_pattern = paragami.NumericArrayPattern(
             shape=(2, ), lb=-1, ub=10.0)
-        pattern_array = base_patterns.PatternArray((2, 3), array_pattern)
+        pattern_array = paragami.PatternArray((2, 3), array_pattern)
         valid_value = pattern_array.random()
         _test_pattern(self, pattern_array, valid_value)
 
-        matrix_pattern = pdmatrix_patterns.PDMatrixPattern(size=2)
-        pattern_array = base_patterns.PatternArray((2, 3), matrix_pattern)
+        matrix_pattern = paragami.PDMatrixPattern(size=2)
+        pattern_array = paragami.PatternArray((2, 3), matrix_pattern)
         valid_value = pattern_array.random()
         _test_pattern(self, pattern_array, valid_value)
 
         self.assertTrue(
-            base_patterns.PatternArray((3, 3), matrix_pattern) !=
-            base_patterns.PatternArray((2, 3), matrix_pattern))
+            paragami.PatternArray((3, 3), matrix_pattern) !=
+            paragami.PatternArray((2, 3), matrix_pattern))
 
         self.assertTrue(
-            base_patterns.PatternArray((2, 3), array_pattern) !=
-            base_patterns.PatternArray((2, 3), matrix_pattern))
+            paragami.PatternArray((2, 3), array_pattern) !=
+            paragami.PatternArray((2, 3), matrix_pattern))
 
 
 

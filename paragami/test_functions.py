@@ -9,7 +9,6 @@ import autograd.numpy as np
 from autograd.test_util import check_grads
 
 import paragami
-from function_patterns import FlattenedFunction
 
 def get_test_pattern():
     pattern = paragami.PatternDict()
@@ -47,11 +46,11 @@ class TestPatterns(unittest.TestCase):
         for free in [True, False]:
             param_val_flat = pattern.flatten(param_val, free=free)
 
-            tf1_flat = FlattenedFunction(tf1, pattern, free)
+            tf1_flat = paragami.FlattenedFunction(tf1, pattern, free)
             assert_array_almost_equal(
                 tf1(param_val), tf1_flat(param_val_flat))
 
-            tf2_flat = FlattenedFunction(tf2, pattern, free, argnums=1)
+            tf2_flat = paragami.FlattenedFunction(tf2, pattern, free, argnums=1)
             assert_array_almost_equal(
                 tf2(x, param_val, y=y), tf2_flat(x, param_val_flat, y=y))
 
@@ -59,13 +58,13 @@ class TestPatterns(unittest.TestCase):
             b_flat = pattern['b'].flatten(param_val['b'], free=free)
 
             # Check when both arguments are free
-            tf3_flat = FlattenedFunction(
+            tf3_flat = paragami.FlattenedFunction(
                 tf3, [ pattern['a'], pattern['b'] ], free)
             assert_array_almost_equal(
                 tf3(param_val['a'], param_val['b']),
                 tf3_flat(a_flat, b_flat))
 
-            tf4_flat = FlattenedFunction(
+            tf4_flat = paragami.FlattenedFunction(
                 tf4, [ pattern['a'], pattern['b'] ], free, argnums=[1, 3])
             assert_array_almost_equal(
                 tf4(x, param_val['a'], z, param_val['b'], y=y),
@@ -75,13 +74,13 @@ class TestPatterns(unittest.TestCase):
             a_flat = pattern['a'].flatten(param_val['a'], free=free)
             b_flat = pattern['b'].flatten(param_val['b'], free=not free)
 
-            tf3_flat = FlattenedFunction(
+            tf3_flat = paragami.FlattenedFunction(
                 tf3, [ pattern['a'], pattern['b'] ], [free, not free])
             assert_array_almost_equal(
                 tf3(param_val['a'], param_val['b']),
                 tf3_flat(a_flat, b_flat))
 
-            tf4_flat = FlattenedFunction(
+            tf4_flat = paragami.FlattenedFunction(
                 tf4, [ pattern['a'], pattern['b'] ],
                 [free, not free], argnums=[1, 3])
             assert_array_almost_equal(
@@ -96,7 +95,7 @@ class TestPatterns(unittest.TestCase):
 
         for free in [True, False]:
             param_val_flat = pattern.flatten(param_val, free=free)
-            tf1_flat = FlattenedFunction(tf1, pattern, free)
+            tf1_flat = paragami.FlattenedFunction(tf1, pattern, free)
             check_grads(
                 tf1_flat, modes=['rev', 'fwd'], order=2)(param_val_flat)
 
