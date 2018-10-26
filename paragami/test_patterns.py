@@ -38,16 +38,19 @@ def _test_pattern(
 
 class TestPatterns(unittest.TestCase):
     def test_simplex_array_patterns(self):
-        simplex_size = 4
-        array_shape = (2, 3)
-        shape = array_shape + (simplex_size, )
-        valid_value = np.random.random(shape) + 0.1
-        valid_value = \
-            valid_value / np.sum(valid_value, axis=-1, keepdims=True)
+        def test_shape_and_size(simplex_size, array_shape):
+            shape = array_shape + (simplex_size, )
+            valid_value = np.random.random(shape) + 0.1
+            valid_value = \
+                valid_value / np.sum(valid_value, axis=-1, keepdims=True)
 
-        pattern = simplex_patterns.SimplexArrayPattern(
-            simplex_size, array_shape)
-        _test_pattern(self, pattern, valid_value)
+            pattern = simplex_patterns.SimplexArrayPattern(
+                simplex_size, array_shape)
+            _test_pattern(self, pattern, valid_value)
+
+        test_shape_and_size(4, (2, 3))
+        test_shape_and_size(2, (2, 3))
+        test_shape_and_size(2, (2, ))
 
         self.assertTrue(
             simplex_patterns.SimplexArrayPattern(3, (2, 3)) !=

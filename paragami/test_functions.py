@@ -15,7 +15,8 @@ class TestPatterns(unittest.TestCase):
     def test_flatten_function(self):
         pattern = paragami.PatternDict()
         pattern['a'] = paragami.NumericArrayPattern((2, 3, 4), lb=-1, ub=2)
-        pattern['b'] = paragami.NumericArrayPattern((5, ), lb=-1, ub=10)
+        pattern['b'] = paragami.PDMatrixPattern(3)
+        pattern['c'] = paragami.SimplexArrayPattern(2, (3, ))
         param_val = pattern.random()
         x = 3
         y = 4

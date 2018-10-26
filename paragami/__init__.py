@@ -1,6 +1,7 @@
 from paragami.version import __version__
 
-from paragami.base_patterns import PatternDict
+from paragami.base_patterns import PatternDict, PatternArray
 from paragami.numeric_array_patterns import NumericArrayPattern
 from paragami.pdmatrix_patterns import PDMatrixPattern
 from paragami.function_patterns import FlattenedFunction
+from paragami.simplex_patterns import SimplexArrayPattern
