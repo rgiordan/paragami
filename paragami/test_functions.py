@@ -10,13 +10,19 @@ import autograd.numpy as np
 import paragami
 from function_patterns import FlattenedFunction
 
+def get_test_pattern():
+    pattern = paragami.PatternDict()
+    pattern['a'] = paragami.NumericArrayPattern((2, 3, 4), lb=-1, ub=2)
+    pattern['b'] = paragami.PDMatrixPattern(3)
+    pattern['c'] = paragami.SimplexArrayPattern(2, (3, ))
+    pattern['d'] = paragami.PatternDict()
+    pattern['d']['e'] = paragami.PDMatrixPattern(2)
+    return pattern
+
 
 class TestPatterns(unittest.TestCase):
     def test_flatten_function(self):
-        pattern = paragami.PatternDict()
-        pattern['a'] = paragami.NumericArrayPattern((2, 3, 4), lb=-1, ub=2)
-        pattern['b'] = paragami.PDMatrixPattern(3)
-        pattern['c'] = paragami.SimplexArrayPattern(2, (3, ))
+        pattern = get_test_pattern()
         param_val = pattern.random()
         x = 3
         y = 4

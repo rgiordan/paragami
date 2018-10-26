@@ -126,6 +126,9 @@ class TestPatterns(unittest.TestCase):
             numeric_array_patterns.NumericArrayPattern((5, ), lb=-1, ub=10)
         dict_pattern['c'] = \
             numeric_array_patterns.NumericArrayPattern((5, 2), lb=-1, ub=10)
+        dict_pattern['d'] = base_patterns.PatternDict()
+        dict_pattern['d']['e'] = \
+            numeric_array_patterns.NumericArrayPattern((2, ))
 
         self.assertEqual(list(dict_pattern.keys()), ['a', 'b', 'c'])
 
