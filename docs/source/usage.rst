@@ -2,8 +2,7 @@
 Usage
 =====
 
-Start by importing paragami.
+Usage follows.
 
-.. code-block:: python
-
-    import paragami
+.. autoclass:: paragami.base_patterns.Pattern
+   :members:
