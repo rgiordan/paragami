@@ -158,6 +158,18 @@ class TestPatterns(unittest.TestCase):
         dict_val = dict_pattern.random()
         _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
 
+        # Check locking
+        dict_pattern.lock()
+        def delete():
+            del dict_pattern['b']
+        def add():
+            dict_pattern['new'] = numeric_array_patterns.NumericArrayPattern((4, ))
+        def modify():
+            dict_pattern['a'] = numeric_array_patterns.NumericArrayPattern((4, ))
+        self.assertRaises(ValueError, delete)
+        self.assertRaises(ValueError, add)
+        self.assertRaises(ValueError, modify)
+
     def test_pattern_array(self):
         array_pattern = numeric_array_patterns.NumericArrayPattern(
             shape=(2, ), lb=-1, ub=10.0)
