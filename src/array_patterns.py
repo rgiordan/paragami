@@ -87,6 +87,7 @@ class NumericArrayPattern(Pattern):
 
     def __eq__(self, other):
         return \
+            (type(self) == type(other)) & \
             (self.bounds() == other.bounds()) & \
             (self.shape() == other.shape())
 

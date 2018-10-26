@@ -158,6 +158,7 @@ class PDMatrixPattern(Pattern):
 
     def __eq__(self, other):
         return \
+            (type(other) == type(self)) & \
             (self.size() == other.size()) & \
             (self.diag_lb() == other.diag_lb())
 

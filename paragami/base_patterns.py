@@ -77,6 +77,8 @@ class PatternDict(Pattern):
             '\n'.join(pattern_strings)
 
     def __eq__(self, other):
+        if type(other) != type(self):
+            return False
         if self.__pattern_dict.keys() != other.keys():
             return False
         for pattern_name in self.__pattern_dict.keys():
@@ -141,14 +143,6 @@ class PatternDict(Pattern):
         flat_val = np.full(flat_length, float('nan'))
         for pattern_name, pattern in self.__pattern_dict.items():
             pattern_flat_length = pattern.flat_length(free)
-            print('offset: ', offset)
-            print('pattern_flat_length: ', pattern_flat_length)
-            print('flat_val: ', flat_val)
-            print('slice: ', flat_val[offset:(offset + pattern_flat_length)] )
-            print('folded val: ', folded_val)
-            print('pattern_name: ', pattern_name)
-            print('folded_val.keys(): ', folded_val.keys())
-            print('folded val[pattern_name]: ', folded_val[pattern_name])
             flat_val[offset:(offset + pattern_flat_length)] = \
                 pattern.flatten(folded_val[pattern_name], free)
             offset += pattern_flat_length
@@ -177,7 +171,17 @@ class PatternArray(Pattern):
         if type(empty_pattern) is np.ndarray:
             self.__folded_pattern_shape = empty_pattern.shape
         else:
-            self.__folded_pattern_shape = ()
+            # autograd's numpy does not seem to support object arrays.
+            # The following snippet works with numpy 1.14.2 but not
+            # autograd's numpy commit 5d49ee.
+            #
+            # foo = OrderedDict(a=5)
+            # bar = onp.array([foo for i in range(3)])
+            # print(bar[0]['a']) # Gives an index error.
+            #
+            raise NotImplementedError(
+                'PatternArray does not support patterns whose folded ' +
+                'values are not numpy.ndarray types.')
 
         super().__init__(
             num_elements * base_pattern.flat_length(free=False),
@@ -194,12 +198,13 @@ class PatternArray(Pattern):
         return self.__base_pattern
 
     def __eq__(self, other):
+        if type(other) != type(self):
+            return False
         if self.__shape != other.shape():
             return False
         if self.__base_pattern != other.base_pattern():
             return False
         return True
-
 
     def empty(self, valid):
         empty_pattern = self.__base_pattern.empty(valid=valid)
