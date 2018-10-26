@@ -1,6 +1,6 @@
 from .base_patterns import Pattern
 
-import autograd
+#import autograd
 import autograd.numpy as np
 import autograd.scipy as sp
 

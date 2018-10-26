@@ -4,7 +4,7 @@ import math
 import copy
 import numbers
 
-import autograd
+#import autograd
 import autograd.numpy as np
 import autograd.scipy as sp
 from autograd.core import primitive
