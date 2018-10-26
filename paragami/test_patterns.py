@@ -44,7 +44,6 @@ class TestPatterns(unittest.TestCase):
         valid_value = np.random.random(shape) + 0.1
         valid_value = \
             valid_value / np.sum(valid_value, axis=-1, keepdims=True)
-        print(valid_value)
 
         pattern = simplex_patterns.SimplexArrayPattern(
             simplex_size, array_shape)
