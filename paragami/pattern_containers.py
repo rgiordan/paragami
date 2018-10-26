@@ -10,6 +10,46 @@ from .base_patterns import Pattern
 # Dictionary of patterns.
 
 class PatternDict(Pattern):
+    """
+    A dictionary of patterns (which is itself a pattern).
+
+    Methods
+    ------------
+    lock:
+        Prevent additional patterns from being added or removed.
+
+    Examples
+    ------------
+    .. code-block:: python
+
+        import paragami
+
+        # Add some patterns.
+        dict_pattern = paragami.PatternDict()
+        dict_pattern['vec'] = paragami.NumericArrayPattern(shape=(2, ))
+        dict_pattern['mat'] = paragami.PDMatrixPattern(size=3)
+
+        # Dictionaries can also contain dictionaries (but they have to
+        # be populated /before/ being added to the parent).
+        sub_dict_pattern = paragami.PatternDict()
+        sub_dict_pattern['vec1'] = paragami.NumericArrayPattern(shape=(2, ))
+        sub_dict_pattern['vec2'] = paragami.NumericArrayPattern(shape=(2, ))
+        dict_pattern['sub_dict'] = sub_dict_pattern
+
+        # We're done adding patterns, so lock the dictionary.
+        dict_pattern.lock()
+
+        # Get a random intial value for the whole dictionary.
+        dict_val = dict_pattern.random()
+        print(dict_val['mat']) # Prints a 3x3 positive definite numpy matrix.
+
+        # Get a flattened value of the whole dictionary.
+        dict_val_flat = dict_pattern.flatten(dict_val, free=True)
+
+        # Get a new random folded value of the dictionary.
+        new_dict_val_flat = np.random.random(len(dict_val_flat))
+        new_dict_val = dict_pattern.fold(new_dict_val_flat, free=True)
+    """
     def __init__(self):
         self.__pattern_dict = OrderedDict()
 
@@ -117,7 +157,37 @@ class PatternDict(Pattern):
 # An array of a pattern.
 
 class PatternArray(Pattern):
+    """
+    An array of a pattern (which is also itself a pattern).
+
+    The first indices of the folded pattern are the array and the final
+    indices are of the base pattern.  For example, if `shape=(3, 4)`
+    and `base_pattern = PDMatrixPattern(size=5)`, then the folded
+    value of the array will have shape `(3, 4, 5, 5)`, where the entry
+    `folded_val[i, j, :, :]` is a 5x5 positive definite matrix.
+
+    Currently this can only contain patterns whose folded values are
+    numeric arrays (i.e., `NumericArrayPattern`, `SimplexArrayPattern`, and
+    `PDMatrixPattern`).
+
+    Methods
+    -------------
+    shape
+        Returns the shape of the entire folded array including the shape
+        of the base pattern.
+
+    base_pattern
+        Returns the pattern contained in each element of the array.
+    """
     def __init__(self, shape, base_pattern):
+        """
+        Parameters
+        ------------
+        shape: tuple of int
+            The shape of the array (not including the base parameter)
+        base_pattern:
+            The base pattern.
+        """
         self.__shape = shape
         self.__array_ranges = [range(0, t) for t in self.__shape]
 

@@ -32,7 +32,47 @@ def _unconstrain_simplex_matrix(simplex_mat):
 
 
 class SimplexArrayPattern(Pattern):
+    """
+    A pattern for an array of simplex parameters.
+
+    The last index represents entries of the simplex.  For example,
+    if `array_shape=(2, 3)` and `simplex_size=4`, then the pattern is
+    for a 2x3 array of 4d simplexes.  If such value of the simplex
+    array is given by `val`, then `val.shape = (2, 3, 4)` and
+    `val[i, j, :]` is the `i,j`th of the six simplicial vectors, i.e,
+    `np.sum(val[i, j, :])` equals 1 for each `i` and `j`.
+
+    Attributes
+    -------------
+    validate: Bool
+        Whether or not the simplex is automatically checked to be
+        non-negative and to sum to one.
+
+    Methods
+    ---------
+    array_shape: tuple of ints
+        The shape of the array of simplexes, not including the simplex
+        dimension.
+
+    simplex_size: int
+        The length of each simplex.
+
+    shape: tuple of ints
+        The shape of the entire array including the simplex dimension.
+    """
     def __init__(self, simplex_size, array_shape, validate=True):
+        """
+        Parameters
+        ------------
+        simplex_size: int
+            The length of the simplexes.
+        array_shape: tuple of integers
+            The size of the array of simplexes (not including the simplexes
+            themselves).
+        validate: bool
+            Whether or not to check for legal (i.e., positive and normalized)
+            folded values.
+        """
         self.__simplex_size = int(simplex_size)
         if self.__simplex_size <= 1:
             raise ValueError('simplex_size must be >= 2.')

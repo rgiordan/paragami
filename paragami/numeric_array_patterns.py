@@ -59,9 +59,35 @@ def _get_inbounds_value(lb, ub):
 
 
 class NumericArrayPattern(Pattern):
+    """
+    A pattern for (optionally bounded) arrays of numbers.
+
+    Attributes
+    -------------
+    validate: Bool
+        Whether or not the array is automatically checked to lie within the
+        specified bounds.
+
+    Methods
+    ----------------
+    validate_folded: Check whether the folded array lies within the bounds.
+    """
     def __init__(self, shape,
                  lb=-float("inf"), ub=float("inf"), validate=True):
 
+        """
+        Parameters
+        -------------
+        shape: Tuple of int
+            The shape of the array.
+        lb: float
+            The (inclusive) lower bound for the entries of the array.
+        ub: float
+            The (inclusive) upper bound for the entries of the array.
+        validate: bool
+            Whether or not the array is automatically checked to lie within the
+            specified bounds.
+        """
         self.validate = validate
         self.__shape = shape
         self.__lb = lb
