@@ -47,8 +47,9 @@ class SimplexArrayPattern(Pattern):
         return self.__shape
 
     def __eq__(self, other):
+        if type(self) != type(other):
+            return False
         return \
-            (type(self) == type(other)) & \
             (self.array_shape() == other.array_shape()) & \
             (self.simplex_size() == other.simplex_size())
 
