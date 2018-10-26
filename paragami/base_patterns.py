@@ -66,7 +66,13 @@ class Pattern(object):
 class PatternDict(Pattern):
     def __init__(self):
         self.__pattern_dict = OrderedDict()
+
+        # __lock determines whether new elements can be added.
+        self.__lock = False
         super().__init__(0, 0)
+
+    def lock(self):
+        self.__lock = True
 
     def __str__(self):
         pattern_strings = [
@@ -91,11 +97,26 @@ class PatternDict(Pattern):
         return self.__pattern_dict[key]
 
     def __setitem__(self, pattern_name, pattern):
+        if self.__lock:
+            raise ValueError(
+                'The dictionary is locked, and its values cannot be changed.')
         self.__pattern_dict[pattern_name] = pattern
+
+        # We cannot allow pattern dictionaries to change their size
+        # once they've been included as members in another dictionary,
+        # since we have no way of updating the parent dictionary's size.
+        # To avoid unexpected errors, lock any dictionary that is set as
+        # a member.
+        if type(self.__pattern_dict[pattern_name]) is PatternDict:
+            self.__pattern_dict[pattern_name].lock()
+
         self._flat_length += pattern.flat_length(free=False)
         self._free_flat_length += pattern.flat_length(free=True)
 
     def __delitem__(self, pattern_name):
+        if self.__lock:
+            raise ValueError(
+                'The dictionary is locked, and its values cannot be changed.')
         pattern = self.__pattern_dict[pattern_name]
         self._flat_length -= pattern.flat_length(free=False)
         self._free_flat_length -= pattern.flat_length(free=True)
@@ -110,12 +131,6 @@ class PatternDict(Pattern):
             empty_val[pattern_name] = pattern.empty(valid)
         return empty_val
 
-    def serialize(self):
-        result = {}
-        for pattern in self.__pattern_dict.values():
-            result[pattern.name] = pattern.serialize()
-        return result
-
     def fold(self, flat_val, free):
         flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
@@ -123,8 +138,8 @@ class PatternDict(Pattern):
         flat_length = self.flat_length(free)
         if flat_val.size != flat_length:
             error_string = \
-                'Wrong size for parameter {}.  Expected {}, got {}'.format(
-                    self.name, str(flat_length), str(flat_val.size))
+                'Wrong size for pattern dictionary {}.  Expected {}, got {}'.format(
+                    str(self), str(flat_length), str(flat_val.size))
             raise ValueError(error_string)
 
         # TODO: add an option to do this -- and other operations -- in place.

@@ -4,6 +4,8 @@ import unittest
 from numpy.testing import assert_array_almost_equal
 import numpy as np
 
+import collections
+
 from paragami import base_patterns
 from paragami import numeric_array_patterns
 from paragami import pdmatrix_patterns
@@ -116,8 +118,11 @@ class TestPatterns(unittest.TestCase):
     def test_dictionary_patterns(self):
         def check_dict_equal(dict1, dict2):
             self.assertEqual(dict1.keys(), dict2.keys())
-            for key  in dict1:
-                assert_array_almost_equal(dict1[key], dict2[key])
+            for key in dict1:
+                if type(dict1[key]) is collections.OrderedDict:
+                    check_dict_equal(dict1[key], dict2[key])
+                else:
+                    assert_array_almost_equal(dict1[key], dict2[key])
 
         dict_pattern = base_patterns.PatternDict()
         dict_pattern['a'] = \
@@ -126,11 +131,12 @@ class TestPatterns(unittest.TestCase):
             numeric_array_patterns.NumericArrayPattern((5, ), lb=-1, ub=10)
         dict_pattern['c'] = \
             numeric_array_patterns.NumericArrayPattern((5, 2), lb=-1, ub=10)
-        dict_pattern['d'] = base_patterns.PatternDict()
-        dict_pattern['d']['e'] = \
+        subdict = base_patterns.PatternDict()
+        subdict['suba'] = \
             numeric_array_patterns.NumericArrayPattern((2, ))
+        dict_pattern['d'] = subdict
 
-        self.assertEqual(list(dict_pattern.keys()), ['a', 'b', 'c'])
+        self.assertEqual(list(dict_pattern.keys()), ['a', 'b', 'c', 'd'])
 
         dict_val = dict_pattern.random()
         _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
