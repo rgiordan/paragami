@@ -1,21 +1,7 @@
-# This is a draft of the new API.
-
-import math
-import copy
-import numbers
-
-#import autograd
 import autograd.numpy as np
-import autograd.scipy as sp
-from autograd.core import primitive
 
 from collections import OrderedDict
 import itertools
-
-import scipy as osp
-from scipy.sparse import coo_matrix, csr_matrix, block_diag
-
-import warnings
 
 
 class Pattern(object):
@@ -76,8 +62,8 @@ class PatternDict(Pattern):
 
     def __str__(self):
         pattern_strings = [
-            '\t[' + key + '] = ' + str(self.__pattern_dict[key]) \
-            for key in self.__pattern_dict ]
+            '\t[' + key + '] = ' + str(self.__pattern_dict[key])
+            for key in self.__pattern_dict]
         return \
             'OrderedDict:\n' + \
             '\n'.join(pattern_strings)
@@ -88,8 +74,7 @@ class PatternDict(Pattern):
         if self.__pattern_dict.keys() != other.keys():
             return False
         for pattern_name in self.__pattern_dict.keys():
-            if self.__pattern_dict[pattern_name] != \
-                other[pattern_name]:
+            if self.__pattern_dict[pattern_name] != other[pattern_name]:
                 return False
         return True
 
@@ -138,7 +123,8 @@ class PatternDict(Pattern):
         flat_length = self.flat_length(free)
         if flat_val.size != flat_length:
             error_string = \
-                'Wrong size for pattern dictionary {}.  Expected {}, got {}'.format(
+                'Wrong size for pattern dictionary {}.  ' + \
+                'Expected {}, got {}'.format(
                     str(self), str(flat_length), str(flat_val.size))
             raise ValueError(error_string)
 
@@ -173,7 +159,7 @@ class PatternDict(Pattern):
 class PatternArray(Pattern):
     def __init__(self, shape, base_pattern):
         self.__shape = shape
-        self.__array_ranges = [ range(0, t) for t in self.__shape ]
+        self.__array_ranges = [range(0, t) for t in self.__shape]
 
         num_elements = np.prod(self.__shape)
         self.__base_pattern = base_pattern
@@ -223,8 +209,9 @@ class PatternArray(Pattern):
 
     def empty(self, valid):
         empty_pattern = self.__base_pattern.empty(valid=valid)
-        repeated_array = np.array([ empty_pattern \
-            for item in itertools.product(*self.__array_ranges)])
+        repeated_array = np.array(
+            [empty_pattern
+             for item in itertools.product(*self.__array_ranges)])
         return np.reshape(
             repeated_array, self.__shape + self.__folded_pattern_shape)
 
@@ -244,21 +231,21 @@ class PatternArray(Pattern):
         if flat_val.size != self.flat_length(free):
             error_string = \
                 'Wrong size for parameter {}.  Expected {}, got {}'.format(
-                    self.name, str(flat_length), str(flat_val.size))
+                    self.name, str(self.flat_length(free)), str(flat_val.size))
             raise ValueError(error_string)
 
         flat_length = self.__base_pattern.flat_length(free)
-        folded_array = np.array([ \
+        folded_array = np.array([
             self.__base_pattern.fold(
-                flat_val[self._stacked_obs_slice(item, flat_length)], free) \
-            for item in itertools.product(*self.__array_ranges) ])
+                flat_val[self._stacked_obs_slice(item, flat_length)], free)
+            for item in itertools.product(*self.__array_ranges)])
         return np.reshape(
             folded_array, self.__shape + self.__folded_pattern_shape)
 
     def flatten(self, folded_val, free):
-        return np.hstack(np.array([ \
-            self.__base_pattern.flatten(folded_val[item], free=free) \
-                for item in itertools.product(*self.__array_ranges) ]))
+        return np.hstack(np.array([
+            self.__base_pattern.flatten(folded_val[item], free=free)
+            for item in itertools.product(*self.__array_ranges)]))
 
     def flat_length(self, free):
         return self._free_flat_length if free else self._flat_length

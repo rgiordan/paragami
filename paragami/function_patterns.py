@@ -1,5 +1,5 @@
-
 import numpy as np
+
 
 class FlattenedFunction:
     def __init__(self, original_fun, patterns, free, argnums=None):
@@ -32,13 +32,14 @@ class FlattenedFunction:
             self._fun, self._argnums, self.free, self._patterns))
 
     def __call__(self, *args, **kwargs):
-        # Loop through the arguments from beginning to end, replacing parameters
-        # with their flattened values.
+        # Loop through the arguments from beginning to end, replacing
+        # parameters with their flattened values.
         new_args = ()
         last_argnum = 0
         for i in self._argnum_sort:
             argnum = self._argnums[i]
-            folded_val = self._patterns[i].fold(args[argnum], free=self.free[i])
+            folded_val = \
+                self._patterns[i].fold(args[argnum], free=self.free[i])
             new_args += args[last_argnum:argnum] + (folded_val, )
             last_argnum = argnum + 1
 

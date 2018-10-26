@@ -1,13 +1,11 @@
 from .base_patterns import Pattern
 
-#import autograd
 import autograd.numpy as np
-import autograd.scipy as sp
 
-import copy
 import math
 
 from autograd.core import primitive, defvjp, defjvp
+
 
 # Return the linear index of an element of a symmetric matrix
 # where the triangular part has been stacked into a vector.
@@ -37,7 +35,8 @@ def _sym_index(k1, k2):
 # The entries above the diagonal are ignored.
 def _vectorize_ld_matrix(mat):
     nrow, ncol = np.shape(mat)
-    if nrow != ncol: raise ValueError('mat must be square')
+    if nrow != ncol:
+        raise ValueError('mat must be square')
     return mat[np.tril_indices(nrow)]
 
 
@@ -59,7 +58,7 @@ def _vectorize_ld_matrix(mat):
 @primitive
 def _unvectorize_ld_matrix(vec):
     mat_size = int(0.5 * (math.sqrt(1 + 8 * vec.size) - 1))
-    if mat_size * (mat_size + 1) / 2 != vec.size: \
+    if mat_size * (mat_size + 1) / 2 != vec.size:
         raise ValueError('Vector is an impossible size')
     mat = np.zeros((mat_size, mat_size))
     for k1 in range(mat_size):
@@ -67,17 +66,22 @@ def _unvectorize_ld_matrix(vec):
             mat[k1, k2] = vec[_sym_index(k1, k2)]
     return mat
 
+
 def _unvectorize_ld_matrix_vjp(g):
     assert g.shape[0] == g.shape[1]
     return _vectorize_ld_matrix(g)
 
+
 defvjp(_unvectorize_ld_matrix,
        lambda ans, vec: lambda g: _unvectorize_ld_matrix_vjp(g))
+
 
 def _unvectorize_ld_matrix_jvp(g):
     return _unvectorize_ld_matrix(g)
 
-defjvp(_unvectorize_ld_matrix, lambda g, ans, x : _unvectorize_ld_matrix_jvp(g))
+
+defjvp(_unvectorize_ld_matrix,
+       lambda g, ans, x: _unvectorize_ld_matrix_jvp(g))
 
 
 def _exp_matrix_diagonal(mat):

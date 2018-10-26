@@ -1,13 +1,9 @@
 from .base_patterns import Pattern
 
-#import autograd
 import autograd.numpy as np
-import autograd.scipy as sp
 
 import copy
 
-##################################
-# Array parameter
 
 def _unconstrain_array(array, lb, ub):
     if not (array <= ub).all():
@@ -22,7 +18,7 @@ def _unconstrain_array(array, lb, ub):
             return copy.deepcopy(array)
         else:
             return np.log(array - lb)
-    else: # the upper bound is finite
+    else:  # the upper bound is finite
         if lb == -float("inf"):
             return -1 * np.log(ub - array)
         else:
@@ -38,7 +34,7 @@ def _constrain_array(free_array, lb, ub):
             return copy.deepcopy(free_array)
         else:
             return np.exp(free_array) + lb
-    else: # the upper bound is finite
+    else:  # the upper bound is finite
         if lb == -float("inf"):
             return ub - np.exp(-1 * free_array)
         else:
@@ -63,9 +59,8 @@ def _get_inbounds_value(lb, ub):
 
 
 class NumericArrayPattern(Pattern):
-    def __init__(
-        self, shape,
-        lb=-float("inf"), ub=float("inf"), validate=True):
+    def __init__(self, shape,
+                 lb=-float("inf"), ub=float("inf"), validate=True):
 
         self.validate = validate
         self.__shape = shape
@@ -102,8 +97,8 @@ class NumericArrayPattern(Pattern):
     def validate_folded(self, folded_val):
         folded_val = np.atleast_1d(folded_val)
         if folded_val.shape != self.shape():
-            raise ValueError('Wrong size for Array.' + \
-                             ' Expected shape: ' + str(self.shape()) + \
+            raise ValueError('Wrong size for Array.' +
+                             ' Expected shape: ' + str(self.shape()) +
                              ' Got shape: ' + str(folded_val.shape))
         if self.validate:
             if (np.array(folded_val < self.__lb)).any():
@@ -118,7 +113,8 @@ class NumericArrayPattern(Pattern):
                     str(self._free_flat_length),
                     str(free_flat_val.size))
             raise ValueError(error_string)
-        constrained_array = _constrain_array(free_flat_val, self.__lb, self.__ub)
+        constrained_array = \
+            _constrain_array(free_flat_val, self.__lb, self.__ub)
         return constrained_array.reshape(self.__shape)
 
     def _free_flatten(self, folded_val):
