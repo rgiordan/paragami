@@ -7,6 +7,7 @@ import numpy as np
 from paragami import base_patterns
 from paragami import numeric_array_patterns
 from paragami import pdmatrix_patterns
+from paragami import simplex_patterns
 
 
 def _test_pattern(
@@ -36,6 +37,27 @@ def _test_pattern(
 
 
 class TestPatterns(unittest.TestCase):
+    def test_simplex_array_patterns(self):
+        simplex_size = 4
+        array_shape = (2, 3)
+        shape = array_shape + (simplex_size, )
+        valid_value = np.random.random(shape) + 0.1
+        valid_value = \
+            valid_value / np.sum(valid_value, axis=-1, keepdims=True)
+        print(valid_value)
+
+        pattern = simplex_patterns.SimplexArrayPattern(
+            simplex_size, array_shape)
+        _test_pattern(self, pattern, valid_value)
+
+        self.assertTrue(
+            simplex_patterns.SimplexArrayPattern(3, (2, 3)) !=
+            simplex_patterns.SimplexArrayPattern(3, (2, 4)))
+
+        self.assertTrue(
+            simplex_patterns.SimplexArrayPattern(4, (2, 3)) !=
+            simplex_patterns.SimplexArrayPattern(3, (2, 3)))
+
     def test_numeric_array_patterns(self):
         for test_shape in [(2, ), (2, 3), (2, 3, 4)]:
             valid_value = np.random.random(test_shape)
@@ -125,6 +147,8 @@ class TestPatterns(unittest.TestCase):
         dict_val = dict_pattern.random()
         _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
 
+    def test_pattern_array(self):
+        pass
 
 if __name__ == '__main__':
     unittest.main()
