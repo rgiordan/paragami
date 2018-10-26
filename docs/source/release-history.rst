@@ -2,5 +2,5 @@
 Release History
 ===============
 
-Initial Release (YYYY-MM-DD)
+Not yet released (as of 2018-Oct-26)
 ----------------------------
