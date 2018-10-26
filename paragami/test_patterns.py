@@ -147,7 +147,19 @@ class TestPatterns(unittest.TestCase):
         _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
 
     def test_pattern_array(self):
-        pass
+        pattern_array = base_patterns.PatternArray(
+            (2, 3), numeric_array_patterns.NumericArrayPattern(
+                shape=(2, ), lb=-1, ub=10.0))
+
+        valid_value = pattern_array.random()
+        _test_pattern(self, pattern_array, valid_value)
+
+        pattern_array = base_patterns.PatternArray(
+            (2, 3), pdmatrix_patterns.PDMatrixPattern(size=2))
+        valid_value = pattern_array.random()
+        _test_pattern(self, pattern_array, valid_value)
+
+
 
 if __name__ == '__main__':
     unittest.main()

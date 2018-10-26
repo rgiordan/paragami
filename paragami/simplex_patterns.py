@@ -5,14 +5,6 @@ import autograd
 import autograd.numpy as np
 import autograd.scipy as sp
 
-import copy
-import math
-
-from autograd.core import primitive, defvjp, defjvp
-
-import scipy as osp
-from scipy.sparse import coo_matrix
-
 def _constrain_simplex_matrix(free_mat):
     # The first column is the reference value.  Append a column of zeros
     # to each simplex representing this reference value.
