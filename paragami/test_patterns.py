@@ -163,9 +163,11 @@ class TestPatterns(unittest.TestCase):
         def delete():
             del dict_pattern['b']
         def add():
-            dict_pattern['new'] = numeric_array_patterns.NumericArrayPattern((4, ))
+            dict_pattern['new'] = \
+                numeric_array_patterns.NumericArrayPattern((4, ))
         def modify():
-            dict_pattern['a'] = numeric_array_patterns.NumericArrayPattern((4, ))
+            dict_pattern['a'] = \
+                numeric_array_patterns.NumericArrayPattern((4, ))
         self.assertRaises(ValueError, delete)
         self.assertRaises(ValueError, add)
         self.assertRaises(ValueError, modify)

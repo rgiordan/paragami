@@ -6,6 +6,7 @@ from numpy.testing import assert_array_almost_equal
 
 import autograd
 import autograd.numpy as np
+from autograd.test_util import check_grads
 
 import paragami
 from function_patterns import FlattenedFunction
@@ -15,8 +16,9 @@ def get_test_pattern():
     pattern['a'] = paragami.NumericArrayPattern((2, 3, 4), lb=-1, ub=2)
     pattern['b'] = paragami.PDMatrixPattern(3)
     pattern['c'] = paragami.SimplexArrayPattern(2, (3, ))
-    pattern['d'] = paragami.PatternDict()
-    pattern['d']['e'] = paragami.PDMatrixPattern(2)
+    subdict = paragami.PatternDict()
+    subdict['sub'] = paragami.PDMatrixPattern(2)
+    pattern['d'] = subdict
     return pattern
 
 
@@ -85,6 +87,21 @@ class TestPatterns(unittest.TestCase):
             assert_array_almost_equal(
                 tf4(x, param_val['a'], z, param_val['b'], y=y),
                 tf4_flat(x, a_flat, z, b_flat, y=y))
+
+    def test_autograd(self):
+        pattern = get_test_pattern()
+        param_val = pattern.random()
+        def tf1(param_val):
+            return np.mean(param_val['a'] ** 2) + np.mean(param_val['b'] ** 2)
+
+        for free in [True, False]:
+            param_val_flat = pattern.flatten(param_val, free=free)
+            tf1_flat = FlattenedFunction(tf1, pattern, free)
+            check_grads(
+                tf1_flat, modes=['rev', 'fwd'], order=2)(param_val_flat)
+
+
+
 
 
 if __name__ == '__main__':
