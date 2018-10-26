@@ -7,11 +7,21 @@ import math
 from autograd.core import primitive, defvjp, defjvp
 
 
-# Return the linear index of an element of a symmetric matrix
-# where the triangular part has been stacked into a vector.
-#
-# Uses 0-indexing. (row, col) = (k1, k2)
 def _sym_index(k1, k2):
+    """
+    Get the index of an entry in a folded symmetric array.
+
+    Parameters
+    ------------
+    k1, k2: int
+        0-based indices into a symmetric matrix.
+
+    Returns
+    --------
+    int
+        Return the linear index of the (k1, k2) element of a symmetric
+        matrix where the triangular part has been stacked into a vector.
+    """
     def ld_ind(k1, k2):
         return int(k2 + k1 * (k1 + 1) / 2)
 
@@ -21,42 +31,63 @@ def _sym_index(k1, k2):
         return ld_ind(k2, k1)
 
 
-# Map a matrix
-#
-# [ x11 x12 ... x1n ]
-# [ x21 x22     x2n ]
-# [...              ]
-# [ xn1 ...     xnn ]
-#
-# to the vector
-#
-# [ x11, x21, x22, x31, ..., xnn ].
-#
-# The entries above the diagonal are ignored.
 def _vectorize_ld_matrix(mat):
+    """
+    Linearize the lower diagonal of a square matrix.
+
+    Parameters:
+    mat
+        A square matrix.
+
+    Returns:
+    1-d vector
+        The lower diagonal of `mat` stacked into a vector.
+
+    Specifically, we map the matrix
+
+    [ x11 x12 ... x1n ]
+    [ x21 x22     x2n ]
+    [...              ]
+    [ xn1 ...     xnn ]
+
+    to the vector
+
+    [ x11, x21, x22, x31, ..., xnn ].
+
+    The entries above the diagonal are ignored.
+    """
     nrow, ncol = np.shape(mat)
     if nrow != ncol:
         raise ValueError('mat must be square')
     return mat[np.tril_indices(nrow)]
 
 
-# Map a vector
-#
-# [ v1, v2, ..., vn ]
-#
-# to the symmetric matrix
-#
-# [ v1 ...          ]
-# [ v2 v3 ...       ]
-# [ v4 v5 v6 ...    ]
-# [ ...             ]
-#
-# where the values above the diagonal are determined by symmetry.
-#
-# Because we cannot use autograd with array assignment, just define the
-# vector jacobian product directly.
 @primitive
 def _unvectorize_ld_matrix(vec):
+    """
+    Invert the mapping of `_vectorize_ld_matrix`.
+
+    Parameters
+    -----------
+    vec: A 1-d vector.
+
+    Returns
+    ----------
+    A symmetric matrix.
+
+    Specifically, we map a vector
+
+    [ v1, v2, ..., vn ]
+
+    to the symmetric matrix
+
+    [ v1 ...          ]
+    [ v2 v3 ...       ]
+    [ v4 v5 v6 ...    ]
+    [ ...             ]
+
+    where the values above the diagonal are determined by symmetry.
+    """
     mat_size = int(0.5 * (math.sqrt(1 + 8 * vec.size) - 1))
     if mat_size * (mat_size + 1) / 2 != vec.size:
         raise ValueError('Vector is an impossible size')
@@ -65,6 +96,10 @@ def _unvectorize_ld_matrix(vec):
         for k2 in range(k1 + 1):
             mat[k1, k2] = vec[_sym_index(k1, k2)]
     return mat
+
+# Because we cannot use autograd with array assignment, define the
+# vector jacobian product and jacobian vector products of
+# _unvectorize_ld_matrix.
 
 
 def _unvectorize_ld_matrix_vjp(g):
@@ -86,7 +121,7 @@ defjvp(_unvectorize_ld_matrix,
 
 def _exp_matrix_diagonal(mat):
     assert mat.shape[0] == mat.shape[1]
-    # make_diagonal() is only defined in the autograd version of numpy
+    # NB: make_diagonal() is only defined in the autograd version of numpy
     mat_exp_diag = np.make_diagonal(
         np.exp(np.diag(mat)), offset=0, axis1=-1, axis2=-2)
     mat_diag = np.make_diagonal(np.diag(mat), offset=0, axis1=-1, axis2=-2)
@@ -95,7 +130,7 @@ def _exp_matrix_diagonal(mat):
 
 def _log_matrix_diagonal(mat):
     assert mat.shape[0] == mat.shape[1]
-    # make_diagonal() is only defined in the autograd version of numpy
+    # NB: make_diagonal() is only defined in the autograd version of numpy
     mat_log_diag = np.make_diagonal(
         np.log(np.diag(mat)), offset=0, axis1=-1, axis2=-2)
     mat_diag = np.make_diagonal(np.diag(mat), offset=0, axis1=-1, axis2=-2)
@@ -131,17 +166,28 @@ def _unvectorize_symmetric_matrix(vec_val):
     return mat_val
 
 
-# def _pos_def_matrix_free_to_vector(free_val, diag_lb=0.0):
-#     mat_val = _unpack_posdef_matrix(free_val, diag_lb=diag_lb)
-#     return _vectorize_ld_matrix(mat_val)
-#
-# pos_def_matrix_free_to_vector_jac = \
-#     autograd.jacobian(_pos_def_matrix_free_to_vector)
-# pos_def_matrix_free_to_vector_hess = \
-#     autograd.hessian(_pos_def_matrix_free_to_vector)
-
 class PDMatrixPattern(Pattern):
+    """
+    A pattern for a symmetric, positive-definite matrix parameter.
+
+    Attributes
+    -------------
+    validate: Bool
+        Whether or not the matrix is automatically checked for symmetry
+        positive-definiteness, and the diagonal lower bound.
+    """
     def __init__(self, size, diag_lb=0.0, validate=True):
+        """
+        Parameters
+        --------------
+        size: int
+            The length of one side of the square matrix.
+        diag_lb: float
+            A lower bound for the diagonal entries.  Must be >= 0.
+        validate: bool
+            Whether or not to check for legal (i.e., symmetric
+            positive-definite) folded values.
+        """
         self.__size = int(size)
         self.__diag_lb = diag_lb
         self.validate = validate
@@ -163,12 +209,21 @@ class PDMatrixPattern(Pattern):
             (self.diag_lb() == other.diag_lb())
 
     def size(self):
+        """
+        Returns the matrix size.
+        """
         return self.__size
 
     def shape(self):
+        """
+        Returns the matrix shape, i.e., (size, size).
+        """
         return (self.__size, self.__size)
 
     def diag_lb(self):
+        """
+        Returns the diagonal lower bound.
+        """
         return self.__diag_lb
 
     def empty(self, valid):
@@ -178,6 +233,36 @@ class PDMatrixPattern(Pattern):
             return np.empty((self.__size, self.__size))
 
     def validate_folded(self, folded_val):
+        """
+        Check that the folded value is valid.
+
+        If `validate = True`, checks that `folded_val` is a symmetric,
+        positive-definite matrix of the correct shape with diagonal entries
+        greater than the specified lower bound.  If `validate = False`,
+        only the shape is checked.
+
+        .. note::
+            This method does not currently check for positive-definiteness.
+
+        Parameters
+        -----------
+        folded_val: A numpy array
+            A candidate value for a positive definite matrix.
+
+        Raises
+        ----------
+        If `folded_val` is not a valid matrix, raises a `ValueError`.
+
+        Examples
+        ---------
+
+        .. code-block:: python
+
+            import numpy as np
+
+            np.deg2rad(90)  # pi / 2
+            np.rad2deg(np.pi / 2)  # 90.0
+        """
         if folded_val.shape != (self.__size, self.__size):
             raise ValueError('Wrong shape for PDMatrix.')
         if self.validate:
