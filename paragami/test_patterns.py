@@ -147,17 +147,24 @@ class TestPatterns(unittest.TestCase):
         _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
 
     def test_pattern_array(self):
-        pattern_array = base_patterns.PatternArray(
-            (2, 3), numeric_array_patterns.NumericArrayPattern(
-                shape=(2, ), lb=-1, ub=10.0))
-
+        array_pattern = numeric_array_patterns.NumericArrayPattern(
+            shape=(2, ), lb=-1, ub=10.0)
+        pattern_array = base_patterns.PatternArray((2, 3), array_pattern)
         valid_value = pattern_array.random()
         _test_pattern(self, pattern_array, valid_value)
 
-        pattern_array = base_patterns.PatternArray(
-            (2, 3), pdmatrix_patterns.PDMatrixPattern(size=2))
+        matrix_pattern = pdmatrix_patterns.PDMatrixPattern(size=2)
+        pattern_array = base_patterns.PatternArray((2, 3), matrix_pattern)
         valid_value = pattern_array.random()
         _test_pattern(self, pattern_array, valid_value)
+
+        self.assertTrue(
+            base_patterns.PatternArray((3, 3), matrix_pattern) !=
+            base_patterns.PatternArray((2, 3), matrix_pattern))
+
+        self.assertTrue(
+            base_patterns.PatternArray((2, 3), array_pattern) !=
+            base_patterns.PatternArray((2, 3), matrix_pattern))
 
 
 
