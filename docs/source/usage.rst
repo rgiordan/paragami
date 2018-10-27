@@ -48,3 +48,13 @@ Arrays of patterns
 ---------------------------
 .. autoclass:: paragami.pattern_containers.PatternArray
   :members:
+
+
+
+Function wrappers
+========================
+
+Arrays of patterns
+---------------------------
+.. autoclass:: paragami.function_patterns.FlattenedFunction
+  :members:
