@@ -12,10 +12,10 @@ import paragami
 def get_test_pattern():
     pattern = paragami.PatternDict()
     pattern['a'] = paragami.NumericArrayPattern((2, 3, 4), lb=-1, ub=2)
-    pattern['b'] = paragami.PDMatrixPattern(3)
+    pattern['b'] = paragami.PSDMatrixPattern(3)
     pattern['c'] = paragami.SimplexArrayPattern(2, (3, ))
     subdict = paragami.PatternDict()
-    subdict['sub'] = paragami.PDMatrixPattern(2)
+    subdict['sub'] = paragami.PSDMatrixPattern(2)
     pattern['d'] = subdict
     return pattern
 

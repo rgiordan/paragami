@@ -166,7 +166,7 @@ def _unvectorize_symmetric_matrix(vec_val):
     return mat_val
 
 
-class PDMatrixPattern(Pattern):
+class PSDMatrixPattern(Pattern):
     """
     A pattern for a symmetric, positive-definite matrix parameter.
 
@@ -192,7 +192,8 @@ class PDMatrixPattern(Pattern):
         self.__diag_lb = diag_lb
         self.validate = validate
         if diag_lb < 0:
-            raise ValueError('The diagonal lower bound diag_lb must be >-= 0.')
+            raise ValueError(
+                'The diagonal lower bound diag_lb must be >-= 0.')
 
         vec_size = int(size * (size + 1) / 2)
         super().__init__(vec_size, vec_size)
@@ -267,7 +268,10 @@ class PDMatrixPattern(Pattern):
             raise ValueError('Wrong shape for PDMatrix.')
         if self.validate:
             if np.any(np.diag(folded_val) < self.__diag_lb):
-                raise ValueError('Diagonal is less than the lower bound.')
+                error_string = \
+                    'Diagonal is less than the lower bound {}.'.format(
+                        self.__diag_lb)
+                raise ValueError(error_string)
             if not (folded_val.transpose() == folded_val).all():
                 raise ValueError('Matrix is not symmetric')
             # TODO: check for positive definiteness

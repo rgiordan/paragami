@@ -23,7 +23,7 @@ Numeric arrays
 Positive definite matrices
 ---------------------------
 
-.. autoclass:: paragami.pdmatrix_patterns.PDMatrixPattern
+.. autoclass:: paragami.psdmatrix_patterns.PSDMatrixPattern
    :members:
 
 Simplexes
