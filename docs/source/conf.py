@@ -201,9 +201,7 @@ intersphinx_mapping = {
     'matplotlib': ('https://matplotlib.org', None),
 }
 
-#autoclass_content = 'both'
-
-# Document the __init__ function.
+# Autogmatically document the __init__ function.
 # See https://stackoverflow.com/questions/5599254/how-to-use-sphinxs-autodoc-to-document-a-classs-init-self-method
 def skip(app, what, name, obj, skip, options):
     if name == "__init__":
@@ -212,3 +210,6 @@ def skip(app, what, name, obj, skip, options):
 
 def setup(app):
     app.connect("autodoc-skip-member", skip)
+
+# You should do this!
+# https://nbsphinx.readthedocs.io/en/0.3.5/
