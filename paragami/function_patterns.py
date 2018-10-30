@@ -16,7 +16,7 @@ class FlattenedFunction:
 
         import paragami
 
-        mat_pattern = paragami.PDMatrixPattern(3)
+        mat_pattern = paragami.PSDMatrixPattern(3)
 
         def fun(offset, mat):
             return np.slogdet(mat + offset)[1]

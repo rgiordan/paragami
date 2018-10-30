@@ -93,33 +93,33 @@ class TestPatterns(unittest.TestCase):
                 paragami.NumericArrayPattern((1, 2), lb=2, ub=4) !=
                 paragami.NumericArrayPattern((1, 2), lb=2))
 
-    def test_pdmatrix_patterns(self):
+    def test_psdmatrix_patterns(self):
         dim = 3
         valid_value = np.eye(dim) * 3 + np.full((dim, dim), 0.1)
-        pattern = paragami.PDMatrixPattern(dim)
+        pattern = paragami.PSDMatrixPattern(dim)
         _test_pattern(self, pattern, valid_value)
 
-        pattern = paragami.PDMatrixPattern(dim, diag_lb=0.5)
+        pattern = paragami.PSDMatrixPattern(dim, diag_lb=0.5)
         _test_pattern(self, pattern, valid_value)
 
         self.assertTrue(
-            paragami.PDMatrixPattern(3) !=
-            paragami.PDMatrixPattern(4))
+            paragami.PSDMatrixPattern(3) !=
+            paragami.PSDMatrixPattern(4))
 
         self.assertTrue(
-            paragami.PDMatrixPattern(3, diag_lb=2) !=
-            paragami.PDMatrixPattern(3))
+            paragami.PSDMatrixPattern(3, diag_lb=2) !=
+            paragami.PSDMatrixPattern(3))
 
     def test_pdmatrix_custom_autodiff(self):
         # TODO: test the autodiff stuff.
         x_vec = np.random.random(6)
-        x_mat = paragami.pdmatrix_patterns._unvectorize_ld_matrix(x_vec)
+        x_mat = paragami.psdmatrix_patterns._unvectorize_ld_matrix(x_vec)
 
         check_grads(
-            paragami.pdmatrix_patterns._vectorize_ld_matrix,
+            paragami.psdmatrix_patterns._vectorize_ld_matrix,
             modes=['fwd', 'rev'], order=3)(x_mat)
         check_grads(
-            paragami.pdmatrix_patterns._unvectorize_ld_matrix,
+            paragami.psdmatrix_patterns._unvectorize_ld_matrix,
             modes=['fwd', 'rev'], order=3)(x_vec)
 
     def test_dictionary_patterns(self):
@@ -190,7 +190,7 @@ class TestPatterns(unittest.TestCase):
         valid_value = pattern_array.random()
         _test_pattern(self, pattern_array, valid_value)
 
-        matrix_pattern = paragami.PDMatrixPattern(size=2)
+        matrix_pattern = paragami.PSDMatrixPattern(size=2)
         pattern_array = paragami.PatternArray((2, 3), matrix_pattern)
         valid_value = pattern_array.random()
         _test_pattern(self, pattern_array, valid_value)

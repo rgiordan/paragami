@@ -27,7 +27,7 @@ class PatternDict(Pattern):
         # Add some patterns.
         dict_pattern = paragami.PatternDict()
         dict_pattern['vec'] = paragami.NumericArrayPattern(shape=(2, ))
-        dict_pattern['mat'] = paragami.PDMatrixPattern(size=3)
+        dict_pattern['mat'] = paragami.PSDMatrixPattern(size=3)
 
         # Dictionaries can also contain dictionaries (but they have to
         # be populated /before/ being added to the parent).
@@ -162,13 +162,13 @@ class PatternArray(Pattern):
 
     The first indices of the folded pattern are the array and the final
     indices are of the base pattern.  For example, if `shape=(3, 4)`
-    and `base_pattern = PDMatrixPattern(size=5)`, then the folded
+    and `base_pattern = PSDMatrixPattern(size=5)`, then the folded
     value of the array will have shape `(3, 4, 5, 5)`, where the entry
     `folded_val[i, j, :, :]` is a 5x5 positive definite matrix.
 
     Currently this can only contain patterns whose folded values are
     numeric arrays (i.e., `NumericArrayPattern`, `SimplexArrayPattern`, and
-    `PDMatrixPattern`).
+    `PSDMatrixPattern`).
 
     Methods
     -------------
