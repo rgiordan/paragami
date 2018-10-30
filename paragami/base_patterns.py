@@ -35,7 +35,7 @@ class Pattern(object):
     def __eq__(self, other):
         raise NotImplementedError()
 
-    def fold(self, flat_val, free):
+    def fold(self, flat_val, free, validate=None):
         """
         Fold a flat value into a parameter.
 
@@ -45,6 +45,10 @@ class Pattern(object):
             The flattened value.
         free: Boolean
             Whether or not the flattened value is a free parameterization.
+        validate: Boolean
+            Whether to validate that the folded value respects the constraints.
+            If None, default either to the pattern's default or, if that is
+            unspecified, to True.
 
         Returns
         ---------
@@ -52,7 +56,7 @@ class Pattern(object):
         """
         raise NotImplementedError()
 
-    def flatten(self, folded_val, free):
+    def flatten(self, folded_val, free, validate=None):
         """
         Flatten a folded value into a flat vector.
 
@@ -63,6 +67,10 @@ class Pattern(object):
         free: Boolean
             Whether or not the flattened value is to be in a free
             parameterization.
+        validate: Boolean
+            Whether to validate that the folded value respects the constraints.
+            If None, default either to the pattern's default or, if that is
+            unspecified, to True.
 
         Returns
         ---------

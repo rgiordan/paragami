@@ -10,6 +10,7 @@ class HyperparameterSensitivityLinearApproximation(object):
         opt_par_pattern, hyper_par_pattern,
         opt_par_folded_value, hyper_par_folded_value,
         opt_par_is_free, hyper_par_is_free,
+        validate_optimum=True,
         hessian_at_opt=None,
         factorize_hessian=True,
         hyper_par_objective_fun=None):
@@ -52,7 +53,7 @@ class HyperparameterSensitivityLinearApproximation(object):
 
         self.set_base_values(
             opt_par_folded_value, hyper_par_folded_value,
-            hessian_at_opt, factorize_hessian)
+            hessian_at_opt, factorize_hessian, validate=validate_optimum)
 
     def set_base_values(self,
                         opt_par_folded_value, hyper_par_folded_value,
@@ -105,7 +106,7 @@ class HyperparameterSensitivityLinearApproximation(object):
     def predict_opt_par_from_hyper_par(self, new_hyper_par_folded_value,
                                        fold=True):
         hyper1 = self._hyper_par_pattern.flatten(
-            new_hyper_par_value, free=self._hyper_par_is_free)
+            new_hyper_par_folded_value, free=self._hyper_par_is_free)
         opt_par1 = self._opt0 + self._sens_mat @ (hyper1 - self._hyper0)
         if fold:
             return self._opt_par_pattern.fold(

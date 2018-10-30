@@ -44,8 +44,8 @@ class SimplexArrayPattern(Pattern):
 
     Attributes
     -------------
-    validate: Bool
-        Whether or not the simplex is automatically checked to be
+    default_validate: Bool
+        Whether or not the simplex is checked by default to be
         non-negative and to sum to one.
 
     Methods
@@ -60,7 +60,7 @@ class SimplexArrayPattern(Pattern):
     shape: tuple of ints
         The shape of the entire array including the simplex dimension.
     """
-    def __init__(self, simplex_size, array_shape, validate=True):
+    def __init__(self, simplex_size, array_shape, default_validate=True):
         """
         Parameters
         ------------
@@ -69,9 +69,9 @@ class SimplexArrayPattern(Pattern):
         array_shape: tuple of integers
             The size of the array of simplexes (not including the simplexes
             themselves).
-        validate: bool
+        default_validate: bool
             Whether or not to check for legal (i.e., positive and normalized)
-            folded values.
+            folded values by default.
         """
         self.__simplex_size = int(simplex_size)
         if self.__simplex_size <= 1:
@@ -79,7 +79,7 @@ class SimplexArrayPattern(Pattern):
         self.__array_shape = array_shape
         self.__shape = self.__array_shape + (self.__simplex_size, )
         self.__free_shape = self.__array_shape + (self.__simplex_size - 1, )
-        self.validate = validate
+        self.default_validate = default_validate
         super().__init__(np.prod(self.__shape), np.prod(self.__free_shape))
 
     def __str__(self):
@@ -108,10 +108,14 @@ class SimplexArrayPattern(Pattern):
         else:
             return np.empty(self.__shape)
 
-    def validate_folded(self, folded_val):
+    def check_folded(self, folded_val, validate=None):
+        # TODO: be consistent about whether validate raises an error or
+        # returns a boolean.
         if folded_val.shape != self.__shape:
             return False
-        if self.validate:
+        if validate is None:
+            validate = self.default_validate
+        if validate:
             if np.any(folded_val < 0):
                 return False
             simplex_sums = np.sum(folded_val, axis=-1)
@@ -119,7 +123,7 @@ class SimplexArrayPattern(Pattern):
                 return False
         return True
 
-    def fold(self, flat_val, free):
+    def fold(self, flat_val, free, validate=None):
         flat_size = self.flat_length(free)
         if len(flat_val) != flat_size:
             raise ValueError('flat_val is the wrong length.')
@@ -128,11 +132,11 @@ class SimplexArrayPattern(Pattern):
             return _constrain_simplex_matrix(free_mat)
         else:
             folded_val = np.reshape(flat_val, self.__shape)
-            self.validate_folded(folded_val)
+            self.check_folded(folded_val, validate)
             return folded_val
 
-    def flatten(self, folded_val, free):
-        self.validate_folded(folded_val)
+    def flatten(self, folded_val, free, validate=None):
+        self.check_folded(folded_val, validate)
         if free:
             return _unconstrain_simplex_matrix(folded_val).flatten()
         else:
