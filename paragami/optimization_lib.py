@@ -3,7 +3,7 @@ import autograd.numpy as np
 from .function_patterns import FlattenedFunction
 import scipy as osp
 
-class ParametricSensitivityLinearApproximation(object):
+class HyperparameterSensitivityLinearApproximation(object):
     def __init__(
         self,
         objective_fun,
@@ -70,9 +70,10 @@ class ParametricSensitivityLinearApproximation(object):
             grad0 = self._obj_fun_grad(self._opt0, self._hyper0)
             grad0_norm = np.linalg.norm(grad0)
             if np.linalg.norm(grad0) > grad_tol:
-                err_msg = 'The gradient is not zero at the putatively optimal' +
-                          'values.  ||grad|| = {} > {} = grad_tol'.format(
-                            grad0_norm, grad_tol)
+                err_msg = \
+                    'The gradient is not zero at the putatively optimal' + \
+                    'values.  ||grad|| = {} > {} = grad_tol'.format(
+                        grad0_norm, grad_tol)
                 raise ValueError(err_msg)
 
         # Set the values of the Hessian at the optimum.
