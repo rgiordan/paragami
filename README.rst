@@ -1,16 +1,17 @@
-===================================
+#####################################
 "Parameter origami": ``paragami``.
-===================================
+#####################################
 
 Description.
----------------
+==========================
 
 This is a library (very much still in development) intended to make sensitivity
-analysis easier for optimization problems. This package provides tools for the
-folding and unfolding collections of parameters for optimization and sensitivity
-analysis.
+analysis easier for optimization problems. The core functionality consists of
+tools for "folding" and "flattening" collections of parameters -- i.e., for
+converting data structures of constrained parameters to and from vectors
+of unconstrained parameters.
 
-For some background and motivations, see some of our papers:
+For background and motivation, see the following papers:
 
 | Covariances, Robustness, and Variational Bayes
 | Ryan Giordano, Tamara Broderick, Michael I. Jordan
@@ -29,15 +30,25 @@ For some background and motivations, see some of our papers:
 | https://arxiv.org/abs/1810.06587
 
 
-Installation.
------------------
+Using the package.
+==========================
 
-To install, run the follwing command, pointing to the root of the git repo:
+We welcome new users!  However, please be aware that the package is still in
+development.  We encourage users to contact the author (github user
+``rgiordan``) for advice, bugs, or if you're using the package for something
+important.
+
+
+Installation.
+-------------------------
+
+The package is not (yet) registered on ``pypi``.
+To install, run the following command, pointing to the root of the git repo:
 
 ``sudo -H pip3 install --user -e paragami``.
 
 Documentation and Examples.
----------------------------
+----------------------------------
 
 For API documentation, run ``make html`` in ``docs/``.
 
