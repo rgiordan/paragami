@@ -124,7 +124,6 @@ class NumericArrayPattern(Pattern):
             return np.empty(self.__shape)
 
     def check_folded(self, folded_val, validate=None):
-        folded_val = np.atleast_1d(folded_val)
         if folded_val.shape != self.shape():
             raise ValueError('Wrong size for Array.' +
                              ' Expected shape: ' + str(self.shape()) +
@@ -176,6 +175,7 @@ class NumericArrayPattern(Pattern):
             return self._notfree_fold(flat_val, validate)
 
     def flatten(self, folded_val, free, validate=None):
+        folded_val = np.atleast_1d(folded_val)
         if free:
             return self._free_flatten(folded_val, validate)
         else:
