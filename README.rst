@@ -1,8 +1,8 @@
-================================
-"Parameter origami": `paragami`
-================================
+===================================
+"Parameter origami": ``paragami``.
+===================================
 
-Description
+Description.
 ---------------
 
 This is a library (very much still in development) intended to make sensitivity
@@ -29,14 +29,14 @@ For some background and motivations, see some of our papers:
 | https://arxiv.org/abs/1810.06587
 
 
-Installation
+Installation.
 -----------------
 
 To install, run the follwing command, pointing to the root of the git repo:
 
 ``sudo -H pip3 install --user -e paragami``.
 
-Documentation and Examples
+Documentation and Examples.
 ---------------------------
 
 For API documentation, run ``make html`` in ``docs/``.
@@ -57,10 +57,10 @@ The following example is from the notebook
 .. code:: ipython3
 
     import paragami
-    
+
     import autograd
     from autograd import numpy as np
-    
+
     # Use the original scipy for functions we don't need to differentiate.
     import scipy as osp
 
@@ -71,15 +71,11 @@ For illustration, let’s consider a simple example: a Gaussian maximum
 likelihood estimator.
 
 .. math::
-
-
    x_n \overset{iid}\sim \mathcal{N}(\mu, \Sigma)\textrm{, for }n=1,...,N.
 
 Let :math:`X = (x_1, ..., x_N)`. We will minimize the loss
 
 .. math::
-
-
    \ell(X, \mu, \Sigma) = \frac{1}{2}\sum_{n=1}^N \left((x_n - \mu)^T \Sigma^{-1} (x_n - \mu) + \log |\Sigma| \right).
 
 Specify parameters and draw data.
@@ -88,17 +84,17 @@ Specify parameters and draw data.
 .. code:: ipython3
 
     np.random.seed(42)
-    
+
     num_obs = 1000
-    
+
     # True values of parameters
     true_sigma = \
         np.eye(3) * np.diag(np.array([1, 2, 3])) + \
         np.random.random((3, 3)) * 0.1
     true_sigma = 0.5 * (true_sigma + true_sigma.T)
-    
+
     true_mu = np.array([0, 1, 2])
-    
+
     # Data
     x = np.random.multivariate_normal(
         mean=true_mu, cov=true_sigma, size=(num_obs, ))
@@ -118,17 +114,17 @@ Write out the log likelihood and use it to specify a loss function.
             return -0.5 * (
                 np.einsum('ni,ij,nj->n', x_centered, sigma_inv, x_centered) + \
                 sigma_log_det)
-    
+
     # The loss function uses the data x from the global scope.
     def get_loss(norm_param_dict):
         return np.sum(
             -1 * get_normal_log_prob(
                 x, norm_param_dict['sigma'], norm_param_dict['mu']))
-    
+
     true_norm_param_dict = dict()
     true_norm_param_dict['sigma'] = true_sigma
     true_norm_param_dict['mu'] = true_mu
-    
+
     print('Loss at true parameter: {}'.format(get_loss(true_norm_param_dict)))
 
 
@@ -181,11 +177,11 @@ without worrying about the PSD constraint on :math:`\Sigma`.
     print('First, wrap the loss to be a function of the flat parameter.')
     get_freeflat_loss = paragami.FlattenedFunction(
         original_fun=get_loss, patterns=norm_param_pattern, free=True)
-    
+
     print('Now, use the flattened function to optimize with autograd.\n')
     get_freeflat_loss_grad = autograd.grad(get_freeflat_loss)
     get_freeflat_loss_hessian = autograd.hessian(get_freeflat_loss)
-    
+
     # Initialize with zeros.
     init_param = np.zeros(norm_param_pattern.flat_length(free=True))
     mle_opt = osp.optimize.minimize(
@@ -195,7 +191,7 @@ without worrying about the PSD constraint on :math:`\Sigma`.
         jac=get_freeflat_loss_grad,
         hess=get_freeflat_loss_hessian,
         options={'gtol': 1e-8, 'disp': True})
-    
+
     mle_opt = get_optimum(init_param)
 
 
@@ -203,7 +199,7 @@ without worrying about the PSD constraint on :math:`\Sigma`.
 
     First, wrap the loss to be a function of the flat parameter.
     Now, use the flattened function to optimize with autograd.
-    
+
     Warning: A bad approximation caused failure to predict improvement.
              Current function value: 2385.942776
              Iterations: 15
@@ -227,7 +223,7 @@ inspection and further use.
 .. code:: ipython3
 
     norm_param_opt = norm_param_pattern.fold(mle_opt.x, free=True)
-    
+
     for param in ['sigma', 'mu']:
         print('Parmeter {}\nOptimal:\n{}\n\nTrue:\n{}\n\n'.format(
             param, norm_param_opt[param], true_norm_param_dict[param]))
@@ -240,19 +236,16 @@ inspection and further use.
     [[ 1.06683522  0.07910048  0.04229475]
      [ 0.07910048  1.89297797 -0.02650233]
      [ 0.04229475 -0.02650233  2.92376984]]
-    
+
     True:
     [[1.03745401 0.07746864 0.03950388]
      [0.07746864 2.01560186 0.05110853]
      [0.03950388 0.05110853 3.0601115 ]]
-    
-    
+
+
     Parmeter mu
     Optimal:
     [-0.04469438  1.03094019  1.85511868]
-    
+
     True:
     [0 1 2]
-    
-    
-
