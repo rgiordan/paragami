@@ -15,7 +15,8 @@ def _unconstrain_array(array, lb, ub):
     if ub == float("inf"):
         if lb == -float("inf"):
             # For consistent behavior, never return a reference.
-            return copy.deepcopy(array)
+            #return copy.deepcopy(array)
+            return copy.copy(array)
         else:
             return np.log(array - lb)
     else:  # the upper bound is finite
@@ -31,7 +32,9 @@ def _constrain_array(free_array, lb, ub):
     if ub == float("inf"):
         if lb == -float("inf"):
             # For consistency, never return a reference.
-            return copy.deepcopy(free_array)
+            #return copy.deepcopy(free_array)
+            #return free_array
+            return copy.copy(free_array)
         else:
             return np.exp(free_array) + lb
     else:  # the upper bound is finite
