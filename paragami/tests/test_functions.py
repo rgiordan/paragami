@@ -75,6 +75,23 @@ class TestPatterns(unittest.TestCase):
             self._test_functor(testfun, argnums, (x, y), {'z': 3, 'zz': 4})
 
 
+    def _test_flatten_function(self, original_fun, patterns, free,
+                               argnums, args, flat_args, kwargs):
+
+        fun_flat = paragami.FlattenedFunction(original_fun, patterns, free)
+        # Sanity check
+        argnums_array = np.atleast_1d(argnums)
+        patterns_array = np.atleast_1d(patterns)
+        free_array = np.atleast_1d(free)
+        for i in range(len(argnums_array)):
+            argnum = argnums_array[i]
+            pattern = patterns_array[i]
+            assert_array_almost_equal(
+                flat_args[argnum],
+                pattern.flatten(args[i], free=free_array[i]))
+        assert_array_almost_equal(
+            original_fun(*args, **kwargs), fun_flat(*flat_args, **kwargs))
+
 
     def test_flatten_function(self):
         pattern = get_test_pattern()
@@ -83,8 +100,14 @@ class TestPatterns(unittest.TestCase):
         y = 4
         z = 5
 
-        def tf1(param_val):
+        def testfun(param_val):
             return np.mean(param_val['a'] ** 2) + np.mean(param_val['b'] ** 2)
+
+        for free in [False, True]:
+            param_val_flat = pattern.flatten(param_val, free=free)
+            self._test_flatten_function(
+                testfun, pattern, free, 0,
+                (param_val, ), (param_val_flat, ), {})
 
         def tf2(x, param_val, y=5):
             return \
@@ -97,12 +120,11 @@ class TestPatterns(unittest.TestCase):
         def tf4(x, a, z, b, y=5):
             return np.mean(a**2) + np.mean(b**2) + x**2 + y**2 + z**2
 
-        for free in [True, False]:
-            param_val_flat = pattern.flatten(param_val, free=free)
+        def tf5(a, z, b, x, y=5):
+            return np.mean(a**2) + np.mean(b**2) + x**2 + y**2 + z**2
 
-            tf1_flat = paragami.FlattenedFunction(tf1, pattern, free)
-            assert_array_almost_equal(
-                tf1(param_val), tf1_flat(param_val_flat))
+        for free in [False, True]:
+            param_val_flat = pattern.flatten(param_val, free=free)
 
             tf2_flat = paragami.FlattenedFunction(
                 tf2, pattern, free, argnums=1)
