@@ -21,6 +21,61 @@ def get_test_pattern():
 
 
 class TestPatterns(unittest.TestCase):
+    def _test_functor(self, original_fun, argnums, args, kwargs):
+        argnums_array = np.atleast_1d(argnums)
+        functor = paragami.Functor(original_fun, argnums)
+        functor_args = ()
+        for i in argnums_array:
+            functor_args += (args[i], )
+
+        # Check that you have to set the cache.
+        with self.assertRaises(ValueError):
+            functor(*functor_args)
+
+        functor.cache_args(*args, **kwargs)
+        assert_array_almost_equal(
+            original_fun(*args, **kwargs),
+            functor(*functor_args))
+
+        # Check you can clear the cache.
+        functor.clear_cached_args()
+        with self.assertRaises(ValueError):
+            functor(*functor_args)
+
+        # Check that the argument length must be correct.
+        functor.cache_args(*args, **kwargs)
+        bad_functor_args = functor_args + (2, )
+        with self.assertRaises(ValueError):
+            functor(*bad_functor_args)
+
+
+    def test_functors(self):
+        x = 1
+        y = 2
+        z = -3
+        zz = -4
+
+        def testfun(x):
+            return x
+        self._test_functor(testfun, 0, (x, ), {})
+
+        def testfun(x, y):
+            return x + y
+        for argnums in [0, 1, [0, 1]]:
+            self._test_functor(testfun, argnums, (x, y), {})
+
+        def testfun(x, y, z=3):
+            return x + y + z
+        for argnums in [0, 1, [0, 1]]:
+            self._test_functor(testfun, argnums, (x, y), {'z': 3})
+
+        def testfun(x, y, z=3, zz=4):
+            return x + y + z + zz
+        for argnums in [0, 1, [0, 1]]:
+            self._test_functor(testfun, argnums, (x, y), {'z': 3, 'zz': 4})
+
+
+
     def test_flatten_function(self):
         pattern = get_test_pattern()
         param_val = pattern.random()

@@ -97,6 +97,7 @@ class FlattenedFunction:
                 self._patterns[i].fold(args[argnum], free=self.free[i])
             new_args += args[last_argnum:argnum] + (folded_val, )
             last_argnum = argnum + 1
+        new_args += args[last_argnum:len(args)]
 
         return self._fun(*new_args, **kwargs)
 
@@ -105,6 +106,11 @@ class Functor():
     def __init__(self, original_fun, argnums):
         self._fun = original_fun
         self._argnums = np.atleast_1d(argnums)
+
+        if len(self._argnums) == 0:
+            raise ValueError(
+                'argnums must contain at least one argument location.')
+
         if len(self._argnums) != len(np.unique(self._argnums)):
             raise ValueError('argnums must not contain duplicated values.')
 
@@ -161,5 +167,6 @@ class Functor():
             new_args += \
                 self._cached_args[last_argnum:argnum] + (functor_args[i], )
             last_argnum = argnum + 1
+        new_args += self._cached_args[last_argnum:len(self._cached_args)]
 
         return self._fun(*new_args, **self._cached_kwargs)
