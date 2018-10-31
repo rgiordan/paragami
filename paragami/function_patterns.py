@@ -1,8 +1,5 @@
 import numpy as np
 
-import numpy as np
-
-
 class FlattenedFunction:
     """
     Convert a function of folded values into one that takes flat values.
@@ -30,15 +27,11 @@ class FlattenedFunction:
         # pd_mat_flat is an unconstrained vector:
         pd_mat_flat = mat_pattern.flatten(pd_mat, free=True)
 
-        flattened_fun.cache_args(2, pd_mat, kwoffset=3)
-
         # These three functions return the same value:
         print('Original: {}'.format(
             fun(2, pd_mat, kwoffset=3)))
         print('Flat: {}'.format(
             flattened_fun(2, pd_mat_flat, kwoffset=3)))
-        print('Cached: {}'.format(
-            flattened_fun.functor(pd_mat_flat)))
     """
     def __init__(self, original_fun, patterns, free, argnums=None):
         """
@@ -78,6 +71,8 @@ class FlattenedFunction:
     def _validate_args(self):
         if len(self._argnums.shape) != 1:
             raise ValueError('argnums must be a 1d vector.')
+        if len(self._argnums) != len(np.unique(self._argnums)):
+            raise ValueError('argnums must not contain duplicated values.')
         if len(self._argnums) != len(self._patterns):
             raise ValueError('argnums must be the same length as patterns.')
         if len(self.free.shape) != 1:
@@ -105,7 +100,36 @@ class FlattenedFunction:
 
         return self._fun(*new_args, **kwargs)
 
+
+class Functor():
+    def __init__(self, original_fun, argnums):
+        self._fun = original_fun
+        self._argnums = np.atleast_1d(argnums)
+        if len(self._argnums) != len(np.unique(self._argnums)):
+            raise ValueError('argnums must not contain duplicated values.')
+
+        self._argnum_sort = np.argsort(self._argnums)
+        self._max_argnum = np.max(self._argnums)
+
+        self._cached_args_set = False
+        self._cached_args = None
+        self._cached_kwargs = None
+
+    def argnums(self):
+        # We don't want _argnums to be modified, so copy before returning.
+        return copy.copy(self._argnums)
+
+    def cached_args(self):
+        return self._cached_args
+
+    def cached_kwargs(self):
+        return self._cached_kwargs
+
     def cache_args(self, *args, **kwargs):
+        if len(args) < self._max_argnum:
+            raise ValueError(
+                'You must cache at least as many arguments as there are'
+                'arguments in argnums.')
         self._cached_args_set = True
         self._cached_args = args
         self._cached_kwargs = kwargs
@@ -115,27 +139,27 @@ class FlattenedFunction:
         self._cached_args = None
         self._cached_kwargs = None
 
-    def functor(self, *flat_args):
+    def __call__(self, *functor_args):
         if not self._cached_args_set:
             raise ValueError(
                 'You must run cache_args to save default arguments' +
-                'before calling functor.')
+                'before calling the functor.')
 
-        if len(flat_args) != len(self._patterns):
+        if len(functor_args) != len(self._argnums):
             raise ValueError(
                 'The arguments to functor must be' +
-                'the same length (and order) as patterns.')
+                'the same length (and order) as argnums.')
 
         # Loop through the arguments from beginning to end, replacing
-        # parameters with their flattened values.
+        # parameters with the passed values.
         new_args = ()
         last_argnum = 0
-        # The argument flat_args is in the same order as patterns.
+
+        # The argument flat_args is in the same order as _argnums.
         for i in self._argnum_sort:
             argnum = self._argnums[i]
-            folded_val = \
-                self._patterns[i].fold(flat_args[i], free=self.free[i])
-            new_args += self._cached_args[last_argnum:argnum] + (folded_val, )
+            new_args += \
+                self._cached_args[last_argnum:argnum] + (functor_args[i], )
             last_argnum = argnum + 1
 
         return self._fun(*new_args, **self._cached_kwargs)
