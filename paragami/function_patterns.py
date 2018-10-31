@@ -1,5 +1,7 @@
 import numpy as np
 
+import numpy as np
+
 
 class FlattenedFunction:
     """
@@ -14,15 +16,13 @@ class FlattenedFunction:
     ----------
     .. code-block:: python
 
-        import paragami
-
         mat_pattern = paragami.PSDMatrixPattern(3)
 
-        def fun(offset, mat):
-            return np.slogdet(mat + offset)[1]
+        def fun(offset, mat, kwoffset=3):
+            return np.linalg.slogdet(mat + offset + kwoffset)[1]
 
         flattened_fun = paragami.FlattenedFunction(
-            fun=fun, patterns=mat_pattern, free=True, argnums=1)
+            original_fun=fun, patterns=mat_pattern, free=True, argnums=1)
 
         # pd_mat is a matrix:
         pd_mat = np.eye(3) + np.full((3, 3), 0.1)
@@ -30,9 +30,15 @@ class FlattenedFunction:
         # pd_mat_flat is an unconstrained vector:
         pd_mat_flat = mat_pattern.flatten(pd_mat, free=True)
 
-        # These two functions return the same value:
-        fun(2, pd_mat)
-        flattened_fun(2, pd_mat_flat)
+        flattened_fun.cache_args(2, pd_mat, kwoffset=3)
+
+        # These three functions return the same value:
+        print('Original: {}'.format(
+            fun(2, pd_mat, kwoffset=3)))
+        print('Flat: {}'.format(
+            flattened_fun(2, pd_mat_flat, kwoffset=3)))
+        print('Cached: {}'.format(
+            flattened_fun.functor(pd_mat_flat)))
     """
     def __init__(self, original_fun, patterns, free, argnums=None):
         """
@@ -65,6 +71,10 @@ class FlattenedFunction:
 
         self._validate_args()
 
+        self._cached_args_set = False
+        self._cached_args = None
+        self._cached_kwargs = None
+
     def _validate_args(self):
         if len(self._argnums.shape) != 1:
             raise ValueError('argnums must be a 1d vector.')
@@ -94,3 +104,38 @@ class FlattenedFunction:
             last_argnum = argnum + 1
 
         return self._fun(*new_args, **kwargs)
+
+    def cache_args(self, *args, **kwargs):
+        self._cached_args_set = True
+        self._cached_args = args
+        self._cached_kwargs = kwargs
+
+    def clear_cached_args(self):
+        self._cached_args_set = False
+        self._cached_args = None
+        self._cached_kwargs = None
+
+    def functor(self, *flat_args):
+        if not self._cached_args_set:
+            raise ValueError(
+                'You must run cache_args to save default arguments' +
+                'before calling functor.')
+
+        if len(flat_args) != len(self._patterns):
+            raise ValueError(
+                'The arguments to functor must be' +
+                'the same length (and order) as patterns.')
+
+        # Loop through the arguments from beginning to end, replacing
+        # parameters with their flattened values.
+        new_args = ()
+        last_argnum = 0
+        # The argument flat_args is in the same order as patterns.
+        for i in self._argnum_sort:
+            argnum = self._argnums[i]
+            folded_val = \
+                self._patterns[i].fold(flat_args[i], free=self.free[i])
+            new_args += self._cached_args[last_argnum:argnum] + (folded_val, )
+            last_argnum = argnum + 1
+
+        return self._fun(*new_args, **self._cached_kwargs)
