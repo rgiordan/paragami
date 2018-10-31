@@ -123,8 +123,8 @@ class PatternDict(Pattern):
         flat_length = self.flat_length(free)
         if flat_val.size != flat_length:
             error_string = \
-                'Wrong size for pattern dictionary {}.  ' + \
-                'Expected {}, got {}'.format(
+                ('Wrong size for pattern dictionary {}.\n' +
+                 'Expected {}, got {}.').format(
                     str(self), str(flat_length), str(flat_val.size))
             raise ValueError(error_string)
 
