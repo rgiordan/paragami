@@ -104,11 +104,11 @@ class HyperparameterSensitivityLinearApproximation(object):
         return self._hess0
 
     def predict_opt_par_from_hyper_par(self, new_hyper_par_folded_value,
-                                       fold=True):
+                                       fold_output=True):
         hyper1 = self._hyper_par_pattern.flatten(
             new_hyper_par_folded_value, free=self._hyper_par_is_free)
         opt_par1 = self._opt0 + self._sens_mat @ (hyper1 - self._hyper0)
-        if fold:
+        if fold_output:
             return self._opt_par_pattern.fold(
                 opt_par1, free=self._opt_par_is_free)
         else:
