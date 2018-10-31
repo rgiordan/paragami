@@ -72,7 +72,7 @@ class HyperparameterSensitivityLinearApproximation(object):
             grad0_norm = np.linalg.norm(grad0)
             if np.linalg.norm(grad0) > grad_tol:
                 err_msg = \
-                    'The gradient is not zero at the putatively optimal' + \
+                    'The gradient is not zero at the putatively optimal ' + \
                     'values.  ||grad|| = {} > {} = grad_tol'.format(
                         grad0_norm, grad_tol)
                 raise ValueError(err_msg)
