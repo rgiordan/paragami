@@ -61,6 +61,9 @@ For API documentation, run ``make html`` in ``docs/``.
 For motivating and expository Jupyter notebooks, see
 ``docs/example_notebooks/``.
 
+Worked Example.
+----------------------
+
 The following example is from the notebook
 ``docs/example_notebooks/front_page_example.ipynb``.
 
