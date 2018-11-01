@@ -112,8 +112,8 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
             error = np.abs(pred_diff - true_diff)
             tol = epsilon * np.mean(np.abs(true_diff))
             if not np.all(error < tol):
-                print(error, tol)
-            #self.assertTrue(np.all(error < tol))
+                print('Error in linear approximation: ', error, tol)
+            self.assertTrue(np.all(error < tol))
 
         # Test the Jacobian.
         get_true_optimal_theta_lamflat = paragami.FlattenedFunction(
