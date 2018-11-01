@@ -1,0 +1,398 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>paragami.numeric_array_patterns &mdash; paragami 0.post103+gf7d7b1a documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> paragami
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.post103+gf7d7b1a
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release-history.html">Release History</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">paragami</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>paragami.numeric_array_patterns</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for paragami.numeric_array_patterns</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">.base_patterns</span> <span class="k">import</span> <span class="n">Pattern</span>
+
+<span class="kn">import</span> <span class="nn">autograd.numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+
+
+<span class="k">def</span> <span class="nf">_unconstrain_array</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">array</span> <span class="o">&lt;=</span> <span class="n">ub</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Elements larger than the upper bound&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">array</span> <span class="o">&gt;=</span> <span class="n">lb</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Elements smaller than the lower bound&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ub</span> <span class="o">&lt;=</span> <span class="n">lb</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Upper bound must be greater than lower bound&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ub</span> <span class="o">==</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">lb</span> <span class="o">==</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">):</span>
+            <span class="c1"># For consistent behavior, never return a reference.</span>
+            <span class="c1">#return copy.deepcopy(array)</span>
+            <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">array</span> <span class="o">-</span> <span class="n">lb</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># the upper bound is finite</span>
+        <span class="k">if</span> <span class="n">lb</span> <span class="o">==</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ub</span> <span class="o">-</span> <span class="n">array</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">array</span> <span class="o">-</span> <span class="n">lb</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ub</span> <span class="o">-</span> <span class="n">array</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_constrain_array</span><span class="p">(</span><span class="n">free_array</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">ub</span> <span class="o">&lt;=</span> <span class="n">lb</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Upper bound must be greater than lower bound&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ub</span> <span class="o">==</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">lb</span> <span class="o">==</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">):</span>
+            <span class="c1"># For consistency, never return a reference.</span>
+            <span class="c1">#return copy.deepcopy(free_array)</span>
+            <span class="c1">#return free_array</span>
+            <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">free_array</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">free_array</span><span class="p">)</span> <span class="o">+</span> <span class="n">lb</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># the upper bound is finite</span>
+        <span class="k">if</span> <span class="n">lb</span> <span class="o">==</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ub</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">free_array</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">exp_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">free_array</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">ub</span> <span class="o">-</span> <span class="n">lb</span><span class="p">)</span> <span class="o">*</span> <span class="n">exp_vec</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">exp_vec</span><span class="p">)</span> <span class="o">+</span> <span class="n">lb</span>
+
+
+<span class="k">def</span> <span class="nf">_get_inbounds_value</span><span class="p">(</span><span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">lb</span> <span class="o">&lt;</span> <span class="n">ub</span>
+    <span class="k">if</span> <span class="n">lb</span> <span class="o">&gt;</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">ub</span> <span class="o">&lt;</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ub</span> <span class="o">-</span> <span class="n">lb</span><span class="p">)</span> <span class="o">+</span> <span class="n">lb</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">lb</span> <span class="o">&gt;</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">):</span>
+            <span class="c1"># The upper bound is infinite.</span>
+            <span class="k">return</span> <span class="n">lb</span> <span class="o">+</span> <span class="mf">1.0</span>
+        <span class="k">elif</span> <span class="n">ub</span> <span class="o">&lt;</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">):</span>
+            <span class="c1"># The lower bound is infinite.</span>
+            <span class="k">return</span> <span class="n">ub</span> <span class="o">-</span> <span class="mf">1.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Both are infinite.</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+
+
+<div class="viewcode-block" id="NumericArrayPattern"><a class="viewcode-back" href="../../usage.html#paragami.numeric_array_patterns.NumericArrayPattern">[docs]</a><span class="k">class</span> <span class="nc">NumericArrayPattern</span><span class="p">(</span><span class="n">Pattern</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A pattern for (optionally bounded) arrays of numbers.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    -------------</span>
+<span class="sd">    default_validate: Bool</span>
+<span class="sd">        Whether or not the array is checked by default to lie within the</span>
+<span class="sd">        specified bounds.</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    ----------------</span>
+<span class="sd">    validate_folded: Check whether the folded array lies within the bounds.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NumericArrayPattern.__init__"><a class="viewcode-back" href="../../usage.html#paragami.numeric_array_patterns.NumericArrayPattern.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span>
+                 <span class="n">lb</span><span class="o">=-</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">),</span> <span class="n">ub</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">),</span> <span class="n">default_validate</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        -------------</span>
+<span class="sd">        shape: Tuple of int</span>
+<span class="sd">            The shape of the array.</span>
+<span class="sd">        lb: float</span>
+<span class="sd">            The (inclusive) lower bound for the entries of the array.</span>
+<span class="sd">        ub: float</span>
+<span class="sd">            The (inclusive) upper bound for the entries of the array.</span>
+<span class="sd">        default_validate: bool</span>
+<span class="sd">            Whether or not the array is checked by default to lie within the</span>
+<span class="sd">            specified bounds.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_validate</span> <span class="o">=</span> <span class="n">default_validate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__shape</span> <span class="o">=</span> <span class="n">shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__lb</span> <span class="o">=</span> <span class="n">lb</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__ub</span> <span class="o">=</span> <span class="n">ub</span>
+        <span class="k">assert</span> <span class="n">lb</span> <span class="o">&gt;=</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">ub</span> <span class="o">&lt;=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">lb</span> <span class="o">&gt;=</span> <span class="n">ub</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Upper bound ub must strictly exceed lower bound lb&#39;</span><span class="p">)</span>
+
+        <span class="n">free_flat_length</span> <span class="o">=</span> <span class="n">flat_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__shape</span><span class="p">))</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">flat_length</span><span class="p">,</span> <span class="n">free_flat_length</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;Array </span><span class="si">{}</span><span class="s1"> (lb=</span><span class="si">{}</span><span class="s1">, ub=</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ub</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> \
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bounds</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">bounds</span><span class="p">())</span> <span class="o">&amp;</span> \
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">())</span>
+
+<div class="viewcode-block" id="NumericArrayPattern.empty"><a class="viewcode-back" href="../../usage.html#paragami.numeric_array_patterns.NumericArrayPattern.empty">[docs]</a>    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">valid</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">valid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__shape</span><span class="p">,</span> <span class="n">_get_inbounds_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ub</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__shape</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">check_folded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">folded_val</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wrong size for Array.&#39;</span> <span class="o">+</span>
+                             <span class="s1">&#39; Expected shape: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">())</span> <span class="o">+</span>
+                             <span class="s1">&#39; Got shape: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">folded_val</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">validate</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">validate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_validate</span>
+        <span class="k">if</span> <span class="n">validate</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">folded_val</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lb</span><span class="p">))</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Value beneath lower bound.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">folded_val</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ub</span><span class="p">))</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Value above upper bound.&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_free_fold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">free_flat_val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">free_flat_val</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_flat_length</span><span class="p">:</span>
+            <span class="n">error_string</span> <span class="o">=</span> \
+                <span class="s1">&#39;Wrong size for Array.  Expected </span><span class="si">{}</span><span class="s1">, got </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_free_flat_length</span><span class="p">),</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">free_flat_val</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_string</span><span class="p">)</span>
+        <span class="n">constrained_array</span> <span class="o">=</span> \
+            <span class="n">_constrain_array</span><span class="p">(</span><span class="n">free_flat_val</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ub</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">constrained_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__shape</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_free_flatten</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_folded</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_unconstrain_array</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ub</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_notfree_fold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flat_val</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">flat_val</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flat_length</span><span class="p">:</span>
+            <span class="n">error_string</span> <span class="o">=</span> \
+                <span class="s1">&#39;Wrong size for Array.  Expected </span><span class="si">{}</span><span class="s1">, got </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_flat_length</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">flat_val</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_string</span><span class="p">)</span>
+        <span class="n">folded_val</span> <span class="o">=</span> <span class="n">flat_val</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__shape</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_folded</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">folded_val</span>
+
+    <span class="k">def</span> <span class="nf">_notfree_flatten</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_folded</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">folded_val</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+<div class="viewcode-block" id="NumericArrayPattern.fold"><a class="viewcode-back" href="../../usage.html#paragami.numeric_array_patterns.NumericArrayPattern.fold">[docs]</a>    <span class="k">def</span> <span class="nf">fold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flat_val</span><span class="p">,</span> <span class="n">free</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">flat_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">flat_val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">flat_val</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The argument to fold must be a 1d vector.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">free</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_fold</span><span class="p">(</span><span class="n">flat_val</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notfree_fold</span><span class="p">(</span><span class="n">flat_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="NumericArrayPattern.flatten"><a class="viewcode-back" href="../../usage.html#paragami.numeric_array_patterns.NumericArrayPattern.flatten">[docs]</a>    <span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folded_val</span><span class="p">,</span> <span class="n">free</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">folded_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">folded_val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">free</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_flatten</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notfree_flatten</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__shape</span>
+
+    <span class="k">def</span> <span class="nf">bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ub</span>
+
+<div class="viewcode-block" id="NumericArrayPattern.flat_length"><a class="viewcode-back" href="../../usage.html#paragami.numeric_array_patterns.NumericArrayPattern.flat_length">[docs]</a>    <span class="k">def</span> <span class="nf">flat_length</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">free</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">free</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_flat_length</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flat_length</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Giordano
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script>
+        <script type="text/javascript" src="../../_static/copybutton.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

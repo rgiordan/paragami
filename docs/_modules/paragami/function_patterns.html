@@ -1,0 +1,448 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>paragami.function_patterns &mdash; paragami 0.post103+gf7d7b1a documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> paragami
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.post103+gf7d7b1a
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release-history.html">Release History</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">paragami</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>paragami.function_patterns</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for paragami.function_patterns</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="FlattenedFunction"><a class="viewcode-back" href="../../usage.html#paragami.function_patterns.FlattenedFunction">[docs]</a><span class="k">class</span> <span class="nc">FlattenedFunction</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a function of folded values into one that takes flat values.</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    ---------</span>
+<span class="sd">    __str__(): Print the details of this flattened function.</span>
+<span class="sd">    __call__(): Execute the original function at the flattened arguments.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        mat_pattern = paragami.PSDMatrixPattern(3)</span>
+
+<span class="sd">        def fun(offset, mat, kwoffset=3):</span>
+<span class="sd">            return np.linalg.slogdet(mat + offset + kwoffset)[1]</span>
+
+<span class="sd">        flattened_fun = paragami.FlattenedFunction(</span>
+<span class="sd">            original_fun=fun, patterns=mat_pattern, free=True, argnums=1)</span>
+
+<span class="sd">        # pd_mat is a matrix:</span>
+<span class="sd">        pd_mat = np.eye(3) + np.full((3, 3), 0.1)</span>
+
+<span class="sd">        # pd_mat_flat is an unconstrained vector:</span>
+<span class="sd">        pd_mat_flat = mat_pattern.flatten(pd_mat, free=True)</span>
+
+<span class="sd">        # These two functions return the same value:</span>
+<span class="sd">        print(&#39;Original: {}&#39;.format(</span>
+<span class="sd">            fun(2, pd_mat, kwoffset=3)))</span>
+<span class="sd">        print(&#39;Flat: {}&#39;.format(</span>
+<span class="sd">            flattened_fun(2, pd_mat_flat, kwoffset=3)))</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="FlattenedFunction.__init__"><a class="viewcode-back" href="../../usage.html#paragami.function_patterns.FlattenedFunction.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">original_fun</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">free</span><span class="p">,</span> <span class="n">argnums</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ------------</span>
+<span class="sd">        original_fun: callable function</span>
+<span class="sd">            A function that takes one or more folded values as input.</span>
+
+<span class="sd">        patterns: `Pattern` or array of `Pattern`</span>
+<span class="sd">            A single pattern or array of patterns describing the input to</span>
+<span class="sd">            `original_fun`.</span>
+
+<span class="sd">        free: bool or array of bool</span>
+<span class="sd">            Whether or not the corresponding elements of `patterns` should</span>
+<span class="sd">            use free or non-free flattened values.</span>
+
+<span class="sd">        argnums: int or array of int</span>
+<span class="sd">            The 0-indexed locations of the corresponding pattern in `patterns`</span>
+<span class="sd">            in the order of the arguments fo `original_fun`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fun</span> <span class="o">=</span> <span class="n">original_fun</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_patterns</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">patterns</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">argnums</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">argnums</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_patterns</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_patterns</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;patterns must be a 1d vector.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">argnums</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_argnum_sort</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">free</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">free</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_patterns</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_args</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cached_args_set</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cached_args</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cached_kwargs</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+    <span class="k">def</span> <span class="nf">_validate_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;argnums must be a 1d vector.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;argnums must not contain duplicated values.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_patterns</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;argnums must be the same length as patterns.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">free</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;free must be a single boolean or a 1d vector of booleans.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">free</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_patterns</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;free must broadcast to the same shape as patterns.&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span><span class="p">(</span><span class="s1">&#39;Function: </span><span class="si">{}</span><span class="se">\n</span><span class="s1">argnums: </span><span class="si">{}</span><span class="se">\n</span><span class="s1">free: </span><span class="si">{}</span><span class="se">\n</span><span class="s1">patterns: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fun</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">free</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_patterns</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># Loop through the arguments from beginning to end, replacing</span>
+        <span class="c1"># parameters with their flattened values.</span>
+        <span class="n">new_args</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="n">last_argnum</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_argnum_sort</span><span class="p">:</span>
+            <span class="n">argnum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">folded_val</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_patterns</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">fold</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="n">argnum</span><span class="p">],</span> <span class="n">free</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">free</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">new_args</span> <span class="o">+=</span> <span class="n">args</span><span class="p">[</span><span class="n">last_argnum</span><span class="p">:</span><span class="n">argnum</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="p">)</span>
+            <span class="n">last_argnum</span> <span class="o">=</span> <span class="n">argnum</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">new_args</span> <span class="o">+=</span> <span class="n">args</span><span class="p">[</span><span class="n">last_argnum</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fun</span><span class="p">(</span><span class="o">*</span><span class="n">new_args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Functor"><a class="viewcode-back" href="../../usage.html#paragami.function_patterns.Functor">[docs]</a><span class="k">class</span> <span class="nc">Functor</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Cache the values of certain arguments to a function.</span>
+
+<span class="sd">    This class converts a function of several arguments to a function of only</span>
+<span class="sd">    a subset of the arguments, with cached values for the other arguments.</span>
+<span class="sd">    The ``__call__`` method of a ``Functor`` is a function only of the</span>
+<span class="sd">    arguments to ``original_fun`` specified by ``argnums``, using cached</span>
+<span class="sd">    values for all other arguments.</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    ---------</span>
+<span class="sd">    argnums(): Print which arguments of the original function</span>
+<span class="sd">               are arguments of the functor.</span>
+<span class="sd">    cached_args(): Return a tuple of the cached non-keyword arguments.</span>
+<span class="sd">    cached_kwargs(): Return a dictionary of the cached keyword arguments.</span>
+<span class="sd">    cache_args(): Cache the arguments passed to cache_args().</span>
+<span class="sd">    cache_cached_args(): Clear the cached arguments.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        mat_pattern = paragami.PSDMatrixPattern(3)</span>
+
+<span class="sd">        def fun(offset, mat, kwoffset=3):</span>
+<span class="sd">            return np.linalg.slogdet(mat + offset + kwoffset)[1]</span>
+
+<span class="sd">        flattened_fun = paragami.FlattenedFunction(</span>
+<span class="sd">            original_fun=fun, patterns=mat_pattern, free=True, argnums=1)</span>
+
+<span class="sd">        pd_mat = np.eye(3) + np.full((3, 3), 0.1)</span>
+<span class="sd">        pd_mat_flat = mat_pattern.flatten(pd_mat, free=True)</span>
+
+<span class="sd">        # Define a functor where the first and third arguments are cached:</span>
+<span class="sd">        flattened_functor = paragami.Functor(</span>
+<span class="sd">            original_fun=flattened_fun, argnums=1)</span>
+<span class="sd">        flattened_functor.cache_args(2, pd_mat_flat, kwoffset=3)</span>
+
+<span class="sd">        # These three functions return the same value:</span>
+<span class="sd">        print(&#39;Original: {}&#39;.format(</span>
+<span class="sd">            fun(2, pd_mat, kwoffset=3)))</span>
+<span class="sd">        print(&#39;Flat: {}&#39;.format(</span>
+<span class="sd">            flattened_fun(2, pd_mat_flat, kwoffset=3)))</span>
+<span class="sd">        print(&#39;Flat functor: {}&#39;.format(</span>
+<span class="sd">            flattened_functor(pd_mat_flat)))</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Functor.__init__"><a class="viewcode-back" href="../../usage.html#paragami.function_patterns.Functor.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">original_fun</span><span class="p">,</span> <span class="n">argnums</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ------------</span>
+<span class="sd">        original_fun: callable function</span>
+<span class="sd">            A function that takes one or more arguments as input.</span>
+
+<span class="sd">        argnums: int or array of int</span>
+<span class="sd">            The 0-indexed locations of the functor arguments</span>
+<span class="sd">            in the order of the arguments fo ``original_fun``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fun</span> <span class="o">=</span> <span class="n">original_fun</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">argnums</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;argnums must contain at least one argument location.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;argnums must not contain duplicated values.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_argnum_sort</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_argnum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cached_args_set</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cached_args</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cached_kwargs</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+    <span class="k">def</span> <span class="nf">argnums</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># We don&#39;t want _argnums to be modified, so copy before returning.</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">cached_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cached_args</span>
+
+    <span class="k">def</span> <span class="nf">cached_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cached_kwargs</span>
+
+<div class="viewcode-block" id="Functor.cache_args"><a class="viewcode-back" href="../../usage.html#paragami.function_patterns.Functor.cache_args">[docs]</a>    <span class="k">def</span> <span class="nf">cache_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ------------</span>
+<span class="sd">        *args, **kwargs:</span>
+<span class="sd">            Arguments as they would be passed to ``original_fun``.</span>
+
+<span class="sd">        ``cache_args`` must be called before using the ``__call__`` method</span>
+<span class="sd">        of the ``Functor`` class.</span>
+
+<span class="sd">        After calling ``cache_args``, the ``__call__`` method of the functor</span>
+<span class="sd">        will evalute ``original_fun`` with ``*args`` and ``**kwargs`` except</span>
+<span class="sd">        for the arguments specified in ``argnums``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_argnum</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;You must cache at least as many arguments as there are&#39;</span>
+                <span class="s1">&#39;arguments in argnums.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cached_args_set</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cached_args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cached_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span></div>
+
+<div class="viewcode-block" id="Functor.clear_cached_args"><a class="viewcode-back" href="../../usage.html#paragami.function_patterns.Functor.clear_cached_args">[docs]</a>    <span class="k">def</span> <span class="nf">clear_cached_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Clear the cached values set by ``cache_args``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cached_args_set</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cached_args</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cached_kwargs</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">functor_args</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cached_args_set</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;You must run cache_args to save default arguments&#39;</span> <span class="o">+</span>
+                <span class="s1">&#39;before calling the functor.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">functor_args</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;The arguments to functor must be&#39;</span> <span class="o">+</span>
+                <span class="s1">&#39;the same length (and order) as argnums.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Loop through the arguments from beginning to end, replacing</span>
+        <span class="c1"># parameters with the passed values.</span>
+        <span class="n">new_args</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="n">last_argnum</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># The argument flat_args is in the same order as _argnums.</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_argnum_sort</span><span class="p">:</span>
+            <span class="n">argnum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_argnums</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">new_args</span> <span class="o">+=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cached_args</span><span class="p">[</span><span class="n">last_argnum</span><span class="p">:</span><span class="n">argnum</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">functor_args</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">)</span>
+            <span class="n">last_argnum</span> <span class="o">=</span> <span class="n">argnum</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">new_args</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cached_args</span><span class="p">[</span><span class="n">last_argnum</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cached_args</span><span class="p">)]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fun</span><span class="p">(</span><span class="o">*</span><span class="n">new_args</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_cached_kwargs</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Giordano
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script>
+        <script type="text/javascript" src="../../_static/copybutton.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
