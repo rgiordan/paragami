@@ -35,4 +35,4 @@ script:
   - set -e
   - make -C docs html  # Build the documentation.
   - pip install doctr
-  - doctr deploy --built-docs paragami/docs/build/html .
+  - doctr deploy --built-docs docs/build/html .
