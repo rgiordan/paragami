@@ -9,6 +9,11 @@ cache:
     - $HOME/.cache/pip
     - $HOME/.ccache  # https://github.com/travis-ci/travis-ci/issues/5853
 
+env:
+  global:
+    # Doctr deploy key for rgiordan/paragami
+    - secure: "ZgfHS4nRfO3up51UZgaw/hjshO8md5gRer2wGKUuOyWolSiCvLNkk3yBmsw8CR+ZmGwzCNoBWGz9rwGrSWn+Awbn37CTXJ7jrIYyBPsdbrocnfBbc04kzUfchr1Y35Hyvyntk3N1tMUJqsRNhAfk/YaG7i22z5kfhOqb/blZn8sDRfYYrQvqeo6EpjDd9HRjRCh0cadMIU6RrgxMoJ3FYtqwmvmpIYxl/iZl0ZzeZ0p3M8t5IhKuXXBfy0yCp0a3Ja+oMoMUE81p0bJHCdgEKQxc2SjHxcnfoFW5jvhIkq4HI0gWMpMpvVkfaibn3xdTvxh0/7FMhkek3Wf8hVKPpgTARzrXZ2TGWqlNaad2i0veR/IaOtnb2WrDfSzROQue/DBBFqKonb9BWRRXQbgxmoJJi8NVWkXSb+GN/r9QklaIAWsEqoXBOndeKrjXUPp/e2BlrglxHS9zj4OB4mpUJ2Mr3iRxfQHiQ9Ukie6oVUPKX7E/hP25jZ4Hhj61T4Teo4EMCKlyFQ90jbz2u2zN8Lyw8QRlmH4S0QIOdRz5uyzsV64MKyX0PnjuqltRJk5fnv8B7TdnCAyjWiRiqm94o+QTpGVAQOc1N32oqIrAPzrGi1aQ3l7VkS/o8Is97lEuBNzRdN45EEsR5dHv5Bkj/WSECYo3cN8Djy2p+XGgUAc="
+
 notifications:
   email:
     recipients:
@@ -27,4 +32,7 @@ script:
   - coverage report -m  # Generate test coverage report.
   - codecov  # Upload the report to codecov.
   #- flake8 --max-line-length=115  # Enforce code style (but relax line length limit a bit).
+  - set -e
   - make -C docs html  # Build the documentation.
+  - pip install doctr
+  - doctr deploy --built-docs paragami/docs/build/html .
