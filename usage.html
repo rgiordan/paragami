@@ -1,0 +1,1486 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>API Documentation &mdash; paragami 0.post103+ge6c042a documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Release History" href="release-history.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> paragami
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.post103+ge6c042a
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#numeric-patterns">Numeric patterns</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#numeric-arrays">Numeric arrays</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#positive-definite-matrices">Positive definite matrices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#simplexes">Simplexes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#containers-of-patterns">Containers of patterns</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#dictionaries-of-patterns">Dictionaries of patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#arrays-of-patterns">Arrays of patterns</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#function-wrappers">Function wrappers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Function wrappers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#optimization-and-sensitivity-tools">Optimization and sensitivity tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="release-history.html">Release History</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">paragami</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>API Documentation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/usage.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="api-documentation">
+<h1>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="numeric-patterns">
+<h2>Numeric patterns<a class="headerlink" href="#numeric-patterns" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="numeric-arrays">
+<h3>Numeric arrays<a class="headerlink" href="#numeric-arrays" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="paragami.numeric_array_patterns.NumericArrayPattern">
+<em class="property">class </em><code class="descclassname">paragami.numeric_array_patterns.</code><code class="descname">NumericArrayPattern</code><span class="sig-paren">(</span><em>shape</em>, <em>lb=-inf</em>, <em>ub=inf</em>, <em>default_validate=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/numeric_array_patterns.html#NumericArrayPattern"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.numeric_array_patterns.NumericArrayPattern" title="Permalink to this definition">¶</a></dt>
+<dd><p>A pattern for (optionally bounded) arrays of numbers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>default_validate: Bool</strong></dt>
+<dd><p class="first last">Whether or not the array is checked by default to lie within the
+specified bounds.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="88%" />
+<col width="12%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>validate_folded: Check whether the folded array lies within the bounds.</strong></td>
+<td>&#160;</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="paragami.numeric_array_patterns.NumericArrayPattern.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>shape</em>, <em>lb=-inf</em>, <em>ub=inf</em>, <em>default_validate=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/numeric_array_patterns.html#NumericArrayPattern.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.numeric_array_patterns.NumericArrayPattern.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>shape: Tuple of int</strong></dt>
+<dd><p class="first last">The shape of the array.</p>
+</dd>
+<dt><strong>lb: float</strong></dt>
+<dd><p class="first last">The (inclusive) lower bound for the entries of the array.</p>
+</dd>
+<dt><strong>ub: float</strong></dt>
+<dd><p class="first last">The (inclusive) upper bound for the entries of the array.</p>
+</dd>
+<dt><strong>default_validate: bool</strong></dt>
+<dd><p class="first last">Whether or not the array is checked by default to lie within the
+specified bounds.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.numeric_array_patterns.NumericArrayPattern.empty">
+<code class="descname">empty</code><span class="sig-paren">(</span><em>valid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/numeric_array_patterns.html#NumericArrayPattern.empty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.numeric_array_patterns.NumericArrayPattern.empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an empty parameter in its “folded” shape.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>valid: Boolean</strong></dt>
+<dd><p class="first last">Whether or folded shape should be filled with valid values.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>A parameter value in its original “folded” shape.</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.numeric_array_patterns.NumericArrayPattern.flat_length">
+<code class="descname">flat_length</code><span class="sig-paren">(</span><em>free</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/numeric_array_patterns.html#NumericArrayPattern.flat_length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.numeric_array_patterns.NumericArrayPattern.flat_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the length of the pattern’s flattened value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>free: Boolean</strong></dt>
+<dd><p class="first last">Whether or not the flattened value is to be in a free
+parameterization.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>int</strong></dt>
+<dd><p class="first last">The length of the pattern’s flattened value.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.numeric_array_patterns.NumericArrayPattern.flatten">
+<code class="descname">flatten</code><span class="sig-paren">(</span><em>folded_val</em>, <em>free</em>, <em>validate=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/numeric_array_patterns.html#NumericArrayPattern.flatten"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.numeric_array_patterns.NumericArrayPattern.flatten" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flatten a folded value into a flat vector.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>folded_val</strong></dt>
+<dd><p class="first last">The parameter in its original “folded” shape.</p>
+</dd>
+<dt><strong>free: Boolean</strong></dt>
+<dd><p class="first last">Whether or not the flattened value is to be in a free
+parameterization.</p>
+</dd>
+<dt><strong>validate: Boolean</strong></dt>
+<dd><p class="first last">Whether to validate that the folded value respects the constraints.
+If None, default either to the pattern’s default or, if that is
+unspecified, to True.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>1-d vector of floats</strong></dt>
+<dd><p class="first last">The flattened value.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.numeric_array_patterns.NumericArrayPattern.fold">
+<code class="descname">fold</code><span class="sig-paren">(</span><em>flat_val</em>, <em>free</em>, <em>validate=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/numeric_array_patterns.html#NumericArrayPattern.fold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.numeric_array_patterns.NumericArrayPattern.fold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fold a flat value into a parameter.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>flat_val: 1-d float array</strong></dt>
+<dd><p class="first last">The flattened value.</p>
+</dd>
+<dt><strong>free: Boolean</strong></dt>
+<dd><p class="first last">Whether or not the flattened value is a free parameterization.</p>
+</dd>
+<dt><strong>validate: Boolean</strong></dt>
+<dd><p class="first last">Whether to validate that the folded value respects the constraints.
+If None, default either to the pattern’s default or, if that is
+unspecified, to True.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>The parameter value in its original “folded” shape.</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="positive-definite-matrices">
+<h3>Positive definite matrices<a class="headerlink" href="#positive-definite-matrices" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="paragami.psdmatrix_patterns.PSDMatrixPattern">
+<em class="property">class </em><code class="descclassname">paragami.psdmatrix_patterns.</code><code class="descname">PSDMatrixPattern</code><span class="sig-paren">(</span><em>size</em>, <em>diag_lb=0.0</em>, <em>default_validate=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/psdmatrix_patterns.html#PSDMatrixPattern"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.psdmatrix_patterns.PSDMatrixPattern" title="Permalink to this definition">¶</a></dt>
+<dd><p>A pattern for a symmetric, positive-definite matrix parameter.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>validate: Bool</strong></dt>
+<dd><p class="first last">Whether or not the matrix is automatically checked for symmetry
+positive-definiteness, and the diagonal lower bound.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="paragami.psdmatrix_patterns.PSDMatrixPattern.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>size</em>, <em>diag_lb=0.0</em>, <em>default_validate=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/psdmatrix_patterns.html#PSDMatrixPattern.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.psdmatrix_patterns.PSDMatrixPattern.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>size: int</strong></dt>
+<dd><p class="first last">The length of one side of the square matrix.</p>
+</dd>
+<dt><strong>diag_lb: float</strong></dt>
+<dd><p class="first last">A lower bound for the diagonal entries.  Must be &gt;= 0.</p>
+</dd>
+<dt><strong>default_validate: bool</strong></dt>
+<dd><p class="first last">Whether or not to check for legal (i.e., symmetric
+positive-definite) folded values by default.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.psdmatrix_patterns.PSDMatrixPattern.check_folded">
+<code class="descname">check_folded</code><span class="sig-paren">(</span><em>folded_val</em>, <em>validate=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/psdmatrix_patterns.html#PSDMatrixPattern.check_folded"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.psdmatrix_patterns.PSDMatrixPattern.check_folded" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that the folded value is valid.</p>
+<p>If <cite>validate = True</cite>, checks that <cite>folded_val</cite> is a symmetric,
+positive-definite matrix of the correct shape with diagonal entries
+greater than the specified lower bound.  If <cite>validate = False</cite>,
+only the shape is checked.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method does not currently check for positive-definiteness.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>folded_val: A numpy array</strong></dt>
+<dd><p class="first last">A candidate value for a positive definite matrix.</p>
+</dd>
+<dt><strong>validate: Boolean</strong></dt>
+<dd><p class="first last">Whether to check the matrix for attributes other than shape.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>If `folded_val` is not a valid matrix, raises a `ValueError`.</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.psdmatrix_patterns.PSDMatrixPattern.diag_lb">
+<code class="descname">diag_lb</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/psdmatrix_patterns.html#PSDMatrixPattern.diag_lb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.psdmatrix_patterns.PSDMatrixPattern.diag_lb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the diagonal lower bound.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.psdmatrix_patterns.PSDMatrixPattern.empty">
+<code class="descname">empty</code><span class="sig-paren">(</span><em>valid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/psdmatrix_patterns.html#PSDMatrixPattern.empty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.psdmatrix_patterns.PSDMatrixPattern.empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an empty parameter in its “folded” shape.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>valid: Boolean</strong></dt>
+<dd><p class="first last">Whether or folded shape should be filled with valid values.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>A parameter value in its original “folded” shape.</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.psdmatrix_patterns.PSDMatrixPattern.flatten">
+<code class="descname">flatten</code><span class="sig-paren">(</span><em>folded_val</em>, <em>free</em>, <em>validate=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/psdmatrix_patterns.html#PSDMatrixPattern.flatten"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.psdmatrix_patterns.PSDMatrixPattern.flatten" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flatten a folded value into a flat vector.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>folded_val</strong></dt>
+<dd><p class="first last">The parameter in its original “folded” shape.</p>
+</dd>
+<dt><strong>free: Boolean</strong></dt>
+<dd><p class="first last">Whether or not the flattened value is to be in a free
+parameterization.</p>
+</dd>
+<dt><strong>validate: Boolean</strong></dt>
+<dd><p class="first last">Whether to validate that the folded value respects the constraints.
+If None, default either to the pattern’s default or, if that is
+unspecified, to True.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>1-d vector of floats</strong></dt>
+<dd><p class="first last">The flattened value.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.psdmatrix_patterns.PSDMatrixPattern.fold">
+<code class="descname">fold</code><span class="sig-paren">(</span><em>flat_val</em>, <em>free</em>, <em>validate=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/psdmatrix_patterns.html#PSDMatrixPattern.fold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.psdmatrix_patterns.PSDMatrixPattern.fold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fold a flat value into a parameter.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>flat_val: 1-d float array</strong></dt>
+<dd><p class="first last">The flattened value.</p>
+</dd>
+<dt><strong>free: Boolean</strong></dt>
+<dd><p class="first last">Whether or not the flattened value is a free parameterization.</p>
+</dd>
+<dt><strong>validate: Boolean</strong></dt>
+<dd><p class="first last">Whether to validate that the folded value respects the constraints.
+If None, default either to the pattern’s default or, if that is
+unspecified, to True.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>The parameter value in its original “folded” shape.</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.psdmatrix_patterns.PSDMatrixPattern.shape">
+<code class="descname">shape</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/psdmatrix_patterns.html#PSDMatrixPattern.shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.psdmatrix_patterns.PSDMatrixPattern.shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the matrix shape, i.e., (size, size).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.psdmatrix_patterns.PSDMatrixPattern.size">
+<code class="descname">size</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/psdmatrix_patterns.html#PSDMatrixPattern.size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.psdmatrix_patterns.PSDMatrixPattern.size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the matrix size.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="simplexes">
+<h3>Simplexes<a class="headerlink" href="#simplexes" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="paragami.simplex_patterns.SimplexArrayPattern">
+<em class="property">class </em><code class="descclassname">paragami.simplex_patterns.</code><code class="descname">SimplexArrayPattern</code><span class="sig-paren">(</span><em>simplex_size</em>, <em>array_shape</em>, <em>default_validate=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/simplex_patterns.html#SimplexArrayPattern"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.simplex_patterns.SimplexArrayPattern" title="Permalink to this definition">¶</a></dt>
+<dd><p>A pattern for an array of simplex parameters.</p>
+<p>The last index represents entries of the simplex.  For example,
+if <cite>array_shape=(2, 3)</cite> and <cite>simplex_size=4</cite>, then the pattern is
+for a 2x3 array of 4d simplexes.  If such value of the simplex
+array is given by <cite>val</cite>, then <cite>val.shape = (2, 3, 4)</cite> and
+<cite>val[i, j, :]</cite> is the <cite>i,j`th of the six simplicial vectors, i.e,
+`np.sum(val[i, j, :])</cite> equals 1 for each <cite>i</cite> and <cite>j</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>default_validate: Bool</strong></dt>
+<dd><p class="first last">Whether or not the simplex is checked by default to be
+non-negative and to sum to one.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="29%" />
+<col width="71%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>array_shape: tuple of ints</strong></td>
+<td>The shape of the array of simplexes, not including the simplex dimension.</td>
+</tr>
+<tr class="row-even"><td><strong>simplex_size: int</strong></td>
+<td>The length of each simplex.</td>
+</tr>
+<tr class="row-odd"><td><strong>shape: tuple of ints</strong></td>
+<td>The shape of the entire array including the simplex dimension.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="paragami.simplex_patterns.SimplexArrayPattern.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>simplex_size</em>, <em>array_shape</em>, <em>default_validate=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/simplex_patterns.html#SimplexArrayPattern.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.simplex_patterns.SimplexArrayPattern.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>simplex_size: int</strong></dt>
+<dd><p class="first last">The length of the simplexes.</p>
+</dd>
+<dt><strong>array_shape: tuple of integers</strong></dt>
+<dd><p class="first last">The size of the array of simplexes (not including the simplexes
+themselves).</p>
+</dd>
+<dt><strong>default_validate: bool</strong></dt>
+<dd><p class="first last">Whether or not to check for legal (i.e., positive and normalized)
+folded values by default.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.simplex_patterns.SimplexArrayPattern.empty">
+<code class="descname">empty</code><span class="sig-paren">(</span><em>valid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/simplex_patterns.html#SimplexArrayPattern.empty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.simplex_patterns.SimplexArrayPattern.empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an empty parameter in its “folded” shape.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>valid: Boolean</strong></dt>
+<dd><p class="first last">Whether or folded shape should be filled with valid values.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>A parameter value in its original “folded” shape.</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.simplex_patterns.SimplexArrayPattern.flatten">
+<code class="descname">flatten</code><span class="sig-paren">(</span><em>folded_val</em>, <em>free</em>, <em>validate=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/simplex_patterns.html#SimplexArrayPattern.flatten"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.simplex_patterns.SimplexArrayPattern.flatten" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flatten a folded value into a flat vector.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>folded_val</strong></dt>
+<dd><p class="first last">The parameter in its original “folded” shape.</p>
+</dd>
+<dt><strong>free: Boolean</strong></dt>
+<dd><p class="first last">Whether or not the flattened value is to be in a free
+parameterization.</p>
+</dd>
+<dt><strong>validate: Boolean</strong></dt>
+<dd><p class="first last">Whether to validate that the folded value respects the constraints.
+If None, default either to the pattern’s default or, if that is
+unspecified, to True.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>1-d vector of floats</strong></dt>
+<dd><p class="first last">The flattened value.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.simplex_patterns.SimplexArrayPattern.fold">
+<code class="descname">fold</code><span class="sig-paren">(</span><em>flat_val</em>, <em>free</em>, <em>validate=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/simplex_patterns.html#SimplexArrayPattern.fold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.simplex_patterns.SimplexArrayPattern.fold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fold a flat value into a parameter.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>flat_val: 1-d float array</strong></dt>
+<dd><p class="first last">The flattened value.</p>
+</dd>
+<dt><strong>free: Boolean</strong></dt>
+<dd><p class="first last">Whether or not the flattened value is a free parameterization.</p>
+</dd>
+<dt><strong>validate: Boolean</strong></dt>
+<dd><p class="first last">Whether to validate that the folded value respects the constraints.
+If None, default either to the pattern’s default or, if that is
+unspecified, to True.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>The parameter value in its original “folded” shape.</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="containers-of-patterns">
+<h2>Containers of patterns<a class="headerlink" href="#containers-of-patterns" title="Permalink to this headline">¶</a></h2>
+<p>Containers of patterns are themselves patterns, and so can
+contain instantiations of themselves.</p>
+<div class="section" id="dictionaries-of-patterns">
+<h3>Dictionaries of patterns<a class="headerlink" href="#dictionaries-of-patterns" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="paragami.pattern_containers.PatternDict">
+<em class="property">class </em><code class="descclassname">paragami.pattern_containers.</code><code class="descname">PatternDict</code><a class="reference internal" href="_modules/paragami/pattern_containers.html#PatternDict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.pattern_containers.PatternDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dictionary of patterns (which is itself a pattern).</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">paragami</span>
+
+<span class="c1"># Add some patterns.</span>
+<span class="n">dict_pattern</span> <span class="o">=</span> <span class="n">paragami</span><span class="o">.</span><span class="n">PatternDict</span><span class="p">()</span>
+<span class="n">dict_pattern</span><span class="p">[</span><span class="s1">&#39;vec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">paragami</span><span class="o">.</span><span class="n">NumericArrayPattern</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="p">))</span>
+<span class="n">dict_pattern</span><span class="p">[</span><span class="s1">&#39;mat&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">paragami</span><span class="o">.</span><span class="n">PSDMatrixPattern</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1"># Dictionaries can also contain dictionaries (but they have to</span>
+<span class="c1"># be populated /before/ being added to the parent).</span>
+<span class="n">sub_dict_pattern</span> <span class="o">=</span> <span class="n">paragami</span><span class="o">.</span><span class="n">PatternDict</span><span class="p">()</span>
+<span class="n">sub_dict_pattern</span><span class="p">[</span><span class="s1">&#39;vec1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">paragami</span><span class="o">.</span><span class="n">NumericArrayPattern</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="p">))</span>
+<span class="n">sub_dict_pattern</span><span class="p">[</span><span class="s1">&#39;vec2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">paragami</span><span class="o">.</span><span class="n">NumericArrayPattern</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="p">))</span>
+<span class="n">dict_pattern</span><span class="p">[</span><span class="s1">&#39;sub_dict&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sub_dict_pattern</span>
+
+<span class="c1"># We&#39;re done adding patterns, so lock the dictionary.</span>
+<span class="n">dict_pattern</span><span class="o">.</span><span class="n">lock</span><span class="p">()</span>
+
+<span class="c1"># Get a random intial value for the whole dictionary.</span>
+<span class="n">dict_val</span> <span class="o">=</span> <span class="n">dict_pattern</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">dict_val</span><span class="p">[</span><span class="s1">&#39;mat&#39;</span><span class="p">])</span> <span class="c1"># Prints a 3x3 positive definite numpy matrix.</span>
+
+<span class="c1"># Get a flattened value of the whole dictionary.</span>
+<span class="n">dict_val_flat</span> <span class="o">=</span> <span class="n">dict_pattern</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">dict_val</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c1"># Get a new random folded value of the dictionary.</span>
+<span class="n">new_dict_val_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dict_val_flat</span><span class="p">))</span>
+<span class="n">new_dict_val</span> <span class="o">=</span> <span class="n">dict_pattern</span><span class="o">.</span><span class="n">fold</span><span class="p">(</span><span class="n">new_dict_val_flat</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="rubric">Methods</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="14%" />
+<col width="86%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>lock:</strong></td>
+<td>Prevent additional patterns from being added or removed.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="paragami.pattern_containers.PatternDict.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/pattern_containers.html#PatternDict.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.pattern_containers.PatternDict.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>flat_length</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">The length of a non-free flattened vector.</p>
+</dd>
+<dt><strong>free_flat_length</strong> <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd><p class="first last">The length of a free flattened vector.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.pattern_containers.PatternDict.empty">
+<code class="descname">empty</code><span class="sig-paren">(</span><em>valid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/pattern_containers.html#PatternDict.empty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.pattern_containers.PatternDict.empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an empty parameter in its “folded” shape.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>valid: Boolean</strong></dt>
+<dd><p class="first last">Whether or folded shape should be filled with valid values.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>A parameter value in its original “folded” shape.</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.pattern_containers.PatternDict.flat_length">
+<code class="descname">flat_length</code><span class="sig-paren">(</span><em>free</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/pattern_containers.html#PatternDict.flat_length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.pattern_containers.PatternDict.flat_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the length of the pattern’s flattened value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>free: Boolean</strong></dt>
+<dd><p class="first last">Whether or not the flattened value is to be in a free
+parameterization.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>int</strong></dt>
+<dd><p class="first last">The length of the pattern’s flattened value.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.pattern_containers.PatternDict.flatten">
+<code class="descname">flatten</code><span class="sig-paren">(</span><em>folded_val</em>, <em>free</em>, <em>validate=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/pattern_containers.html#PatternDict.flatten"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.pattern_containers.PatternDict.flatten" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flatten a folded value into a flat vector.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>folded_val</strong></dt>
+<dd><p class="first last">The parameter in its original “folded” shape.</p>
+</dd>
+<dt><strong>free: Boolean</strong></dt>
+<dd><p class="first last">Whether or not the flattened value is to be in a free
+parameterization.</p>
+</dd>
+<dt><strong>validate: Boolean</strong></dt>
+<dd><p class="first last">Whether to validate that the folded value respects the constraints.
+If None, default either to the pattern’s default or, if that is
+unspecified, to True.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>1-d vector of floats</strong></dt>
+<dd><p class="first last">The flattened value.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.pattern_containers.PatternDict.fold">
+<code class="descname">fold</code><span class="sig-paren">(</span><em>flat_val</em>, <em>free</em>, <em>validate=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/pattern_containers.html#PatternDict.fold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.pattern_containers.PatternDict.fold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fold a flat value into a parameter.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>flat_val: 1-d float array</strong></dt>
+<dd><p class="first last">The flattened value.</p>
+</dd>
+<dt><strong>free: Boolean</strong></dt>
+<dd><p class="first last">Whether or not the flattened value is a free parameterization.</p>
+</dd>
+<dt><strong>validate: Boolean</strong></dt>
+<dd><p class="first last">Whether to validate that the folded value respects the constraints.
+If None, default either to the pattern’s default or, if that is
+unspecified, to True.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>The parameter value in its original “folded” shape.</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="arrays-of-patterns">
+<h3>Arrays of patterns<a class="headerlink" href="#arrays-of-patterns" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="paragami.pattern_containers.PatternArray">
+<em class="property">class </em><code class="descclassname">paragami.pattern_containers.</code><code class="descname">PatternArray</code><span class="sig-paren">(</span><em>shape</em>, <em>base_pattern</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/pattern_containers.html#PatternArray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.pattern_containers.PatternArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>An array of a pattern (which is also itself a pattern).</p>
+<p>The first indices of the folded pattern are the array and the final
+indices are of the base pattern.  For example, if <cite>shape=(3, 4)</cite>
+and <cite>base_pattern = PSDMatrixPattern(size=5)</cite>, then the folded
+value of the array will have shape <cite>(3, 4, 5, 5)</cite>, where the entry
+<cite>folded_val[i, j, :, :]</cite> is a 5x5 positive definite matrix.</p>
+<p>Currently this can only contain patterns whose folded values are
+numeric arrays (i.e., <cite>NumericArrayPattern</cite>, <cite>SimplexArrayPattern</cite>, and
+<cite>PSDMatrixPattern</cite>).</p>
+<p class="rubric">Methods</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="16%" />
+<col width="84%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>shape</strong></td>
+<td>Returns the shape of the entire folded array including the shape of the base pattern.</td>
+</tr>
+<tr class="row-even"><td><strong>base_pattern</strong></td>
+<td>Returns the pattern contained in each element of the array.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="paragami.pattern_containers.PatternArray.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>shape</em>, <em>base_pattern</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/pattern_containers.html#PatternArray.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.pattern_containers.PatternArray.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>shape: tuple of int</strong></dt>
+<dd><p class="first last">The shape of the array (not including the base parameter)</p>
+</dd>
+<dt><strong>base_pattern:</strong></dt>
+<dd><p class="first last">The base pattern.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.pattern_containers.PatternArray.empty">
+<code class="descname">empty</code><span class="sig-paren">(</span><em>valid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/pattern_containers.html#PatternArray.empty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.pattern_containers.PatternArray.empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an empty parameter in its “folded” shape.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>valid: Boolean</strong></dt>
+<dd><p class="first last">Whether or folded shape should be filled with valid values.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>A parameter value in its original “folded” shape.</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.pattern_containers.PatternArray.flat_length">
+<code class="descname">flat_length</code><span class="sig-paren">(</span><em>free</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/pattern_containers.html#PatternArray.flat_length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.pattern_containers.PatternArray.flat_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the length of the pattern’s flattened value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>free: Boolean</strong></dt>
+<dd><p class="first last">Whether or not the flattened value is to be in a free
+parameterization.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>int</strong></dt>
+<dd><p class="first last">The length of the pattern’s flattened value.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.pattern_containers.PatternArray.flatten">
+<code class="descname">flatten</code><span class="sig-paren">(</span><em>folded_val</em>, <em>free</em>, <em>validate=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/pattern_containers.html#PatternArray.flatten"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.pattern_containers.PatternArray.flatten" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flatten a folded value into a flat vector.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>folded_val</strong></dt>
+<dd><p class="first last">The parameter in its original “folded” shape.</p>
+</dd>
+<dt><strong>free: Boolean</strong></dt>
+<dd><p class="first last">Whether or not the flattened value is to be in a free
+parameterization.</p>
+</dd>
+<dt><strong>validate: Boolean</strong></dt>
+<dd><p class="first last">Whether to validate that the folded value respects the constraints.
+If None, default either to the pattern’s default or, if that is
+unspecified, to True.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>1-d vector of floats</strong></dt>
+<dd><p class="first last">The flattened value.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.pattern_containers.PatternArray.fold">
+<code class="descname">fold</code><span class="sig-paren">(</span><em>flat_val</em>, <em>free</em>, <em>validate=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/pattern_containers.html#PatternArray.fold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.pattern_containers.PatternArray.fold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fold a flat value into a parameter.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>flat_val: 1-d float array</strong></dt>
+<dd><p class="first last">The flattened value.</p>
+</dd>
+<dt><strong>free: Boolean</strong></dt>
+<dd><p class="first last">Whether or not the flattened value is a free parameterization.</p>
+</dd>
+<dt><strong>validate: Boolean</strong></dt>
+<dd><p class="first last">Whether to validate that the folded value respects the constraints.
+If None, default either to the pattern’s default or, if that is
+unspecified, to True.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>The parameter value in its original “folded” shape.</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="function-wrappers">
+<h2>Function wrappers<a class="headerlink" href="#function-wrappers" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id1">
+<h3>Function wrappers<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="paragami.function_patterns.FlattenedFunction">
+<em class="property">class </em><code class="descclassname">paragami.function_patterns.</code><code class="descname">FlattenedFunction</code><span class="sig-paren">(</span><em>original_fun</em>, <em>patterns</em>, <em>free</em>, <em>argnums=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/function_patterns.html#FlattenedFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.function_patterns.FlattenedFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a function of folded values into one that takes flat values.</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mat_pattern</span> <span class="o">=</span> <span class="n">paragami</span><span class="o">.</span><span class="n">PSDMatrixPattern</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">fun</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">kwoffset</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">slogdet</span><span class="p">(</span><span class="n">mat</span> <span class="o">+</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">kwoffset</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="n">flattened_fun</span> <span class="o">=</span> <span class="n">paragami</span><span class="o">.</span><span class="n">FlattenedFunction</span><span class="p">(</span>
+    <span class="n">original_fun</span><span class="o">=</span><span class="n">fun</span><span class="p">,</span> <span class="n">patterns</span><span class="o">=</span><span class="n">mat_pattern</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">argnums</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># pd_mat is a matrix:</span>
+<span class="n">pd_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="mf">0.1</span><span class="p">)</span>
+
+<span class="c1"># pd_mat_flat is an unconstrained vector:</span>
+<span class="n">pd_mat_flat</span> <span class="o">=</span> <span class="n">mat_pattern</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">pd_mat</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c1"># These two functions return the same value:</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Original: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+    <span class="n">fun</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">pd_mat</span><span class="p">,</span> <span class="n">kwoffset</span><span class="o">=</span><span class="mi">3</span><span class="p">)))</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Flat: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+    <span class="n">flattened_fun</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">pd_mat_flat</span><span class="p">,</span> <span class="n">kwoffset</span><span class="o">=</span><span class="mi">3</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p class="rubric">Methods</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="88%" />
+<col width="12%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>__str__(): Print the details of this flattened function.</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td><strong>__call__(): Execute the original function at the flattened arguments.</strong></td>
+<td>&#160;</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="paragami.function_patterns.FlattenedFunction.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>original_fun</em>, <em>patterns</em>, <em>free</em>, <em>argnums=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/function_patterns.html#FlattenedFunction.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.function_patterns.FlattenedFunction.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>original_fun: callable function</strong></dt>
+<dd><p class="first last">A function that takes one or more folded values as input.</p>
+</dd>
+<dt><strong>patterns: `Pattern` or array of `Pattern`</strong></dt>
+<dd><p class="first last">A single pattern or array of patterns describing the input to
+<cite>original_fun</cite>.</p>
+</dd>
+<dt><strong>free: bool or array of bool</strong></dt>
+<dd><p class="first last">Whether or not the corresponding elements of <cite>patterns</cite> should
+use free or non-free flattened values.</p>
+</dd>
+<dt><strong>argnums: int or array of int</strong></dt>
+<dd><p class="first last">The 0-indexed locations of the corresponding pattern in <cite>patterns</cite>
+in the order of the arguments fo <cite>original_fun</cite>.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="paragami.function_patterns.Functor">
+<em class="property">class </em><code class="descclassname">paragami.function_patterns.</code><code class="descname">Functor</code><span class="sig-paren">(</span><em>original_fun</em>, <em>argnums</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/function_patterns.html#Functor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.function_patterns.Functor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cache the values of certain arguments to a function.</p>
+<p>This class converts a function of several arguments to a function of only
+a subset of the arguments, with cached values for the other arguments.
+The <code class="docutils literal notranslate"><span class="pre">__call__</span></code> method of a <code class="docutils literal notranslate"><span class="pre">Functor</span></code> is a function only of the
+arguments to <code class="docutils literal notranslate"><span class="pre">original_fun</span></code> specified by <code class="docutils literal notranslate"><span class="pre">argnums</span></code>, using cached
+values for all other arguments.</p>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mat_pattern</span> <span class="o">=</span> <span class="n">paragami</span><span class="o">.</span><span class="n">PSDMatrixPattern</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">fun</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">kwoffset</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">slogdet</span><span class="p">(</span><span class="n">mat</span> <span class="o">+</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">kwoffset</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="n">flattened_fun</span> <span class="o">=</span> <span class="n">paragami</span><span class="o">.</span><span class="n">FlattenedFunction</span><span class="p">(</span>
+    <span class="n">original_fun</span><span class="o">=</span><span class="n">fun</span><span class="p">,</span> <span class="n">patterns</span><span class="o">=</span><span class="n">mat_pattern</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">argnums</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">pd_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">pd_mat_flat</span> <span class="o">=</span> <span class="n">mat_pattern</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">pd_mat</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c1"># Define a functor where the first and third arguments are cached:</span>
+<span class="n">flattened_functor</span> <span class="o">=</span> <span class="n">paragami</span><span class="o">.</span><span class="n">Functor</span><span class="p">(</span>
+    <span class="n">original_fun</span><span class="o">=</span><span class="n">flattened_fun</span><span class="p">,</span> <span class="n">argnums</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">flattened_functor</span><span class="o">.</span><span class="n">cache_args</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">pd_mat_flat</span><span class="p">,</span> <span class="n">kwoffset</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1"># These three functions return the same value:</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Original: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+    <span class="n">fun</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">pd_mat</span><span class="p">,</span> <span class="n">kwoffset</span><span class="o">=</span><span class="mi">3</span><span class="p">)))</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Flat: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+    <span class="n">flattened_fun</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">pd_mat_flat</span><span class="p">,</span> <span class="n">kwoffset</span><span class="o">=</span><span class="mi">3</span><span class="p">)))</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Flat functor: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+    <span class="n">flattened_functor</span><span class="p">(</span><span class="n">pd_mat_flat</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p class="rubric">Methods</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="72%" />
+<col width="28%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>argnums(): Print which arguments of the original function</strong></td>
+<td>are arguments of the functor.</td>
+</tr>
+<tr class="row-even"><td><strong>cached_args(): Return a tuple of the cached non-keyword arguments.</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td><strong>cached_kwargs(): Return a dictionary of the cached keyword arguments.</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td><strong>cache_args(): Cache the arguments passed to cache_args().</strong></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td><strong>cache_cached_args(): Clear the cached arguments.</strong></td>
+<td>&#160;</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="paragami.function_patterns.Functor.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>original_fun</em>, <em>argnums</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/function_patterns.html#Functor.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.function_patterns.Functor.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>original_fun: callable function</strong></dt>
+<dd><p class="first last">A function that takes one or more arguments as input.</p>
+</dd>
+<dt><strong>argnums: int or array of int</strong></dt>
+<dd><p class="first last">The 0-indexed locations of the functor arguments
+in the order of the arguments fo <code class="docutils literal notranslate"><span class="pre">original_fun</span></code>.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.function_patterns.Functor.cache_args">
+<code class="descname">cache_args</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/function_patterns.html#Functor.cache_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.function_patterns.Functor.cache_args" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>*args, **kwargs:</strong></dt>
+<dd><p class="first last">Arguments as they would be passed to <code class="docutils literal notranslate"><span class="pre">original_fun</span></code>.</p>
+</dd>
+<dt><strong>``cache_args`` must be called before using the ``__call__`` method</strong></dt>
+<dd></dd>
+<dt><strong>of the ``Functor`` class.</strong></dt>
+<dd></dd>
+<dt><strong>After calling ``cache_args``, the ``__call__`` method of the functor</strong></dt>
+<dd></dd>
+<dt><strong>will evalute ``original_fun`` with ``*args`` and ``**kwargs`` except</strong></dt>
+<dd></dd>
+<dt><strong>for the arguments specified in ``argnums``.</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.function_patterns.Functor.clear_cached_args">
+<code class="descname">clear_cached_args</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/function_patterns.html#Functor.clear_cached_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.function_patterns.Functor.clear_cached_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear the cached values set by <code class="docutils literal notranslate"><span class="pre">cache_args</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="optimization-and-sensitivity-tools">
+<h2>Optimization and sensitivity tools<a class="headerlink" href="#optimization-and-sensitivity-tools" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="paragami.optimization_lib.HyperparameterSensitivityLinearApproximation">
+<em class="property">class </em><code class="descclassname">paragami.optimization_lib.</code><code class="descname">HyperparameterSensitivityLinearApproximation</code><span class="sig-paren">(</span><em>objective_fun</em>, <em>opt_par_pattern</em>, <em>hyper_par_pattern</em>, <em>opt_par_folded_value</em>, <em>hyper_par_folded_value</em>, <em>opt_par_is_free</em>, <em>hyper_par_is_free</em>, <em>validate_optimum=True</em>, <em>hessian_at_opt=None</em>, <em>factorize_hessian=True</em>, <em>hyper_par_objective_fun=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/optimization_lib.html#HyperparameterSensitivityLinearApproximation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.optimization_lib.HyperparameterSensitivityLinearApproximation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Linearly approximate dependence of an optimum on a hyperparameter.</p>
+<p>Suppose we have an optimization problem in which the objective
+depends on a hyperparameter:</p>
+<div class="math notranslate nohighlight">
+\[\hat{\theta} = \mathrm{argmin}_{\theta} f(\theta, \lambda).\]</div>
+<p>The optimal parameter, <span class="math notranslate nohighlight">\(\hat{\theta}\)</span>, is a function of
+<span class="math notranslate nohighlight">\(\lambda\)</span> through the optimization problem.  In general, this
+dependence is complex and nonlinear.  To approximate this dependence,
+this class uses the linear approximation:</p>
+<div class="math notranslate nohighlight">
+\[\hat{\theta}(\lambda) \approx \hat{\theta}(\lambda_0) +
+    \frac{d\hat{\theta}}{d\lambda}|_{\lambda_0}
+        (\lambda - \lambda_0).\]</div>
+<p>In terms of the arguments to this function,
+<span class="math notranslate nohighlight">\(\theta\)</span> corresponds to <code class="docutils literal notranslate"><span class="pre">opt_par</span></code>,
+<span class="math notranslate nohighlight">\(\lambda\)</span> corresponds to <code class="docutils literal notranslate"><span class="pre">hyper_par</span></code>,
+and <span class="math notranslate nohighlight">\(f\)</span> corresponds to <code class="docutils literal notranslate"><span class="pre">objective_fun</span></code>.</p>
+<p>Because <code class="docutils literal notranslate"><span class="pre">opt_par</span></code> and <code class="docutils literal notranslate"><span class="pre">hyper_par</span></code> in general are structured,
+constrained data, the linear approximation is evaluated in flattened
+space using user-specified patterns.</p>
+<p class="rubric">Methods</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="79%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>set_base_values:</strong></td>
+<td>Set the base values, <span class="math notranslate nohighlight">\(\lambda_0\)</span> and <span class="math notranslate nohighlight">\(\theta_0 := \hat\theta(\lambda_0)\)</span>, at which the linear approximation is evaluated.</td>
+</tr>
+<tr class="row-even"><td><strong>get_dopt_dhyper:</strong></td>
+<td>Return the Jacobian matrix <span class="math notranslate nohighlight">\(\frac{d\hat{\theta}}{d\lambda}|_{\lambda_0}\)</span> in flattened space.</td>
+</tr>
+<tr class="row-odd"><td><strong>get_hessian_at_opt:</strong></td>
+<td>Return the Hessian of the objective function in the flattened space.</td>
+</tr>
+<tr class="row-even"><td><strong>predict_opt_par_from_hyper_par:</strong></td>
+<td>Use the linear approximation to predict the folded value of <code class="docutils literal notranslate"><span class="pre">opt_par</span></code> from a folded value of <code class="docutils literal notranslate"><span class="pre">hyper_par</span></code>.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="paragami.optimization_lib.HyperparameterSensitivityLinearApproximation.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>objective_fun</em>, <em>opt_par_pattern</em>, <em>hyper_par_pattern</em>, <em>opt_par_folded_value</em>, <em>hyper_par_folded_value</em>, <em>opt_par_is_free</em>, <em>hyper_par_is_free</em>, <em>validate_optimum=True</em>, <em>hessian_at_opt=None</em>, <em>factorize_hessian=True</em>, <em>hyper_par_objective_fun=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/optimization_lib.html#HyperparameterSensitivityLinearApproximation.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.optimization_lib.HyperparameterSensitivityLinearApproximation.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>objective_fun: Callable function</strong></dt>
+<dd><p class="first last">A callable function, optimized by <code class="docutils literal notranslate"><span class="pre">opt_par</span></code> at a particular value
+of <code class="docutils literal notranslate"><span class="pre">hyper_par</span></code>.  The function must be of the form
+<code class="docutils literal notranslate"><span class="pre">f(folded</span> <span class="pre">opt_par,</span> <span class="pre">folded</span> <span class="pre">hyper_par)</span></code>.</p>
+</dd>
+<dt><strong>opt_par_pattern:</strong></dt>
+<dd><p class="first last">A pattern for <code class="docutils literal notranslate"><span class="pre">opt_par</span></code>, the optimal parameter.</p>
+</dd>
+<dt><strong>opt_par_pattern:</strong></dt>
+<dd><p class="first last">A pattern for <code class="docutils literal notranslate"><span class="pre">hyper_par</span></code>, the hyperparameter.</p>
+</dd>
+<dt><strong>opt_par_folded_value:</strong></dt>
+<dd><p class="first last">The folded value of <code class="docutils literal notranslate"><span class="pre">opt_par</span></code> at which <code class="docutils literal notranslate"><span class="pre">objective_fun</span></code> is
+optimized for the given value of <code class="docutils literal notranslate"><span class="pre">hyper_par</span></code>.</p>
+</dd>
+<dt><strong>hyper_par_folded_value:</strong></dt>
+<dd><p class="first last">The folded of <code class="docutils literal notranslate"><span class="pre">hyper_par_folded_value</span></code> at which <code class="docutils literal notranslate"><span class="pre">opt_par</span></code>
+optimizes <code class="docutils literal notranslate"><span class="pre">objective_fun</span></code>.</p>
+</dd>
+<dt><strong>opt_par_is_free: Boolean</strong></dt>
+<dd><p class="first last">Whether to use the free parameterization for <code class="docutils literal notranslate"><span class="pre">opt_par`</span></code> when
+linearzing.</p>
+</dd>
+<dt><strong>hyper_par_is_free: Boolean</strong></dt>
+<dd><p class="first last">Whether to use the free parameterization for <code class="docutils literal notranslate"><span class="pre">hyper_par`</span></code> when
+linearzing.</p>
+</dd>
+<dt><strong>validate_optimum: Boolean</strong></dt>
+<dd><p class="first last">When setting the values of <code class="docutils literal notranslate"><span class="pre">opt_par</span></code> and <code class="docutils literal notranslate"><span class="pre">hyper_par</span></code>, check
+that <code class="docutils literal notranslate"><span class="pre">opt_par</span></code> is, in fact, a critical point of
+<code class="docutils literal notranslate"><span class="pre">objective_fun</span></code>.</p>
+</dd>
+<dt><strong>hessian_at_opt: Numeric matrix (optional)</strong></dt>
+<dd><p class="first last">The Hessian of <code class="docutils literal notranslate"><span class="pre">objective_fun</span></code> at the optimum.  If not specified,
+it is calculated using automatic differentiation.</p>
+</dd>
+<dt><strong>factorize_hessian: Boolean</strong></dt>
+<dd><p class="first last">If <code class="docutils literal notranslate"><span class="pre">True</span></code>, solve the required linear system using a Cholesky
+factorization.  If <code class="docutils literal notranslate"><span class="pre">False</span></code>, use the conjugate gradient algorithm
+to avoid forming or inverting the Hessian.</p>
+</dd>
+<dt><strong>hyper_par_objective_fun: Callable function</strong></dt>
+<dd><p class="first last">A callable function of the form
+<code class="docutils literal notranslate"><span class="pre">f(folded</span> <span class="pre">opt_par,</span> <span class="pre">folded</span> <span class="pre">hyper_par)</span></code> containing the part of
+<code class="docutils literal notranslate"><span class="pre">objective_fun</span></code> that depends on both <code class="docutils literal notranslate"><span class="pre">opt_par</span></code> and
+<code class="docutils literal notranslate"><span class="pre">hyper_par</span></code>.  If not specified, <code class="docutils literal notranslate"><span class="pre">objective_fun</span></code> is used.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="paragami.optimization_lib.HyperparameterSensitivityLinearApproximation.predict_opt_par_from_hyper_par">
+<code class="descname">predict_opt_par_from_hyper_par</code><span class="sig-paren">(</span><em>new_hyper_par_folded_value</em>, <em>fold_output=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/paragami/optimization_lib.html#HyperparameterSensitivityLinearApproximation.predict_opt_par_from_hyper_par"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#paragami.optimization_lib.HyperparameterSensitivityLinearApproximation.predict_opt_par_from_hyper_par" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict <code class="docutils literal notranslate"><span class="pre">opt_par</span></code> using the linear approximation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>new_hyper_par_folded_value:</strong></dt>
+<dd><p class="first last">The folded value of <code class="docutils literal notranslate"><span class="pre">hyper_par</span></code> at which to approximate
+<code class="docutils literal notranslate"><span class="pre">opt_par</span></code>.</p>
+</dd>
+<dt><strong>fold_output: Boolean</strong></dt>
+<dd><p class="first last">Whether to return <code class="docutils literal notranslate"><span class="pre">opt_par</span></code> as a folded value.  If <code class="docutils literal notranslate"><span class="pre">False</span></code>,
+returns the flattened value according to <code class="docutils literal notranslate"><span class="pre">opt_par_pattern</span></code>
+and <code class="docutils literal notranslate"><span class="pre">opt_par_is_free</span></code>.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="release-history.html" class="btn btn-neutral float-right" title="Release History" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="installation.html" class="btn btn-neutral" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Giordano
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script>
+        <script type="text/javascript" src="_static/copybutton.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
