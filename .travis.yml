@@ -9,6 +9,13 @@ cache:
     - $HOME/.cache/pip
     - $HOME/.ccache  # https://github.com/travis-ci/travis-ci/issues/5853
 
+notifications:
+  email:
+    recipients:
+      - rgiordan.dev@gmail.com
+    on_success: never # default: change
+    on_failure: always # default: always
+
 install:
   # Install this package and the packages listed in requirements.txt.
   - pip install .
