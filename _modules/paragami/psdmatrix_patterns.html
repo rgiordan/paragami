@@ -1,0 +1,518 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>paragami.psdmatrix_patterns &mdash; paragami 0.post103+ge6c042a documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> paragami
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.post103+ge6c042a
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release-history.html">Release History</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">paragami</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>paragami.psdmatrix_patterns</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for paragami.psdmatrix_patterns</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">.base_patterns</span> <span class="k">import</span> <span class="n">Pattern</span>
+
+<span class="kn">import</span> <span class="nn">autograd.numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">from</span> <span class="nn">autograd.core</span> <span class="k">import</span> <span class="n">primitive</span><span class="p">,</span> <span class="n">defvjp</span><span class="p">,</span> <span class="n">defjvp</span>
+
+
+<span class="k">def</span> <span class="nf">_sym_index</span><span class="p">(</span><span class="n">k1</span><span class="p">,</span> <span class="n">k2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the index of an entry in a folded symmetric array.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ------------</span>
+<span class="sd">    k1, k2: int</span>
+<span class="sd">        0-based indices into a symmetric matrix.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    int</span>
+<span class="sd">        Return the linear index of the (k1, k2) element of a symmetric</span>
+<span class="sd">        matrix where the triangular part has been stacked into a vector.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">ld_ind</span><span class="p">(</span><span class="n">k1</span><span class="p">,</span> <span class="n">k2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">k2</span> <span class="o">+</span> <span class="n">k1</span> <span class="o">*</span> <span class="p">(</span><span class="n">k1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">k2</span> <span class="o">&lt;=</span> <span class="n">k1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ld_ind</span><span class="p">(</span><span class="n">k1</span><span class="p">,</span> <span class="n">k2</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ld_ind</span><span class="p">(</span><span class="n">k2</span><span class="p">,</span> <span class="n">k1</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_vectorize_ld_matrix</span><span class="p">(</span><span class="n">mat</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Linearize the lower diagonal of a square matrix.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    mat</span>
+<span class="sd">        A square matrix.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    1-d vector</span>
+<span class="sd">        The lower diagonal of `mat` stacked into a vector.</span>
+
+<span class="sd">    Specifically, we map the matrix</span>
+
+<span class="sd">    [ x11 x12 ... x1n ]</span>
+<span class="sd">    [ x21 x22     x2n ]</span>
+<span class="sd">    [...              ]</span>
+<span class="sd">    [ xn1 ...     xnn ]</span>
+
+<span class="sd">    to the vector</span>
+
+<span class="sd">    [ x11, x21, x22, x31, ..., xnn ].</span>
+
+<span class="sd">    The entries above the diagonal are ignored.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nrow</span><span class="p">,</span> <span class="n">ncol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">mat</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">nrow</span> <span class="o">!=</span> <span class="n">ncol</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;mat must be square&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mat</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">tril_indices</span><span class="p">(</span><span class="n">nrow</span><span class="p">)]</span>
+
+
+<span class="nd">@primitive</span>
+<span class="k">def</span> <span class="nf">_unvectorize_ld_matrix</span><span class="p">(</span><span class="n">vec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Invert the mapping of `_vectorize_ld_matrix`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    vec: A 1-d vector.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    A symmetric matrix.</span>
+
+<span class="sd">    Specifically, we map a vector</span>
+
+<span class="sd">    [ v1, v2, ..., vn ]</span>
+
+<span class="sd">    to the symmetric matrix</span>
+
+<span class="sd">    [ v1 ...          ]</span>
+<span class="sd">    [ v2 v3 ...       ]</span>
+<span class="sd">    [ v4 v5 v6 ...    ]</span>
+<span class="sd">    [ ...             ]</span>
+
+<span class="sd">    where the values above the diagonal are determined by symmetry.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mat_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">8</span> <span class="o">*</span> <span class="n">vec</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">mat_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">mat_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">!=</span> <span class="n">vec</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Vector is an impossible size&#39;</span><span class="p">)</span>
+    <span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">mat_size</span><span class="p">,</span> <span class="n">mat_size</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">k1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mat_size</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">mat</span><span class="p">[</span><span class="n">k1</span><span class="p">,</span> <span class="n">k2</span><span class="p">]</span> <span class="o">=</span> <span class="n">vec</span><span class="p">[</span><span class="n">_sym_index</span><span class="p">(</span><span class="n">k1</span><span class="p">,</span> <span class="n">k2</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">mat</span>
+
+<span class="c1"># Because we cannot use autograd with array assignment, define the</span>
+<span class="c1"># vector jacobian product and jacobian vector products of</span>
+<span class="c1"># _unvectorize_ld_matrix.</span>
+
+
+<span class="k">def</span> <span class="nf">_unvectorize_ld_matrix_vjp</span><span class="p">(</span><span class="n">g</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">g</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">g</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">_vectorize_ld_matrix</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+
+
+<span class="n">defvjp</span><span class="p">(</span><span class="n">_unvectorize_ld_matrix</span><span class="p">,</span>
+       <span class="k">lambda</span> <span class="n">ans</span><span class="p">,</span> <span class="n">vec</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">g</span><span class="p">:</span> <span class="n">_unvectorize_ld_matrix_vjp</span><span class="p">(</span><span class="n">g</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">_unvectorize_ld_matrix_jvp</span><span class="p">(</span><span class="n">g</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_unvectorize_ld_matrix</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+
+
+<span class="n">defjvp</span><span class="p">(</span><span class="n">_unvectorize_ld_matrix</span><span class="p">,</span>
+       <span class="k">lambda</span> <span class="n">g</span><span class="p">,</span> <span class="n">ans</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">_unvectorize_ld_matrix_jvp</span><span class="p">(</span><span class="n">g</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">_exp_matrix_diagonal</span><span class="p">(</span><span class="n">mat</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># NB: make_diagonal() is only defined in the autograd version of numpy</span>
+    <span class="n">mat_exp_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">make_diagonal</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">mat</span><span class="p">)),</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis1</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis2</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">mat_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">make_diagonal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">mat</span><span class="p">),</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis1</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis2</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mat_exp_diag</span> <span class="o">+</span> <span class="n">mat</span> <span class="o">-</span> <span class="n">mat_diag</span>
+
+
+<span class="k">def</span> <span class="nf">_log_matrix_diagonal</span><span class="p">(</span><span class="n">mat</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># NB: make_diagonal() is only defined in the autograd version of numpy</span>
+    <span class="n">mat_log_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">make_diagonal</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">mat</span><span class="p">)),</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis1</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis2</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">mat_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">make_diagonal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">mat</span><span class="p">),</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis1</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis2</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mat_log_diag</span> <span class="o">+</span> <span class="n">mat</span> <span class="o">-</span> <span class="n">mat_diag</span>
+
+
+<span class="k">def</span> <span class="nf">_pack_posdef_matrix</span><span class="p">(</span><span class="n">mat</span><span class="p">,</span> <span class="n">diag_lb</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">mat_lb</span> <span class="o">=</span> <span class="n">mat</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">make_diagonal</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">diag_lb</span><span class="p">),</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis1</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis2</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_vectorize_ld_matrix</span><span class="p">(</span>
+        <span class="n">_log_matrix_diagonal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="n">mat_lb</span><span class="p">)))</span>
+
+
+<span class="k">def</span> <span class="nf">_unpack_posdef_matrix</span><span class="p">(</span><span class="n">free_vec</span><span class="p">,</span> <span class="n">diag_lb</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+    <span class="n">mat_chol</span> <span class="o">=</span> <span class="n">_exp_matrix_diagonal</span><span class="p">(</span><span class="n">_unvectorize_ld_matrix</span><span class="p">(</span><span class="n">free_vec</span><span class="p">))</span>
+    <span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">mat_chol</span><span class="p">,</span> <span class="n">mat_chol</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">mat</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">make_diagonal</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">diag_lb</span><span class="p">),</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis1</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis2</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+
+
+<span class="c1"># Convert a vector containing the lower diagonal portion of a symmetric</span>
+<span class="c1"># matrix into the full symmetric matrix.</span>
+<span class="k">def</span> <span class="nf">_unvectorize_symmetric_matrix</span><span class="p">(</span><span class="n">vec_val</span><span class="p">):</span>
+    <span class="n">ld_mat</span> <span class="o">=</span> <span class="n">_unvectorize_ld_matrix</span><span class="p">(</span><span class="n">vec_val</span><span class="p">)</span>
+    <span class="n">mat_val</span> <span class="o">=</span> <span class="n">ld_mat</span> <span class="o">+</span> <span class="n">ld_mat</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+    <span class="c1"># We have double counted the diagonal.  For some reason the autograd</span>
+    <span class="c1"># diagonal functions require axis1=-1 and axis2=-2</span>
+    <span class="n">mat_val</span> <span class="o">=</span> <span class="n">mat_val</span> <span class="o">-</span> \
+        <span class="n">np</span><span class="o">.</span><span class="n">make_diagonal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diagonal</span><span class="p">(</span><span class="n">ld_mat</span><span class="p">,</span> <span class="n">axis1</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis2</span><span class="o">=-</span><span class="mi">2</span><span class="p">),</span>
+                         <span class="n">axis1</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis2</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mat_val</span>
+
+
+<div class="viewcode-block" id="PSDMatrixPattern"><a class="viewcode-back" href="../../usage.html#paragami.psdmatrix_patterns.PSDMatrixPattern">[docs]</a><span class="k">class</span> <span class="nc">PSDMatrixPattern</span><span class="p">(</span><span class="n">Pattern</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A pattern for a symmetric, positive-definite matrix parameter.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    -------------</span>
+<span class="sd">    validate: Bool</span>
+<span class="sd">        Whether or not the matrix is automatically checked for symmetry</span>
+<span class="sd">        positive-definiteness, and the diagonal lower bound.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="PSDMatrixPattern.__init__"><a class="viewcode-back" href="../../usage.html#paragami.psdmatrix_patterns.PSDMatrixPattern.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">diag_lb</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">default_validate</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        --------------</span>
+<span class="sd">        size: int</span>
+<span class="sd">            The length of one side of the square matrix.</span>
+<span class="sd">        diag_lb: float</span>
+<span class="sd">            A lower bound for the diagonal entries.  Must be &gt;= 0.</span>
+<span class="sd">        default_validate: bool</span>
+<span class="sd">            Whether or not to check for legal (i.e., symmetric</span>
+<span class="sd">            positive-definite) folded values by default.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__diag_lb</span> <span class="o">=</span> <span class="n">diag_lb</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_validate</span> <span class="o">=</span> <span class="n">default_validate</span>
+        <span class="k">if</span> <span class="n">diag_lb</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;The diagonal lower bound diag_lb must be &gt;-= 0.&#39;</span><span class="p">)</span>
+
+        <span class="n">vec_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">size</span> <span class="o">*</span> <span class="p">(</span><span class="n">size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">vec_size</span><span class="p">,</span> <span class="n">vec_size</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;PDMatrix </span><span class="si">{}</span><span class="s1">x</span><span class="si">{}</span><span class="s1"> (diag_lb = </span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__diag_lb</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> \
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">size</span><span class="p">())</span> <span class="o">&amp;</span> \
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">diag_lb</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">diag_lb</span><span class="p">())</span>
+
+<div class="viewcode-block" id="PSDMatrixPattern.size"><a class="viewcode-back" href="../../usage.html#paragami.psdmatrix_patterns.PSDMatrixPattern.size">[docs]</a>    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the matrix size.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__size</span></div>
+
+<div class="viewcode-block" id="PSDMatrixPattern.shape"><a class="viewcode-back" href="../../usage.html#paragami.psdmatrix_patterns.PSDMatrixPattern.shape">[docs]</a>    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the matrix shape, i.e., (size, size).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__size</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PSDMatrixPattern.diag_lb"><a class="viewcode-back" href="../../usage.html#paragami.psdmatrix_patterns.PSDMatrixPattern.diag_lb">[docs]</a>    <span class="k">def</span> <span class="nf">diag_lb</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the diagonal lower bound.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__diag_lb</span></div>
+
+<div class="viewcode-block" id="PSDMatrixPattern.empty"><a class="viewcode-back" href="../../usage.html#paragami.psdmatrix_patterns.PSDMatrixPattern.empty">[docs]</a>    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">valid</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">valid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__size</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__diag_lb</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">__size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__size</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="PSDMatrixPattern.check_folded"><a class="viewcode-back" href="../../usage.html#paragami.psdmatrix_patterns.PSDMatrixPattern.check_folded">[docs]</a>    <span class="k">def</span> <span class="nf">check_folded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check that the folded value is valid.</span>
+
+<span class="sd">        If `validate = True`, checks that `folded_val` is a symmetric,</span>
+<span class="sd">        positive-definite matrix of the correct shape with diagonal entries</span>
+<span class="sd">        greater than the specified lower bound.  If `validate = False`,</span>
+<span class="sd">        only the shape is checked.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            This method does not currently check for positive-definiteness.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------</span>
+<span class="sd">        folded_val: A numpy array</span>
+<span class="sd">            A candidate value for a positive definite matrix.</span>
+<span class="sd">        validate: Boolean</span>
+<span class="sd">            Whether to check the matrix for attributes other than shape.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ----------</span>
+<span class="sd">        If `folded_val` is not a valid matrix, raises a `ValueError`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">folded_val</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__size</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wrong shape for PDMatrix.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">validate</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">validate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_validate</span>
+        <span class="k">if</span> <span class="n">validate</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">folded_val</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">__diag_lb</span><span class="p">):</span>
+                <span class="n">error_string</span> <span class="o">=</span> \
+                    <span class="s1">&#39;Diagonal is less than the lower bound </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">__diag_lb</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_string</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">folded_val</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span> <span class="o">==</span> <span class="n">folded_val</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Matrix is not symmetric&#39;</span><span class="p">)</span></div>
+            <span class="c1"># TODO: check for positive definiteness</span>
+            <span class="c1"># try:</span>
+            <span class="c1">#     chol = onp.linalg.cholesky(folded_val)</span>
+            <span class="c1"># except LinAlgError:</span>
+            <span class="c1">#     raise ValueError(&#39;Matrix is not positive definite.&#39;)</span>
+
+    <span class="k">def</span> <span class="nf">_free_fold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">free_flat_val</span><span class="p">):</span>
+        <span class="c1"># Note that validate is not necessary -- a free folded value is always</span>
+        <span class="c1"># valid.</span>
+        <span class="k">if</span> <span class="n">free_flat_val</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_flat_length</span><span class="p">:</span>
+            <span class="c1"># TODO: make these errors consistently worded.</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wrong length for PDMatrix free flat value.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_unpack_posdef_matrix</span><span class="p">(</span><span class="n">free_flat_val</span><span class="p">,</span> <span class="n">diag_lb</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__diag_lb</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_free_flatten</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_folded</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_pack_posdef_matrix</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="n">diag_lb</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__diag_lb</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_notfree_fold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flat_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">flat_val</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flat_length</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wrong length for PDMatrix flat value.&#39;</span><span class="p">)</span>
+        <span class="n">folded_val</span> <span class="o">=</span> <span class="n">_unvectorize_symmetric_matrix</span><span class="p">(</span><span class="n">flat_val</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_folded</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">folded_val</span>
+
+    <span class="k">def</span> <span class="nf">_notfree_flatten</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_folded</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_vectorize_ld_matrix</span><span class="p">(</span><span class="n">folded_val</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PSDMatrixPattern.flatten"><a class="viewcode-back" href="../../usage.html#paragami.psdmatrix_patterns.PSDMatrixPattern.flatten">[docs]</a>    <span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folded_val</span><span class="p">,</span> <span class="n">free</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">free</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_flatten</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notfree_flatten</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PSDMatrixPattern.fold"><a class="viewcode-back" href="../../usage.html#paragami.psdmatrix_patterns.PSDMatrixPattern.fold">[docs]</a>    <span class="k">def</span> <span class="nf">fold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flat_val</span><span class="p">,</span> <span class="n">free</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">flat_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">flat_val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">flat_val</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The argument to fold must be a 1d vector.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">free</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_fold</span><span class="p">(</span><span class="n">flat_val</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notfree_fold</span><span class="p">(</span><span class="n">flat_val</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Giordano
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script>
+        <script type="text/javascript" src="../../_static/copybutton.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
