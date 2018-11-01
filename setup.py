@@ -36,6 +36,12 @@ requirements = [line for line in requirements_lines
 git_requirements = [line for line in requirements_lines
                      if line.startswith('git')]
 
+# git repos also need to be listed in the requirements.
+for git_req in git_requirements:
+    loc = git_requirements[0].find('egg=') + 4
+    requirements += [ git_requirements[0][loc:] ]
+
+
 setup(
     name='paragami',
     version=versioneer.get_version(),
