@@ -61,6 +61,46 @@ class HyperparameterSensitivityLinearApproximation:
         hessian_at_opt=None,
         factorize_hessian=True,
         hyper_par_objective_fun=None):
+        """
+        Parameters
+        --------------
+        objective_fun: Callable function
+            A callable function, optimized by ``opt_par`` at a particular value
+            of ``hyper_par``.  The function must be of the form
+            ``f(folded opt_par, folded hyper_par)``.
+        opt_par_pattern:
+            A pattern for ``opt_par``, the optimal parameter.
+        opt_par_pattern:
+            A pattern for ``hyper_par``, the hyperparameter.
+        opt_par_folded_value:
+            The folded value of ``opt_par`` at which ``objective_fun`` is
+            optimized for the given value of ``hyper_par``.
+        hyper_par_folded_value:
+            The folded of ``hyper_par_folded_value`` at which ``opt_par``
+            optimizes ``objective_fun``.
+        opt_par_is_free: Boolean
+            Whether to use the free parameterization for ``opt_par``` when
+            linearzing.
+        hyper_par_is_free: Boolean
+            Whether to use the free parameterization for ``hyper_par``` when
+            linearzing.
+        validate_optimum: Boolean
+            When setting the values of ``opt_par`` and ``hyper_par``, check
+            that ``opt_par`` is, in fact, a critical point of
+            ``objective_fun``.
+        hessian_at_opt: Numeric matrix (optional)
+            The Hessian of ``objective_fun`` at the optimum.  If not specified,
+            it is calculated using automatic differentiation.
+        factorize_hessian: Boolean
+            If ``True``, solve the required linear system using a Cholesky
+            factorization.  If ``False``, use the conjugate gradient algorithm
+            to avoid forming or inverting the Hessian.
+        hyper_par_objective_fun: Callable function
+            A callable function of the form
+            ``f(folded opt_par, folded hyper_par)`` containing the part of
+            ``objective_fun`` that depends on both ``opt_par`` and
+            ``hyper_par``.  If not specified, ``objective_fun`` is used.
+        """
 
         self._objective_fun = objective_fun
         self._opt_par_pattern = opt_par_pattern
@@ -152,6 +192,19 @@ class HyperparameterSensitivityLinearApproximation:
 
     def predict_opt_par_from_hyper_par(self, new_hyper_par_folded_value,
                                        fold_output=True):
+        """
+        Predict ``opt_par`` using the linear approximation.
+
+        Parameters
+        ------------
+        new_hyper_par_folded_value:
+            The folded value of ``hyper_par`` at which to approximate
+            ``opt_par``.
+        fold_output: Boolean
+            Whether to return ``opt_par`` as a folded value.  If ``False``,
+            returns the flattened value according to ``opt_par_pattern``
+            and ``opt_par_is_free``.
+        """
         hyper1 = self._hyper_par_pattern.flatten(
             new_hyper_par_folded_value, free=self._hyper_par_is_free)
         opt_par1 = self._opt0 + self._sens_mat @ (hyper1 - self._hyper0)
