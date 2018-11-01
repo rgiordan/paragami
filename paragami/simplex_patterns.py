@@ -7,8 +7,13 @@ import autograd.scipy as sp
 import warnings
 
 
-def fxn():
-    warnings.warn("deprecated", DeprecationWarning)
+def _logsumexp(mat, axis):
+    if not type(axis) is int:
+        raise ValueError(
+            'This hacky _logsumexp is only designed for exactly one axis.')
+    mat_max = np.max(mat, axis=axis, keepdims=True)
+    exp_mat_norm = np.exp(mat - mat_max)
+    return np.log(np.sum(exp_mat_norm, axis=axis, keepdims=True)) + mat_max
 
 
 def _constrain_simplex_matrix(free_mat):
@@ -18,11 +23,13 @@ def _constrain_simplex_matrix(free_mat):
     free_mat_aug = np.concatenate([reference_col, free_mat], axis=-1)
 
     # Note that autograd needs to update their logsumexp to be in special
-    # not misc before this can be changed.
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore', category=DeprecationWarning)
-        log_norm = np.expand_dims(
-            sp.misc.logsumexp(free_mat_aug, axis=-1), axis=-1)
+    # not misc before this can be changed.  Furthermore, logsumexp is
+    # not even available in the pypi version of autograd.
+    # with warnings.catch_warnings():
+    #     warnings.simplefilter('ignore', category=DeprecationWarning)
+    #     log_norm = np.expand_dims(
+    #         sp.misc.logsumexp(free_mat_aug, axis=-1), axis=-1)
+    log_norm = _logsumexp(free_mat_aug, axis=-1)
     return np.exp(free_mat_aug - log_norm)
 
 

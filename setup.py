@@ -1,34 +1,3 @@
-# from setuptools import setup
-#
-# setup(name='paragami',
-#       version='0.1.0',
-#       description='Helper functions for sensitivity analysis',
-#       long_description=long_description,
-#       url='https://github.com/rgiordan/paragami',
-#       author='Ryan Giordano',
-#       author_email='rgiordan@gmail.com',
-#       license='Apache 2.0',
-#       packages=['paragami'],
-#
-#       python_requires='>=3',
-#       classifiers = [
-#         'License :: OSI Approved :: Apache Software License',
-#         'Intended Audience :: Science/Research',
-#         'Intended Audience :: Developers',
-#         'Development Status :: 2 - Pre-Alpha',
-#         'Natural Language :: English',
-#         'Programming Language :: Python :: 3',
-#         'Topic :: Scientific/Engineering :: Mathematics'
-#       ],
-#
-#       install_requires = [
-#         'autograd',
-#         'numpy',
-#         'scipy',
-#         'json_tricks'
-#       ]
-# )
-
 from os import path
 from setuptools import setup, find_packages
 import sys
@@ -57,10 +26,20 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.rst'), encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
+# Parse requirements.txt, ignoring any commented-out or git lines.
 with open(path.join(here, 'requirements.txt')) as requirements_file:
-    # Parse requirements.txt, ignoring any commented-out lines.
-    requirements = [line for line in requirements_file.read().splitlines()
-                    if not line.startswith('#')]
+    requirements_lines = requirements_file.read().splitlines()
+
+requirements = [line for line in requirements_lines
+                if not (line.startswith('#') or line.startswith('git'))]
+
+git_requirements = [line for line in requirements_lines
+                     if line.startswith('git')]
+
+# git repos also need to be listed in the requirements.
+for git_req in git_requirements:
+    loc = git_requirements[0].find('egg=') + 4
+    requirements += [ git_requirements[0][loc:] ]
 
 
 setup(
@@ -87,7 +66,7 @@ setup(
             ]
         },
     install_requires=requirements,
-    license='Apache 2.0',
+    dependency_links=git_requirements,
     classifiers=[
         'Programming Language :: Python :: 3',
         'Natural Language :: English',
