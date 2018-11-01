@@ -2,6 +2,9 @@
 "Parameter origami": ``paragami``.
 #####################################
 
+.. image:: https://travis-ci.org/rgiordan/paragami.svg?branch=master
+    :target: https://travis-ci.org/rgiordan/paragami
+
 Description.
 ==========================
 
