@@ -56,7 +56,11 @@ To install, run the following command, pointing to the root of the git repo:
 Documentation and Examples.
 ----------------------------------
 
-For API documentation, run ``make html`` in ``docs/``.
+.. _readthedocs: https://paragami.readthedocs.io/
+
+For API documentation, see readthedocs_.
+
+Alternatively, check out the repo and run ``make html`` in ``docs/``.
 
 For motivating and expository Jupyter notebooks, see
 ``docs/example_notebooks/``.  A good place to start is
