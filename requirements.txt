@@ -1,5 +1,4 @@
 # List required packages in this file, one per line.
 autograd
-#git+https://github.com/HIPS/autograd/@5d49ee99bc6473f1cbf4967cb98061344b197c9d#egg=autograd
 numpy
 scipy
