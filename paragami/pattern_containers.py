@@ -116,15 +116,15 @@ class PatternDict(Pattern):
             empty_val[pattern_name] = pattern.empty(valid)
         return empty_val
 
-    def fold(self, flat_val, free):
+    def fold(self, flat_val, free, validate=None):
         flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
         flat_length = self.flat_length(free)
         if flat_val.size != flat_length:
             error_string = \
-                'Wrong size for pattern dictionary {}.  ' + \
-                'Expected {}, got {}'.format(
+                ('Wrong size for pattern dictionary {}.\n' +
+                 'Expected {}, got {}.').format(
                     str(self), str(flat_length), str(flat_val.size))
             raise ValueError(error_string)
 
@@ -135,17 +135,19 @@ class PatternDict(Pattern):
             pattern_flat_length = pattern.flat_length(free)
             pattern_flat_val = flat_val[offset:(offset + pattern_flat_length)]
             offset += pattern_flat_length
-            folded_val[pattern_name] = pattern.fold(pattern_flat_val, free)
+            folded_val[pattern_name] = pattern.fold(
+                pattern_flat_val, free=free, validate=validate)
         return folded_val
 
-    def flatten(self, folded_val, free):
+    def flatten(self, folded_val, free, validate=None):
         flat_length = self.flat_length(free)
         offset = 0
         flat_val = np.full(flat_length, float('nan'))
         for pattern_name, pattern in self.__pattern_dict.items():
             pattern_flat_length = pattern.flat_length(free)
             flat_val[offset:(offset + pattern_flat_length)] = \
-                pattern.flatten(folded_val[pattern_name], free)
+                pattern.flatten(
+                    folded_val[pattern_name], free=free, validate=validate)
             offset += pattern_flat_length
         return flat_val
 
@@ -254,7 +256,7 @@ class PatternArray(Pattern):
         linear_item = np.ravel_multi_index(item, self.__shape) * flat_length
         return slice(linear_item, linear_item + flat_length)
 
-    def fold(self, flat_val, free):
+    def fold(self, flat_val, free, validate=None):
         flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
@@ -267,14 +269,16 @@ class PatternArray(Pattern):
         flat_length = self.__base_pattern.flat_length(free)
         folded_array = np.array([
             self.__base_pattern.fold(
-                flat_val[self._stacked_obs_slice(item, flat_length)], free)
+                flat_val[self._stacked_obs_slice(item, flat_length)],
+                free=free, validate=validate)
             for item in itertools.product(*self.__array_ranges)])
         return np.reshape(
             folded_array, self.__shape + self.__folded_pattern_shape)
 
-    def flatten(self, folded_val, free):
+    def flatten(self, folded_val, free, validate=None):
         return np.hstack(np.array([
-            self.__base_pattern.flatten(folded_val[item], free=free)
+            self.__base_pattern.flatten(
+                folded_val[item], free=free, validate=validate)
             for item in itertools.product(*self.__array_ranges)]))
 
     def flat_length(self, free):

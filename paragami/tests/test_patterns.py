@@ -62,7 +62,7 @@ class TestPatterns(unittest.TestCase):
             paragami.SimplexArrayPattern(3, (2, 3)))
 
     def test_numeric_array_patterns(self):
-        for test_shape in [(2, ), (2, 3), (2, 3, 4)]:
+        for test_shape in [(1, ), (2, ), (2, 3), (2, 3, 4)]:
             valid_value = np.random.random(test_shape)
             pattern = paragami.NumericArrayPattern(test_shape)
             _test_pattern(self, pattern, valid_value)
@@ -92,6 +92,11 @@ class TestPatterns(unittest.TestCase):
             self.assertTrue(
                 paragami.NumericArrayPattern((1, 2), lb=2, ub=4) !=
                 paragami.NumericArrayPattern((1, 2), lb=2))
+
+            # Check that singletons work.
+            pattern = paragami.NumericArrayPattern(shape=(1, ))
+            _test_pattern(self, pattern, 1.0)
+
 
     def test_psdmatrix_patterns(self):
         dim = 3
