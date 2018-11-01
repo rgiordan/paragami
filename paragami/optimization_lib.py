@@ -3,7 +3,54 @@ import autograd.numpy as np
 from .function_patterns import FlattenedFunction
 import scipy as osp
 
-class HyperparameterSensitivityLinearApproximation(object):
+class HyperparameterSensitivityLinearApproximation:
+    """
+    Linearly approximate dependence of an optimum on a hyperparameter.
+
+    Suppose we have an optimization problem in which the objective
+    depends on a hyperparameter:
+
+    .. math::
+
+        \hat{\\theta} = \mathrm{argmin}_{\\theta} f(\\theta, \\lambda).
+
+    The optimal parameter, :math:`\hat{\\theta}`, is a function of
+    :math:`\\lambda` through the optimization problem.  In general, this
+    dependence is complex and nonlinear.  To approximate this dependence,
+    this class uses the linear approximation:
+
+    .. math::
+
+        \hat{\\theta}(\\lambda) \\approx \hat{\\theta}(\\lambda_0) +
+            \\frac{d\hat{\\theta}}{d\\lambda}|_{\\lambda_0}
+                (\\lambda - \\lambda_0).
+
+    In terms of the arguments to this function,
+    :math:`\\theta` corresponds to ``opt_par``,
+    :math:`\\lambda` corresponds to ``hyper_par``,
+    and :math:`f` corresponds to ``objective_fun``.
+
+    Because ``opt_par`` and ``hyper_par`` in general are structured,
+    constrained data, the linear approximation is evaluated in flattened
+    space using user-specified patterns.
+
+    Methods
+    ------------
+    set_base_values:
+        Set the base values, :math:`\\lambda_0` and
+        :math:`\\theta_0 := \hat\\theta(\\lambda_0)`, at which the linear
+        approximation is evaluated.
+    get_dopt_dhyper:
+        Return the Jacobian matrix
+        :math:`\\frac{d\hat{\\theta}}{d\\lambda}|_{\\lambda_0}` in flattened
+        space.
+    get_hessian_at_opt:
+        Return the Hessian of the objective function in the
+        flattened space.
+    predict_opt_par_from_hyper_par:
+        Use the linear approximation to predict
+        the folded value of ``opt_par`` from a folded value of ``hyper_par``.
+    """
     def __init__(
         self,
         objective_fun,

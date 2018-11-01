@@ -54,7 +54,16 @@ Arrays of patterns
 Function wrappers
 ========================
 
-Arrays of patterns
+Function wrappers
 ---------------------------
 .. autoclass:: paragami.function_patterns.FlattenedFunction
+  :members:
+
+.. autoclass:: paragami.function_patterns.Functor
+  :members:
+
+
+Optimization and sensitivity tools
+=====================================
+.. autoclass:: paragami.optimization_lib.HyperparameterSensitivityLinearApproximation
   :members:
