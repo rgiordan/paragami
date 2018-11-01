@@ -56,7 +56,8 @@ To install, run the following command, pointing to the root of the git repo:
 Documentation and Examples.
 ----------------------------------
 
-For API documentation, run ``make html`` in ``docs/``.
+For API documentation, see `github page<https://rgiordan.github.io/paragami>`.
+To make the docs by hand, run ``make html`` in ``docs/``.
 
 For motivating and expository Jupyter notebooks, see
 ``docs/example_notebooks/``.
