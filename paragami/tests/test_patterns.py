@@ -36,36 +36,6 @@ def _test_pattern(testcase, pattern, valid_value,
         folded_val = pattern.fold(flat_val, free=free)
         check_equal(valid_value, folded_val)
 
-class TestHelperFunctions(unittest.TestCase):
-    def _test_logsumexp(self, mat, axis):
-        # Test the more numerically stable version with this simple
-        # version of logsumexp.
-        def logsumexp_simple(mat, axis):
-            return np.log(np.sum(np.exp(mat), axis=axis))
-
-        check_grads(
-            paragami.simplex_patterns._logsumexp,
-            modes=['fwd', 'rev'], order=3)(mat, axis)
-
-        paragami.simplex_patterns._logsumexp(mat, axis)
-
-    def test_logsumexp(self):
-        mat = np.random.random((3, 3, 3))
-        self._test_logsumexp(mat, 0)
-
-    def test_pdmatrix_custom_autodiff(self):
-        x_vec = np.random.random(6)
-        x_mat = paragami.psdmatrix_patterns._unvectorize_ld_matrix(x_vec)
-
-        check_grads(
-            paragami.psdmatrix_patterns._vectorize_ld_matrix,
-            modes=['fwd', 'rev'], order=3)(x_mat)
-        check_grads(
-            paragami.psdmatrix_patterns._unvectorize_ld_matrix,
-            modes=['fwd', 'rev'], order=3)(x_vec)
-
-
-
 class TestPatterns(unittest.TestCase):
     def test_simplex_array_patterns(self):
         def test_shape_and_size(simplex_size, array_shape):
@@ -222,6 +192,38 @@ class TestPatterns(unittest.TestCase):
         self.assertTrue(
             paragami.PatternArray((2, 3), array_pattern) !=
             paragami.PatternArray((2, 3), matrix_pattern))
+
+
+class TestHelperFunctions(unittest.TestCase):
+    def _test_logsumexp(self, mat, axis):
+        # Test the more numerically stable version with this simple
+        # version of logsumexp.
+        def logsumexp_simple(mat, axis):
+            return np.log(np.sum(np.exp(mat), axis=axis, keepdims=True))
+
+        check_grads(
+            paragami.simplex_patterns._logsumexp,
+            modes=['fwd', 'rev'], order=3)(mat, axis)
+
+        assert_array_almost_equal(
+            logsumexp_simple(mat, axis),
+            paragami.simplex_patterns._logsumexp(mat, axis))
+
+
+    def test_logsumexp(self):
+        mat = np.random.random((3, 3, 3))
+        self._test_logsumexp(mat, 0)
+
+    def test_pdmatrix_custom_autodiff(self):
+        x_vec = np.random.random(6)
+        x_mat = paragami.psdmatrix_patterns._unvectorize_ld_matrix(x_vec)
+
+        check_grads(
+            paragami.psdmatrix_patterns._vectorize_ld_matrix,
+            modes=['fwd', 'rev'], order=3)(x_mat)
+        check_grads(
+            paragami.psdmatrix_patterns._unvectorize_ld_matrix,
+            modes=['fwd', 'rev'], order=3)(x_vec)
 
 
 if __name__ == '__main__':

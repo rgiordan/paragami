@@ -8,7 +8,13 @@ import warnings
 
 
 def _logsumexp(mat, axis):
-    return np.log(np.sum(np.exp(mat), axis=axis))
+    if not type(axis) is int:
+        raise ValueError(
+            'This hacky _logsumexp is only designed for exactly one axis.')
+    mat_max = np.max(mat, axis=axis, keepdims=True)
+    exp_mat_norm = np.exp(mat - mat_max)
+    return np.log(np.sum(exp_mat_norm, axis=axis, keepdims=True)) + mat_max
+
 
 def _constrain_simplex_matrix(free_mat):
     # The first column is the reference value.  Append a column of zeros
@@ -23,7 +29,7 @@ def _constrain_simplex_matrix(free_mat):
     #     warnings.simplefilter('ignore', category=DeprecationWarning)
     #     log_norm = np.expand_dims(
     #         sp.misc.logsumexp(free_mat_aug, axis=-1), axis=-1)
-    log_norm = np.expand_dims(_logsumexp(free_mat_aug, axis=-1), axis=-1)
+    log_norm = _logsumexp(free_mat_aug, axis=-1)
     return np.exp(free_mat_aug - log_norm)
 
 
