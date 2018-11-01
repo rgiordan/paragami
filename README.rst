@@ -5,6 +5,9 @@
 .. image:: https://travis-ci.org/rgiordan/paragami.svg?branch=master
     :target: https://travis-ci.org/rgiordan/paragami
 
+.. image:: https://codecov.io/gh/rgiordan/paragami/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/rgiordan/paragami
+
 Description.
 ==========================
 
