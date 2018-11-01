@@ -112,8 +112,8 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
             error = np.abs(pred_diff - true_diff)
             tol = epsilon * np.mean(np.abs(true_diff))
             if not np.all(error < tol):
-                print(error, tol)
-            #self.assertTrue(np.all(error < tol))
+                print('Error in linear approximation: ', error, tol)
+            self.assertTrue(np.all(error < tol))
 
         # Test the Jacobian.
         get_true_optimal_theta_lamflat = paragami.FlattenedFunction(
@@ -131,6 +131,7 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
 
     def test_quadratic_model(self):
         ft_vec = [False, True]
+        dim = 3
         for (theta_free, lambda_free, use_hess, use_hyperobj) in \
             itertools.product(ft_vec, ft_vec, ft_vec, ft_vec):
 
@@ -138,7 +139,7 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
                    'use_hess: {}, use_hyperobj: {}').format(
                    theta_free, lambda_free, use_hess, use_hyperobj))
             self._test_linear_approximation(
-                3, theta_free, lambda_free,
+                dim, theta_free, lambda_free,
                 use_hess, use_hyperobj)
 
 
