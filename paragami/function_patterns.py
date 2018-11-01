@@ -27,7 +27,7 @@ class FlattenedFunction:
         # pd_mat_flat is an unconstrained vector:
         pd_mat_flat = mat_pattern.flatten(pd_mat, free=True)
 
-        # These three functions return the same value:
+        # These two functions return the same value:
         print('Original: {}'.format(
             fun(2, pd_mat, kwoffset=3)))
         print('Flat: {}'.format(
@@ -103,7 +103,63 @@ class FlattenedFunction:
 
 
 class Functor():
+    """
+    Cache the values of certain arguments to a function.
+
+    This class converts a function of several arguments to a function of only
+    a subset of the arguments, with cached values for the other arguments.
+    The ``__call__`` method of a ``Functor`` is a function only of the
+    arguments to ``original_fun`` specified by ``argnums``, using cached
+    values for all other arguments.
+
+    Methods
+    ---------
+    argnums(): Print which arguments of the original function
+               are arguments of the functor.
+    cached_args(): Return a tuple of the cached non-keyword arguments.
+    cached_kwargs(): Return a dictionary of the cached keyword arguments.
+    cache_args(): Cache the arguments passed to cache_args().
+    cache_cached_args(): Clear the cached arguments.
+
+    Examples
+    ----------
+    .. code-block:: python
+
+        mat_pattern = paragami.PSDMatrixPattern(3)
+
+        def fun(offset, mat, kwoffset=3):
+            return np.linalg.slogdet(mat + offset + kwoffset)[1]
+
+        flattened_fun = paragami.FlattenedFunction(
+            original_fun=fun, patterns=mat_pattern, free=True, argnums=1)
+
+        pd_mat = np.eye(3) + np.full((3, 3), 0.1)
+        pd_mat_flat = mat_pattern.flatten(pd_mat, free=True)
+
+        # Define a functor where the first and third arguments are cached:
+        flattened_functor = paragami.Functor(
+            original_fun=flattened_fun, argnums=1)
+        flattened_functor.cache_args(2, pd_mat_flat, kwoffset=3)
+
+        # These three functions return the same value:
+        print('Original: {}'.format(
+            fun(2, pd_mat, kwoffset=3)))
+        print('Flat: {}'.format(
+            flattened_fun(2, pd_mat_flat, kwoffset=3)))
+        print('Flat functor: {}'.format(
+            flattened_functor(pd_mat_flat)))
+    """
     def __init__(self, original_fun, argnums):
+        """
+        Parameters
+        ------------
+        original_fun: callable function
+            A function that takes one or more arguments as input.
+
+        argnums: int or array of int
+            The 0-indexed locations of the functor arguments
+            in the order of the arguments fo ``original_fun``.
+        """
         self._fun = original_fun
         self._argnums = np.atleast_1d(argnums)
 
@@ -132,6 +188,19 @@ class Functor():
         return self._cached_kwargs
 
     def cache_args(self, *args, **kwargs):
+        """
+        Parameters
+        ------------
+        *args, **kwargs:
+            Arguments as they would be passed to ``original_fun``.
+
+        ``cache_args`` must be called before using the ``__call__`` method
+        of the ``Functor`` class.
+
+        After calling ``cache_args``, the ``__call__`` method of the functor
+        will evalute ``original_fun`` with ``*args`` and ``**kwargs`` except
+        for the arguments specified in ``argnums``.
+        """
         if len(args) < self._max_argnum:
             raise ValueError(
                 'You must cache at least as many arguments as there are'
@@ -141,6 +210,9 @@ class Functor():
         self._cached_kwargs = kwargs
 
     def clear_cached_args(self):
+        """
+        Clear the cached values set by ``cache_args``.
+        """
         self._cached_args_set = False
         self._cached_args = None
         self._cached_kwargs = None
