@@ -268,7 +268,7 @@ class PSDSymmetricMatrixPattern(Pattern):
                 raise ValueError(error_string)
             if not (folded_val.transpose() == folded_val).all():
                 raise ValueError('Matrix is not symmetric')
-            # TODO: check for positive definiteness
+            # TODO: check for positive definiteness?
             # try:
             #     chol = onp.linalg.cholesky(folded_val)
             # except LinAlgError:

@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import itertools
 
+from scipy.sparse import coo_matrix, block_diag
 import autograd.numpy as np
 
 from .base_patterns import Pattern
@@ -153,6 +154,60 @@ class PatternDict(Pattern):
 
     def flat_length(self, free):
         return self._free_flat_length if free else self._flat_length
+
+    def unfreeing_jacobian(self, folded_val, sparse=True):
+        # flat_length = self.flat_length(free=False)
+        # freeflat_length = self.flat_length(free=True)
+
+        # free_offset = 0
+        # freeflat_offset = 0
+        jacobians = []
+
+        # flat_val = self.flatten(folded_val, False)
+        for pattern_name, pattern in self.__pattern_dict.items():
+            # pattern_flat_length = pattern.flat_length(free=False)
+            # pattern_freeflat_length = pattern.flat_length(free=True)
+            # flat_val_slice = \
+            #     flat_val[flat_offset:(flat_offset + pattern_flat_length)]
+            jac = pattern.unfreeing_jacobian(
+                folded_val[pattern_name], sparse=True)
+            jacobians.append(jac)
+            # flat_val[offset:(offset + pattern_flat_length)] = \
+            #     pattern.flatten(
+            #         folded_val[pattern_name], free=free, validate=validate)
+            # offset += pattern_flat_length
+        sp_jac = block_diag(jacobians, format='coo')
+        if sparse:
+            return sp_jac
+        else:
+            return np.array(sp_jac.todense())
+
+    def freeing_jacobian(self, folded_val, sparse=True):
+        # flat_length = self.flat_length(free=False)
+        # freeflat_length = self.flat_length(free=True)
+
+        # free_offset = 0
+        # freeflat_offset = 0
+        jacobians = []
+
+        # flat_val = self.flatten(folded_val, False)
+        for pattern_name, pattern in self.__pattern_dict.items():
+            # pattern_flat_length = pattern.flat_length(free=False)
+            # pattern_freeflat_length = pattern.flat_length(free=True)
+            # flat_val_slice = \
+            #     flat_val[flat_offset:(flat_offset + pattern_flat_length)]
+            jac = pattern.freeing_jacobian(
+                folded_val[pattern_name], sparse=True)
+            jacobians.append(jac)
+            # flat_val[offset:(offset + pattern_flat_length)] = \
+            #     pattern.flatten(
+            #         folded_val[pattern_name], free=free, validate=validate)
+            # offset += pattern_flat_length
+        sp_jac = block_diag(jacobians, format='coo')
+        if sparse:
+            return sp_jac
+        else:
+            return np.array(sp_jac.todense())
 
 
 ##########################

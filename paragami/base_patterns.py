@@ -1,5 +1,6 @@
+import autograd
 import numpy as np
-
+from scipy.sparse import coo_matrix
 
 class Pattern(object):
     """
@@ -29,11 +30,26 @@ class Pattern(object):
         self._flat_length = flat_length
         self._free_flat_length = free_flat_length
 
+        self._freeing_jacobian = autograd.jacobian(self._freeing_transform)
+        self._unfreeing_jacobian = autograd.jacobian(self._unfreeing_transform)
+
     def __str__(self):
         raise NotImplementedError()
 
     def __eq__(self, other):
         raise NotImplementedError()
+
+    def _freeing_transform(flat_val):
+        """
+        From the flat to the free flat value.
+        """
+        return self.flatten(self.fold(flat_val, free=False), free=True)
+
+    def _unfreeing_transform(free_flat_val):
+        """
+        From the free flat to the flat value.
+        """
+        return self.flatten(self.fold(flat_val, free=True), free=False)
 
     def fold(self, flat_val, free, validate=None):
         """
@@ -125,6 +141,68 @@ class Pattern(object):
         A random parameter value in its original "folded" shape.
         """
         return self.fold(np.random.random(self._free_flat_length), free=True)
+
+    def freeing_jacobian(self, folded_val, sparse=True):
+        """
+        Return the Jacobian of the map from a flat free value to a flat value.
+
+        If the folded value of the parameter is ``val``, ``val_flat =
+        flatten(val, free=False)``, and ``val_freeflat = flatten(val,
+        free=True)``, then this calculates the Jacobian matrix ``d val_free / d
+        val_freeflat``.  For entries with no dependence between them, the
+        Jacobian is taken to be zero.
+
+        Parameters
+        -------------
+        folded_val:
+            The folded value at which the Jacobian is to be evaluated.
+        sparse: boolean
+            Whether to return a sparse or a dense matrix.
+
+        Returns
+        -------------
+        The Jacobian matrix ``d val_free / d val_freeflat``.
+        Consistent with standard Jacobian notation, the elements of ``val_free``
+        correspond to the rows of the Jacobian matrix and the elements of
+        ``val_freeflat`` correspond to the columns.
+        """
+        flat_val = self.flatten(folded_val, free=False)
+        jac = self._freeing_jacobian(flat_val)
+        if sparse:
+            return coo_matrix(jac)
+        else:
+            return jac
+
+    def unfreeing_jacobian(self, folded_val, sparse=True):
+        """
+        Return the Jacobian of the map from a flat value to a flat free value.
+
+        If the folded value of the parameter is ``val``, ``val_flat =
+        flatten(val, free=False)``, and ``val_freeflat = flatten(val,
+        free=True)``, then this calculates the Jacobian matrix ``d val_freeflat /
+        d val_free``.  For entries with no dependence between them, the Jacobian
+        is taken to be zero.
+
+        Parameters
+        -------------
+        folded_val:
+            The folded value at which the Jacobian is to be evaluated.
+        sparse: boolean
+            Whether to return a sparse or a dense matrix.
+
+        Returns
+        -------------
+        The Jacobian matrix ``d val_freeflat / d val_free``. Consistent with
+        standard Jacobian notation, the elements of ``val_freeflat`` correspond
+        to the rows of the Jacobian matrix and the elements of ``val_free``
+        correspond to the columns.
+        """
+        freeflat_val = self.flatten(folded_val, free=True)
+        jac = self._unfreeing_jacobian(freeflat_val)
+        if sparse:
+            return coo_matrix(jac)
+        else:
+            return jac
 
     # These are currently not implemented, but we should.
     # Maybe this should be to / from JSON.
