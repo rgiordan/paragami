@@ -25,10 +25,6 @@ def _constrain_simplex_matrix(free_mat):
     # Note that autograd needs to update their logsumexp to be in special
     # not misc before this can be changed.  Furthermore, logsumexp is
     # not even available in the pypi version of autograd.
-    # with warnings.catch_warnings():
-    #     warnings.simplefilter('ignore', category=DeprecationWarning)
-    #     log_norm = np.expand_dims(
-    #         sp.misc.logsumexp(free_mat_aug, axis=-1), axis=-1)
     log_norm = _logsumexp(free_mat_aug, axis=-1)
     return np.exp(free_mat_aug - log_norm)
 
