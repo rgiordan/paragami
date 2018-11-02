@@ -1,5 +1,6 @@
 import autograd
 import autograd.numpy as np
+import copy
 from .function_patterns import FlattenedFunction
 import scipy as osp
 
@@ -270,9 +271,9 @@ class PreconditionedFunction():
     preconditioned function are defined with respect to its argument in the
     preconditioned space, e.g., :math:`f'_c = \\frac{df_c}{dx_c}`.
 
-    A typical value of the preconditioner is an inverse square root of the
+    A typical value of the preconditioner is an square root of the
     Hessian of :math:`f`, because then the Hessian of :math:`f_c` is
-    the identity.
+    the identity when the gradient is zero.
 
     Methods
     ----------
@@ -281,6 +282,10 @@ class PreconditionedFunction():
     set_preconditioner_with_hessian:
         Set the preconditioner based on the Hessian of the objective
         at a point in the orginal domain.
+    get_preconditioner:
+        Return a copy of the current preconditioner.
+    get_preconditioner_inv:
+        Return a copy of the current inverse preconditioner.
     precondition:
         Convert from the original domain to the preconditioned domain.
     unprecondition:
@@ -305,7 +310,17 @@ class PreconditionedFunction():
             raise ValueError(
                 'If you specify preconditioner_inv, you must' +
                 'also specify preconditioner. ')
-        self.set_preconditioner(preconditioner, preconditioner_inv)
+        if preconditioner is not None:
+            self.set_preconditioner(preconditioner, preconditioner_inv)
+        else:
+            self._preconditioner = None
+            self._preconditioner_inv = None
+
+    def get_preconditioner(self):
+        return copy.copy(self._preconditioner)
+
+    def get_preconditioner_inv(self):
+        return copy.copy(self._preconditioner_inv)
 
     def set_preconditioner(self, preconditioner, preconditioner_inv=None):
         self._preconditioner = preconditioner
@@ -381,7 +396,7 @@ class PreconditionedFunction():
         """
         if self._preconditioner is None:
             raise ValueError('You must set the preconditioner.')
-        return self.preconditioner @ x_c
+        return self._preconditioner @ x_c
 
     def __call__(self, x_c):
         """
