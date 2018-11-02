@@ -236,9 +236,13 @@ def _get_sym_matrix_inv_sqrt(mat, ev_min=None, ev_max=None):
     eig_val, eig_vec = np.linalg.eigh(mat_sym)
 
     if not ev_min is None:
-        eig_val[eig_val <= ev_min] = ev_min
+        if not np.isreal(ev_min):
+            raise ValueError('ev_min must be real-valued.')
+        eig_val[np.real(eig_val) <= ev_min] = ev_min
     if not ev_max is None:
-        eig_val[eig_val >= ev_max] = ev_max
+        if not np.isreal(ev_max):
+            raise ValueError('ev_max must be real-valued.')
+        eig_val[np.real(eig_val) >= ev_max] = ev_max
 
     mat_corrected = np.matmul(eig_vec,
                                np.matmul(np.diag(eig_val), eig_vec.T))
