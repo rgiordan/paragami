@@ -82,10 +82,16 @@ class PatternDict(Pattern):
     def __getitem__(self, key):
         return self.__pattern_dict[key]
 
-    def __setitem__(self, pattern_name, pattern):
+    def _check_lock(self):
         if self.__lock:
             raise ValueError(
                 'The dictionary is locked, and its values cannot be changed.')
+
+    def __setitem__(self, pattern_name, pattern):
+        self._check_lock()
+        # if pattern_name in self.__pattern_dict.keys():
+        #     self.__delitem__(pattern_name)
+
         self.__pattern_dict[pattern_name] = pattern
 
         # We cannot allow pattern dictionaries to change their size
@@ -96,17 +102,17 @@ class PatternDict(Pattern):
         if type(self.__pattern_dict[pattern_name]) is PatternDict:
             self.__pattern_dict[pattern_name].lock()
 
-        self._flat_length += pattern.flat_length(free=False)
-        self._free_flat_length += pattern.flat_length(free=True)
+        self._free_flat_length = self._update_flat_length(free=True)
+        self._flat_length = self._update_flat_length(free=False)
 
     def __delitem__(self, pattern_name):
-        if self.__lock:
-            raise ValueError(
-                'The dictionary is locked, and its values cannot be changed.')
+        self._check_lock()
+
         pattern = self.__pattern_dict[pattern_name]
-        self._flat_length -= pattern.flat_length(free=False)
-        self._free_flat_length -= pattern.flat_length(free=True)
         self.__pattern_dict.pop(pattern_name)
+
+        self._free_flat_length = self._update_flat_length(free=True)
+        self._flat_length = self._update_flat_length(free=False)
 
     def keys(self):
         return self.__pattern_dict.keys()
@@ -152,57 +158,33 @@ class PatternDict(Pattern):
             offset += pattern_flat_length
         return flat_val
 
-    def flat_length(self, free):
-        return self._free_flat_length if free else self._flat_length
+    def _update_flat_length(self, free):
+        # This is a little wasteful with the benefit of being less error-prone
+        # than adding and subtracting lengths as keys are changed.
+        return np.sum([pattern.flat_length(free) for pattern_name, pattern in
+                       self.__pattern_dict.items()])
 
     def unfreeing_jacobian(self, folded_val, sparse=True):
-        # flat_length = self.flat_length(free=False)
-        # freeflat_length = self.flat_length(free=True)
-
-        # free_offset = 0
-        # freeflat_offset = 0
         jacobians = []
-
-        # flat_val = self.flatten(folded_val, False)
         for pattern_name, pattern in self.__pattern_dict.items():
-            # pattern_flat_length = pattern.flat_length(free=False)
-            # pattern_freeflat_length = pattern.flat_length(free=True)
-            # flat_val_slice = \
-            #     flat_val[flat_offset:(flat_offset + pattern_flat_length)]
             jac = pattern.unfreeing_jacobian(
                 folded_val[pattern_name], sparse=True)
             jacobians.append(jac)
-            # flat_val[offset:(offset + pattern_flat_length)] = \
-            #     pattern.flatten(
-            #         folded_val[pattern_name], free=free, validate=validate)
-            # offset += pattern_flat_length
+
         sp_jac = block_diag(jacobians, format='coo')
+
         if sparse:
             return sp_jac
         else:
             return np.array(sp_jac.todense())
 
     def freeing_jacobian(self, folded_val, sparse=True):
-        # flat_length = self.flat_length(free=False)
-        # freeflat_length = self.flat_length(free=True)
-
-        # free_offset = 0
-        # freeflat_offset = 0
         jacobians = []
-
-        # flat_val = self.flatten(folded_val, False)
         for pattern_name, pattern in self.__pattern_dict.items():
-            # pattern_flat_length = pattern.flat_length(free=False)
-            # pattern_freeflat_length = pattern.flat_length(free=True)
-            # flat_val_slice = \
-            #     flat_val[flat_offset:(flat_offset + pattern_flat_length)]
             jac = pattern.freeing_jacobian(
                 folded_val[pattern_name], sparse=True)
             jacobians.append(jac)
-            # flat_val[offset:(offset + pattern_flat_length)] = \
-            #     pattern.flatten(
-            #         folded_val[pattern_name], free=free, validate=validate)
-            # offset += pattern_flat_length
+
         sp_jac = block_diag(jacobians, format='coo')
         if sparse:
             return sp_jac
