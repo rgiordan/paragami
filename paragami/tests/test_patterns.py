@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+import autograd
 import copy
 import unittest
 from numpy.testing import assert_array_almost_equal
 import numpy as np
+import scipy as sp
 
 import collections
 
@@ -11,9 +13,10 @@ import paragami
 from autograd.test_util import check_grads
 
 def _test_pattern(testcase, pattern, valid_value,
-                  check_equal=assert_array_almost_equal):
+                  check_equal=assert_array_almost_equal,
+                  jacobian_ad_test=True):
 
-    print('Testing pattern {}.'.format(pattern))
+    print('Testing pattern {}'.format(pattern))
     # Execute required methods.
     empty_val = pattern.empty(valid=True)
     pattern.flatten(empty_val, free=False)
@@ -38,13 +41,54 @@ def _test_pattern(testcase, pattern, valid_value,
         check_equal(valid_value, folded_val)
 
     # Test the freeing and unfreeing Jacobians.
+    def freeing_transform(flat_val):
+        return pattern.flatten(
+            pattern.fold(flat_val, free=False), free=True)
+
+    def unfreeing_transform(free_flat_val):
+        return pattern.flatten(
+            pattern.fold(free_flat_val, free=True), free=False)
+
+    ad_freeing_jacobian = autograd.jacobian(freeing_transform)
+    ad_unfreeing_jacobian = autograd.jacobian(unfreeing_transform)
+
     for sparse in [True, False]:
+        flat_val = pattern.flatten(valid_value, free=False)
+        freeflat_val = pattern.flatten(valid_value, free=True)
         freeing_jac = pattern.freeing_jacobian(valid_value, sparse)
         unfreeing_jac = pattern.unfreeing_jacobian(valid_value, sparse)
         free_len = pattern.flat_length(free=False)
         flatfree_len = pattern.flat_length(free=True)
+
+        # Check the shapes.
         testcase.assertTrue(freeing_jac.shape == (flatfree_len, free_len))
         testcase.assertTrue(unfreeing_jac.shape == (free_len, flatfree_len))
+
+        # Check the values of the Jacobians.
+        if sparse:
+            # The Jacobians should be inverses of one another and full rank
+            # in the free flat space.
+            assert_array_almost_equal(
+                np.eye(flatfree_len),
+                np.array((freeing_jac @ unfreeing_jac).todense()))
+            if jacobian_ad_test:
+                assert_array_almost_equal(
+                    ad_freeing_jacobian(flat_val),
+                    np.array(freeing_jac.todense()))
+                assert_array_almost_equal(
+                    ad_unfreeing_jacobian(freeflat_val),
+                    np.array(unfreeing_jac.todense()))
+        else:
+            # The Jacobians should be inverses of one another and full rank
+            # in the free flat space.
+            assert_array_almost_equal(
+                np.eye(flatfree_len), freeing_jac @ unfreeing_jac)
+            if jacobian_ad_test:
+                assert_array_almost_equal(
+                    ad_freeing_jacobian(flat_val), freeing_jac)
+                assert_array_almost_equal(
+                    ad_unfreeing_jacobian(freeflat_val), unfreeing_jac)
+
 
 class TestPatterns(unittest.TestCase):
     def test_simplex_array_patterns(self):
@@ -124,6 +168,13 @@ class TestPatterns(unittest.TestCase):
             paragami.PSDSymmetricMatrixPattern(3))
 
     def test_dictionary_patterns(self):
+        def test_pattern(dict_pattern, dict_val):
+            # autograd can't differnetiate the folding of a dictionary
+            # because it involves assignment to elements of a dictionary.
+            _test_pattern(self, dict_pattern, dict_val,
+                          check_equal=check_dict_equal,
+                          jacobian_ad_test=False)
+
         def check_dict_equal(dict1, dict2):
             self.assertEqual(dict1.keys(), dict2.keys())
             for key in dict1:
@@ -136,61 +187,48 @@ class TestPatterns(unittest.TestCase):
         dict_pattern = paragami.PatternDict()
         dict_pattern['a'] = \
             paragami.NumericArrayPattern((2, 3, 4), lb=-1, ub=2)
-        dict_val = dict_pattern.random()
-        _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
+        test_pattern(dict_pattern, dict_pattern.random())
 
         print('dictionary pattern test: two elements')
         dict_pattern['b'] = \
             paragami.NumericArrayPattern((5, ), lb=-1, ub=10)
-        dict_val = dict_pattern.random()
-        _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
+        test_pattern(dict_pattern, dict_pattern.random())
 
         print('dictionary pattern test: third matrix element')
         dict_pattern['c'] = \
             paragami.PSDSymmetricMatrixPattern(size=3)
-        dict_val = dict_pattern.random()
-        _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
+        test_pattern(dict_pattern, dict_pattern.random())
 
         print('dictionary pattern test: sub-dictionary')
         subdict = paragami.PatternDict()
         subdict['suba'] = paragami.NumericArrayPattern((2, ))
         dict_pattern['d'] = subdict
-        dict_val = dict_pattern.random()
-        _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
+        test_pattern(dict_pattern, dict_pattern.random())
 
         # Test keys.
         self.assertEqual(list(dict_pattern.keys()), ['a', 'b', 'c', 'd'])
 
-        # Test a random pattern.
-        print('dictionary pattern test: random pattern')
-        dict_val = dict_pattern.random()
-        _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
-
         # Check that it works with ordinary dictionaries, not only OrderedDict.
         print('dictionary pattern test: non-ordered dictionary')
-        plain_dict_val = dict(dict_val)
-        _test_pattern(self, dict_pattern, plain_dict_val, check_dict_equal)
+        test_pattern(dict_pattern, dict(dict_pattern.random()))
 
         # Check deletion and non-equality.
         print('dictionary pattern test: deletion')
         old_dict_pattern = copy.deepcopy(dict_pattern)
         del dict_pattern['b']
         self.assertTrue(dict_pattern != old_dict_pattern)
-        dict_val = dict_pattern.random()
-        _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
+        test_pattern(dict_pattern, dict_pattern.random())
 
         # Check modifying an existing array element.
         print('dictionary pattern test: modifying array')
         dict_pattern['a'] = paragami.NumericArrayPattern((2, ), lb=-1, ub=2)
-        dict_val = dict_pattern.random()
-        _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
+        test_pattern(dict_pattern, dict_pattern.random())
 
         # Check modifying an existing dictionary element.
         print('dictionary pattern test: modifying sub-dictionary')
         dict_pattern['d'] = \
             paragami.NumericArrayPattern((4, ), lb=-1, ub=10)
-        dict_val = dict_pattern.random()
-        _test_pattern(self, dict_pattern, dict_val, check_dict_equal)
+        test_pattern(dict_pattern, dict_pattern.random())
 
         # Check locking
         dict_pattern.lock()
