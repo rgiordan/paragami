@@ -216,39 +216,42 @@ class HyperparameterSensitivityLinearApproximation:
 
 
 
-##############
-# preconditioners
+###############################
+# Preconditioned objectives.  #
+###############################
 
 
-# Get the matrix inverse square root of a symmetric matrix with eigenvalue
-# thresholding.  This is particularly useful for calculating preconditioners.
-# Get the matrix inverse square root of a symmetric matrix with eigenvalue
-# thresholding.  This is particularly useful for calculating preconditioners.
-def _get_sym_matrix_inv_sqrt(hessian, ev_min=None, ev_max=None):
-    hessian = np.atleast_2d(hessian)
+def _get_sym_matrix_inv_sqrt(mat, ev_min=None, ev_max=None):
+    """
+    Get the inverse square root of a symmetric matrix with thresholds for the
+    eigenvalues.
+
+    This is particularly useful for calculating preconditioners.
+    """
+    mat = np.atleast_2d(mat)
 
     # Symmetrize for numerical stability.
-    hessian_sym = 0.5 * (hessian + hessian.T)
-    eig_val, eig_vec = np.linalg.eigh(hessian_sym)
+    mat_sym = 0.5 * (mat + mat.T)
+    eig_val, eig_vec = np.linalg.eigh(mat_sym)
 
     if not ev_min is None:
         eig_val[eig_val <= ev_min] = ev_min
     if not ev_max is None:
         eig_val[eig_val >= ev_max] = ev_max
 
-    hess_corrected = np.matmul(eig_vec,
+    mat_corrected = np.matmul(eig_vec,
                                np.matmul(np.diag(eig_val), eig_vec.T))
-    hess_sqrt = \
+    mat_sqrt = \
         np.matmul(eig_vec,
                   np.matmul(np.diag(np.sqrt(eig_val)), eig_vec.T))
 
-    hess_inv_sqrt = \
+    mat_inv_sqrt = \
         np.matmul(eig_vec,
                   np.matmul(np.diag(1 / np.sqrt(eig_val)), eig_vec.T))
 
-    return np.array(hess_inv_sqrt), \
-           np.array(hess_sqrt), \
-           np.array(hess_corrected)
+    return np.array(mat_inv_sqrt), \
+           np.array(mat_sqrt), \
+           np.array(mat_corrected)
 
 
 class PreconditionedFunction():
@@ -313,18 +316,43 @@ class PreconditionedFunction():
 
     def set_preconditioner_with_hessian(self, x=None, hessian=None,
                                         ev_min=None, ev_max=None):
+        """
+        Set the precoditioner to the inverse square root of the Hessian of
+        the original objective (or an approximation thereof).
+
+        Parameters
+        ---------------
+        x: Numeric vector
+            The point at which to evaluate the Hessian of ``original_fun``.
+            If x is specified, the Hessian is evaluated with automatic
+            differentiation.
+            Specify either x or hessian but not both.
+        hessian: Numeric matrix
+            The hessian of ``original_fun`` or an approximation of it.
+            Specify either x or hessian but not both.
+        ev_min: float
+            If not None, set eigenvaluse of ``hessian`` that are less than
+            ``ev_min`` to ``ev_min`` before taking the square root.
+        ev_maxs: float
+            If not None, set eigenvaluse of ``hessian`` that are greater than
+            ``ev_max`` to ``ev_max`` before taking the square root.
+
+        Returns
+        ------------
+        Sets the precoditioner for the class and returns the Hessian with
+        the eigenvalues thresholded by ``ev_min`` and ``ev_max``.
+        """
         if x is not None and hessian is not None:
             raise ValueError('You must specify x or hessian but not both.')
         if x is None and hessian is None:
             raise ValueError('You must specify either x or hessian.')
         if hessian is None:
-            # We know x is not None.
+            # We now know x is not None.
             hessian = self._original_fun_hessian(x)
 
         hess_inv_sqrt, hess_sqrt, hess_corrected = \
             _get_sym_matrix_inv_sqrt(hessian, ev_min, ev_max)
-        self._preconditioner = hess_inv_sqrt
-        self._preconditioner_inv = hess_sqrt
+        self.set_preconditioner(hess_inv_sqrt, hess_sqrt)
 
         return hess_corrected
 
@@ -356,4 +384,8 @@ class PreconditionedFunction():
         return self.preconditioner @ x_c
 
     def __call__(self, x_c):
+        """
+        Evaluate the preconditioned function at a point in the preconditioned
+        domain.
+        """
         return self._original_fun(self.unprecondition(x_c))
