@@ -67,3 +67,6 @@ Optimization and sensitivity tools
 =====================================
 .. autoclass:: paragami.optimization_lib.HyperparameterSensitivityLinearApproximation
   :members:
+
+  .. autoclass:: paragami.optimization_lib.PreconditionedFunction
+    :members:

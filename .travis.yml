@@ -32,7 +32,8 @@ script:
   - coverage report -m  # Generate test coverage report.
   - codecov  # Upload the report to codecov.
   #- flake8 --max-line-length=115  # Enforce code style (but relax line length limit a bit).
-  - set -e
-  - make -C docs html  # Build the documentation.
-  - pip install doctr
-  - doctr deploy --built-docs docs/build/html .
+  # doctr -- didn't work very well, incredibly hard to search for on Google.
+  #- set -e
+  #- make -C docs html  # Build the documentation.
+  #- pip install doctr
+  #- doctr deploy --built-docs docs/build/html docs/
