@@ -142,6 +142,50 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
                 dim, theta_free, lambda_free,
                 use_hess, use_hyperobj)
 
+class TestPreconditionedFunction(unittest.TestCase):
+    def test_preconditioned_function(self):
+        model = QuadraticModel(dim=3)
+
+        # Define a function of theta alone.
+        opt_objective = paragami.Functor(model.get_objective, argnums=0)
+        opt_objective.cache_args(None, model.lam)
+
+    def _test_matrix_sqrt(self, mat):
+        id_mat = np.eye(mat.shape[0])
+        eig_vals = np.linalg.eigvals(mat)
+        ev_min = np.min(eig_vals)
+        ev_max = np.max(eig_vals)
+        ev0 = ev_min + (ev_max - ev_min) / 3
+        ev1 = ev_min + 2 * (ev_max - ev_min) / 3
+
+        for test_ev_min in [None, ev0]:
+            for test_ev_max in [None, ev1]:
+                h_inv_sqrt, h_sqrt, h = \
+                    paragami.optimization_lib._get_sym_matrix_inv_sqrt(
+                        mat, test_ev_min, test_ev_max)
+                assert_array_almost_equal(id_mat, h_inv_sqrt @ h_sqrt)
+                assert_array_almost_equal(
+                    id_mat, h_inv_sqrt @ h @ h_inv_sqrt.T)
+                eig_vals_test = np.linalg.eigvals(h)
+                if test_ev_min is not None:
+                    self.assertTrue(np.min(eig_vals_test) >=
+                                    test_ev_min - 1e-8)
+                else:
+                    assert_array_almost_equal(ev_min, np.min(eig_vals_test))
+                if test_ev_max is not None:
+                    self.assertTrue(np.max(eig_vals_test) <=
+                                    test_ev_max + 1e-8)
+                else:
+                    assert_array_almost_equal(ev_max, np.max(eig_vals_test))
+
+    def test_matrix_sqrt(self):
+        dim = 5
+        mat = dim * np.eye(dim)
+        vec = np.random.random(dim)
+        mat = mat + np.outer(vec, vec)
+        self._test_matrix_sqrt(mat)
+
+
 
 if __name__ == '__main__':
     unittest.main()
