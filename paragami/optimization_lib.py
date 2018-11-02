@@ -271,9 +271,10 @@ class PreconditionedFunction():
     preconditioned function are defined with respect to its argument in the
     preconditioned space, e.g., :math:`f'_c = \\frac{df_c}{dx_c}`.
 
-    A typical value of the preconditioner is an square root of the
+    A typical value of the preconditioner is an inverse square root of the
     Hessian of :math:`f`, because then the Hessian of :math:`f_c` is
-    the identity when the gradient is zero.
+    the identity when the gradient is zero.  This can help speed up the
+    convergence of optimization algorithms.
 
     Methods
     ----------
