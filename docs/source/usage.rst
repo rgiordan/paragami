@@ -2,14 +2,15 @@
 API Documentation
 ====================
 
-.. Pattern parent class
-.. ========================
-..
-.. Every pattern described herin inherits from the
-.. parent `Pattern` class and implements its methods.
-..
-.. .. autoclass:: paragami.base_patterns.Pattern
-..    :members:
+Pattern parent class
+========================
+
+Every pattern described herin inherits from the
+parent `Pattern` class and implements its methods.
+
+.. autoclass:: paragami.base_patterns.Pattern
+   :members:
+
 
 Numeric patterns
 ========================
@@ -23,7 +24,7 @@ Numeric arrays
 Positive definite matrices
 ---------------------------
 
-.. autoclass:: paragami.psdmatrix_patterns.PSDMatrixPattern
+.. autoclass:: paragami.psdmatrix_patterns.PSDSymmetricMatrixPattern
    :members:
 
 Simplexes

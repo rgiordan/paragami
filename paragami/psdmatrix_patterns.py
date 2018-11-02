@@ -166,7 +166,7 @@ def _unvectorize_symmetric_matrix(vec_val):
     return mat_val
 
 
-class PSDMatrixPattern(Pattern):
+class PSDSymmetricMatrixPattern(Pattern):
     """
     A pattern for a symmetric, positive-definite matrix parameter.
 
@@ -195,8 +195,7 @@ class PSDMatrixPattern(Pattern):
             raise ValueError(
                 'The diagonal lower bound diag_lb must be >-= 0.')
 
-        vec_size = int(size * (size + 1) / 2)
-        super().__init__(vec_size, vec_size)
+        super().__init__(self.__size ** 2, int(size * (size + 1) / 2))
 
     def __str__(self):
         return 'PDMatrix {}x{} (diag_lb = {})'.format(
@@ -269,46 +268,29 @@ class PSDMatrixPattern(Pattern):
                 raise ValueError(error_string)
             if not (folded_val.transpose() == folded_val).all():
                 raise ValueError('Matrix is not symmetric')
-            # TODO: check for positive definiteness
+            # TODO: check for positive definiteness?
             # try:
             #     chol = onp.linalg.cholesky(folded_val)
             # except LinAlgError:
             #     raise ValueError('Matrix is not positive definite.')
 
-    def _free_fold(self, free_flat_val):
-        # Note that validate is not necessary -- a free folded value is always
-        # valid.
-        if free_flat_val.size != self._free_flat_length:
-            # TODO: make these errors consistently worded.
-            raise ValueError('Wrong length for PDMatrix free flat value.')
-        return _unpack_posdef_matrix(free_flat_val, diag_lb=self.__diag_lb)
-
-    def _free_flatten(self, folded_val, validate=None):
-        self.check_folded(folded_val, validate)
-        return _pack_posdef_matrix(folded_val, diag_lb=self.__diag_lb)
-
-    def _notfree_fold(self, flat_val, validate):
-        if flat_val.size != self._flat_length:
-            raise ValueError('Wrong length for PDMatrix flat value.')
-        folded_val = _unvectorize_symmetric_matrix(flat_val)
-        self.check_folded(folded_val, validate)
-        return folded_val
-
-    def _notfree_flatten(self, folded_val, validate):
-        self.check_folded(folded_val, validate)
-        return _vectorize_ld_matrix(folded_val)
-
     def flatten(self, folded_val, free, validate=None):
+        self.check_folded(folded_val, validate)
         if free:
-            return self._free_flatten(folded_val, validate)
+            return _pack_posdef_matrix(folded_val, diag_lb=self.__diag_lb)
         else:
-            return self._notfree_flatten(folded_val, validate)
+            return folded_val.flatten()
 
     def fold(self, flat_val, free, validate=None):
         flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
+        if flat_val.size != self.flat_length(free):
+            raise ValueError(
+                'Wrong length for PSDSymmetricMatrix flat value.')
         if free:
-            return self._free_fold(flat_val)
+            return _unpack_posdef_matrix(flat_val, diag_lb=self.__diag_lb)
         else:
-            return self._notfree_fold(flat_val, validate)
+            folded_val = np.reshape(flat_val, (self.__size, self.__size))
+            self.check_folded(folded_val, validate)
+            return folded_val

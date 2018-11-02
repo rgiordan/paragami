@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import itertools
 
+from scipy.sparse import coo_matrix, block_diag
 import autograd.numpy as np
 
 from .base_patterns import Pattern
@@ -27,7 +28,7 @@ class PatternDict(Pattern):
         # Add some patterns.
         dict_pattern = paragami.PatternDict()
         dict_pattern['vec'] = paragami.NumericArrayPattern(shape=(2, ))
-        dict_pattern['mat'] = paragami.PSDMatrixPattern(size=3)
+        dict_pattern['mat'] = paragami.PSDSymmetricMatrixPattern(size=3)
 
         # Dictionaries can also contain dictionaries (but they have to
         # be populated /before/ being added to the parent).
@@ -81,10 +82,16 @@ class PatternDict(Pattern):
     def __getitem__(self, key):
         return self.__pattern_dict[key]
 
-    def __setitem__(self, pattern_name, pattern):
+    def _check_lock(self):
         if self.__lock:
             raise ValueError(
                 'The dictionary is locked, and its values cannot be changed.')
+
+    def __setitem__(self, pattern_name, pattern):
+        self._check_lock()
+        # if pattern_name in self.__pattern_dict.keys():
+        #     self.__delitem__(pattern_name)
+
         self.__pattern_dict[pattern_name] = pattern
 
         # We cannot allow pattern dictionaries to change their size
@@ -95,17 +102,17 @@ class PatternDict(Pattern):
         if type(self.__pattern_dict[pattern_name]) is PatternDict:
             self.__pattern_dict[pattern_name].lock()
 
-        self._flat_length += pattern.flat_length(free=False)
-        self._free_flat_length += pattern.flat_length(free=True)
+        self._free_flat_length = self._update_flat_length(free=True)
+        self._flat_length = self._update_flat_length(free=False)
 
     def __delitem__(self, pattern_name):
-        if self.__lock:
-            raise ValueError(
-                'The dictionary is locked, and its values cannot be changed.')
+        self._check_lock()
+
         pattern = self.__pattern_dict[pattern_name]
-        self._flat_length -= pattern.flat_length(free=False)
-        self._free_flat_length -= pattern.flat_length(free=True)
         self.__pattern_dict.pop(pattern_name)
+
+        self._free_flat_length = self._update_flat_length(free=True)
+        self._flat_length = self._update_flat_length(free=False)
 
     def keys(self):
         return self.__pattern_dict.keys()
@@ -151,8 +158,38 @@ class PatternDict(Pattern):
             offset += pattern_flat_length
         return flat_val
 
-    def flat_length(self, free):
-        return self._free_flat_length if free else self._flat_length
+    def _update_flat_length(self, free):
+        # This is a little wasteful with the benefit of being less error-prone
+        # than adding and subtracting lengths as keys are changed.
+        return np.sum([pattern.flat_length(free) for pattern_name, pattern in
+                       self.__pattern_dict.items()])
+
+    def unfreeing_jacobian(self, folded_val, sparse=True):
+        jacobians = []
+        for pattern_name, pattern in self.__pattern_dict.items():
+            jac = pattern.unfreeing_jacobian(
+                folded_val[pattern_name], sparse=True)
+            jacobians.append(jac)
+
+        sp_jac = block_diag(jacobians, format='coo')
+
+        if sparse:
+            return sp_jac
+        else:
+            return np.array(sp_jac.todense())
+
+    def freeing_jacobian(self, folded_val, sparse=True):
+        jacobians = []
+        for pattern_name, pattern in self.__pattern_dict.items():
+            jac = pattern.freeing_jacobian(
+                folded_val[pattern_name], sparse=True)
+            jacobians.append(jac)
+
+        sp_jac = block_diag(jacobians, format='coo')
+        if sparse:
+            return sp_jac
+        else:
+            return np.array(sp_jac.todense())
 
 
 ##########################
@@ -164,18 +201,18 @@ class PatternArray(Pattern):
 
     The first indices of the folded pattern are the array and the final
     indices are of the base pattern.  For example, if `shape=(3, 4)`
-    and `base_pattern = PSDMatrixPattern(size=5)`, then the folded
+    and `base_pattern = PSDSymmetricMatrixPattern(size=5)`, then the folded
     value of the array will have shape `(3, 4, 5, 5)`, where the entry
     `folded_val[i, j, :, :]` is a 5x5 positive definite matrix.
 
     Currently this can only contain patterns whose folded values are
     numeric arrays (i.e., `NumericArrayPattern`, `SimplexArrayPattern`, and
-    `PSDMatrixPattern`).
+    `PSDSymmetricMatrixPattern`).
 
     Methods
     -------------
     shape
-        Returns the shape of the entire folded array including the shape
+        Returns the shape of the entire folded array not including the shape
         of the base pattern.
 
     base_pattern
@@ -190,6 +227,8 @@ class PatternArray(Pattern):
         base_pattern:
             The base pattern.
         """
+        # TODO: change the name shape -> array_shape
+        # and have shape be the whole array, including the pattern.
         self.__shape = shape
         self.__array_ranges = [range(0, t) for t in self.__shape]
 
@@ -199,18 +238,18 @@ class PatternArray(Pattern):
         # Check whether the base_pattern takes values that are numpy arrays.
         # If they are, then the unfolded value will be a single numpy array
         # of shape __shape + base_pattern.empty().shape.
-        # Otherwise, it will be an object array of shape __shape.
         empty_pattern = self.__base_pattern.empty(valid=False)
         if type(empty_pattern) is np.ndarray:
             self.__folded_pattern_shape = empty_pattern.shape
         else:
             # autograd's numpy does not seem to support object arrays.
             # The following snippet works with numpy 1.14.2 but not
-            # autograd's numpy commit 5d49ee.
+            # autograd's numpy (as of commit 5d49ee anyway).
             #
-            # foo = OrderedDict(a=5)
-            # bar = onp.array([foo for i in range(3)])
-            # print(bar[0]['a']) # Gives an index error.
+            # >>> import autograd.numpy as np
+            # >>> foo = OrderedDict(a=5)
+            # >>> bar = np.array([foo for i in range(3)])
+            # >>> print(bar[0]['a']) # Gives an index error.
             #
             raise NotImplementedError(
                 'PatternArray does not support patterns whose folded ' +
@@ -247,11 +286,24 @@ class PatternArray(Pattern):
         return np.reshape(
             repeated_array, self.__shape + self.__folded_pattern_shape)
 
-    # Get a slice for the elements in a vector of length flat_length
-    # corresponding to
-    # element item of the array, where obs is a tuple indexing into the
-    # array of shape self.__shape.
     def _stacked_obs_slice(self, item, flat_length):
+        """
+        Get the slice in a flat array corresponding to ``item``.
+
+        Parameters
+        -------------
+        item: tuple
+            A tuple of indices into the array of patterns (i.e.,
+            into the shape ``__shape``).
+        flat_length: integer
+            The length of a single flat pattern.
+
+        Returns
+        ---------------
+        A slice for the elements in a vector of length ``flat_length``
+        corresponding to element item of the array, where ``item`` is a tuple
+        indexing into the array of shape ``__shape``.
+        """
         assert len(item) == len(self.__shape)
         linear_item = np.ravel_multi_index(item, self.__shape) * flat_length
         return slice(linear_item, linear_item + flat_length)
@@ -283,3 +335,35 @@ class PatternArray(Pattern):
 
     def flat_length(self, free):
         return self._free_flat_length if free else self._flat_length
+
+    def unfreeing_jacobian(self, folded_val, sparse=True):
+        base_flat_length = self.__base_pattern.flat_length(free=True)
+        base_freeflat_length = self.__base_pattern.flat_length(free=True)
+
+        jacobians = []
+        for item in itertools.product(*self.__array_ranges):
+            jac = self.__base_pattern.unfreeing_jacobian(
+                folded_val[item], sparse=True)
+            jacobians.append(jac)
+        sp_jac = block_diag(jacobians, format='coo')
+
+        if sparse:
+            return sp_jac
+        else:
+            return np.array(sp_jac.todense())
+
+    def freeing_jacobian(self, folded_val, sparse=True):
+        base_flat_length = self.__base_pattern.flat_length(free=True)
+        base_freeflat_length = self.__base_pattern.flat_length(free=True)
+
+        jacobians = []
+        for item in itertools.product(*self.__array_ranges):
+            jac = self.__base_pattern.freeing_jacobian(
+                folded_val[item], sparse=True)
+            jacobians.append(jac)
+        sp_jac = block_diag(jacobians, format='coo')
+
+        if sparse:
+            return sp_jac
+        else:
+            return np.array(sp_jac.todense())

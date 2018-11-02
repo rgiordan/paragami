@@ -13,7 +13,7 @@ class FlattenedFunction:
     ----------
     .. code-block:: python
 
-        mat_pattern = paragami.PSDMatrixPattern(3)
+        mat_pattern = paragami.PSDSymmetricMatrixPattern(3)
 
         def fun(offset, mat, kwoffset=3):
             return np.linalg.slogdet(mat + offset + kwoffset)[1]
@@ -125,7 +125,7 @@ class Functor():
     ----------
     .. code-block:: python
 
-        mat_pattern = paragami.PSDMatrixPattern(3)
+        mat_pattern = paragami.PSDSymmetricMatrixPattern(3)
 
         def fun(offset, mat, kwoffset=3):
             return np.linalg.slogdet(mat + offset + kwoffset)[1]
