@@ -48,10 +48,13 @@ important.
 Installation.
 -------------------------
 
-The package is not (yet) registered on ``pypi``.
-To install, run the following command, pointing to the root of the git repo:
+To install the latest tagged version, install with ``pip``:
 
-``sudo -H pip3 install --user -e paragami``.
+``python3 -m pip install paragami``.
+
+Note that ``paragami`` is under rapid development, so you may want to
+clone the respository and use the master branch instead.
+
 
 Documentation and Examples.
 ----------------------------------
