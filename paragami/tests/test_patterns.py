@@ -99,19 +99,19 @@ class TestPatterns(unittest.TestCase):
     def test_psdmatrix_patterns(self):
         dim = 3
         valid_value = np.eye(dim) * 3 + np.full((dim, dim), 0.1)
-        pattern = paragami.PSDMatrixPattern(dim)
+        pattern = paragami.PSDSymmetricMatrixPattern(dim)
         _test_pattern(self, pattern, valid_value)
 
-        pattern = paragami.PSDMatrixPattern(dim, diag_lb=0.5)
+        pattern = paragami.PSDSymmetricMatrixPattern(dim, diag_lb=0.5)
         _test_pattern(self, pattern, valid_value)
 
         self.assertTrue(
-            paragami.PSDMatrixPattern(3) !=
-            paragami.PSDMatrixPattern(4))
+            paragami.PSDSymmetricMatrixPattern(3) !=
+            paragami.PSDSymmetricMatrixPattern(4))
 
         self.assertTrue(
-            paragami.PSDMatrixPattern(3, diag_lb=2) !=
-            paragami.PSDMatrixPattern(3))
+            paragami.PSDSymmetricMatrixPattern(3, diag_lb=2) !=
+            paragami.PSDSymmetricMatrixPattern(3))
     def test_dictionary_patterns(self):
         def check_dict_equal(dict1, dict2):
             self.assertEqual(dict1.keys(), dict2.keys())
@@ -180,7 +180,7 @@ class TestPatterns(unittest.TestCase):
         valid_value = pattern_array.random()
         _test_pattern(self, pattern_array, valid_value)
 
-        matrix_pattern = paragami.PSDMatrixPattern(size=2)
+        matrix_pattern = paragami.PSDSymmetricMatrixPattern(size=2)
         pattern_array = paragami.PatternArray((2, 3), matrix_pattern)
         valid_value = pattern_array.random()
         _test_pattern(self, pattern_array, valid_value)

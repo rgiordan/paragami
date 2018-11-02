@@ -98,7 +98,7 @@ Define a ``paragami`` pattern that matches the input to ``get_loss``.
 .. code:: ipython3
 
     norm_param_pattern = paragami.PatternDict()
-    norm_param_pattern['sigma'] = paragami.PSDMatrixPattern(size=3)
+    norm_param_pattern['sigma'] = paragami.PSDSymmetricMatrixPattern(size=3)
     norm_param_pattern['mu'] = paragami.NumericArrayPattern(shape=(3, ))
 
 “Flatten” the dictionary into an unconstrained vector.
