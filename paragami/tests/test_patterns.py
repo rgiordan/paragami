@@ -90,7 +90,7 @@ def _test_pattern(testcase, pattern, valid_value,
                     ad_unfreeing_jacobian(freeflat_val), unfreeing_jac)
 
 
-class TestPatterns(unittest.TestCase):
+class TestBasicPatterns(unittest.TestCase):
     def test_simplex_array_patterns(self):
         def test_shape_and_size(simplex_size, array_shape):
             shape = array_shape + (simplex_size, )
@@ -167,6 +167,8 @@ class TestPatterns(unittest.TestCase):
             paragami.PSDSymmetricMatrixPattern(3, diag_lb=2) !=
             paragami.PSDSymmetricMatrixPattern(3))
 
+
+class TestContainerPatterns(unittest.TestCase):
     def test_dictionary_patterns(self):
         def test_pattern(dict_pattern, dict_val):
             # autograd can't differnetiate the folding of a dictionary
@@ -283,7 +285,6 @@ class TestHelperFunctions(unittest.TestCase):
         assert_array_almost_equal(
             logsumexp_simple(mat, axis),
             paragami.simplex_patterns._logsumexp(mat, axis))
-
 
     def test_logsumexp(self):
         mat = np.random.random((3, 3, 3))
