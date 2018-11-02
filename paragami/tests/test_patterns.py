@@ -30,11 +30,17 @@ def _test_pattern(testcase, pattern, valid_value,
     # pattern_serial = pattern.serialize()
     # pattern.unserialize(pattern_serial)
 
+    # Test folding and unfolding.
     for free in [True, False]:
         flat_val = pattern.flatten(valid_value, free=free)
         testcase.assertEqual(len(flat_val), pattern.flat_length(free))
         folded_val = pattern.fold(flat_val, free=free)
         check_equal(valid_value, folded_val)
+
+    # Test the freeing and unfreeing Jacobians.
+    for sparse in [True, False]:
+        freeing_jac = pattern.freeing_jacobian(valid_value, sparse)
+        unfreeing_jac = pattern.unfreeing_jacobian(valid_value, sparse)
 
 class TestPatterns(unittest.TestCase):
     def test_simplex_array_patterns(self):

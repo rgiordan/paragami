@@ -39,17 +39,17 @@ class Pattern(object):
     def __eq__(self, other):
         raise NotImplementedError()
 
-    def _freeing_transform(flat_val):
+    def _freeing_transform(self, flat_val):
         """
         From the flat to the free flat value.
         """
         return self.flatten(self.fold(flat_val, free=False), free=True)
 
-    def _unfreeing_transform(free_flat_val):
+    def _unfreeing_transform(self, free_flat_val):
         """
         From the free flat to the flat value.
         """
-        return self.flatten(self.fold(flat_val, free=True), free=False)
+        return self.flatten(self.fold(free_flat_val, free=True), free=False)
 
     def fold(self, flat_val, free, validate=None):
         """
