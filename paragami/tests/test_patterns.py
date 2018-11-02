@@ -262,6 +262,11 @@ class TestContainerPatterns(unittest.TestCase):
         valid_value = pattern_array.random()
         _test_pattern(self, pattern_array, valid_value)
 
+        base_pattern_array = paragami.PatternArray((2, 1), matrix_pattern)
+        pattern_array_array = paragami.PatternArray((1, 3), base_pattern_array)
+        valid_value = pattern_array_array.random()
+        _test_pattern(self, pattern_array_array, valid_value)
+
         self.assertTrue(
             paragami.PatternArray((3, 3), matrix_pattern) !=
             paragami.PatternArray((2, 3), matrix_pattern))
