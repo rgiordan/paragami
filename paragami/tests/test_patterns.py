@@ -10,11 +10,10 @@ import paragami
 
 from autograd.test_util import check_grads
 
-
 def _test_pattern(testcase, pattern, valid_value,
                   check_equal=assert_array_almost_equal):
 
-    print('Testing {}\n{}'.format(type(pattern), pattern))
+    print('Testing pattern {}.'.format(pattern))
     # Execute required methods.
     empty_val = pattern.empty(valid=True)
     pattern.flatten(empty_val, free=False)
@@ -34,8 +33,6 @@ def _test_pattern(testcase, pattern, valid_value,
     # Test folding and unfolding.
     for free in [True, False]:
         flat_val = pattern.flatten(valid_value, free=free)
-        print('Testing lengths: {} len = {}  asserted len = {}'.format(
-            free, len(flat_val), pattern.flat_length(free)))
         testcase.assertEqual(len(flat_val), pattern.flat_length(free))
         folded_val = pattern.fold(flat_val, free=free)
         check_equal(valid_value, folded_val)
@@ -46,8 +43,6 @@ def _test_pattern(testcase, pattern, valid_value,
         unfreeing_jac = pattern.unfreeing_jacobian(valid_value, sparse)
         free_len = pattern.flat_length(free=False)
         flatfree_len = pattern.flat_length(free=True)
-        print(freeing_jac.shape, flatfree_len, free_len)
-        print(unfreeing_jac.shape, free_len, flatfree_len)
         testcase.assertTrue(freeing_jac.shape == (flatfree_len, free_len))
         testcase.assertTrue(unfreeing_jac.shape == (free_len, flatfree_len))
 
