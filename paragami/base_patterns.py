@@ -161,10 +161,11 @@ class Pattern(object):
 
         Returns
         -------------
-        The Jacobian matrix ``d val_free / d val_freeflat``.
-        Consistent with standard Jacobian notation, the elements of ``val_free``
-        correspond to the rows of the Jacobian matrix and the elements of
-        ``val_freeflat`` correspond to the columns.
+        Numeric matrix:
+            The Jacobian matrix ``d val_free / d val_freeflat``. Consistent with
+            standard Jacobian notation, the elements of ``val_free`` correspond
+            to the rows of the Jacobian matrix and the elements of
+            ``val_freeflat`` correspond to the columns.
         """
         flat_val = self.flatten(folded_val, free=False)
         jac = self._freeing_jacobian(flat_val)
@@ -192,10 +193,11 @@ class Pattern(object):
 
         Returns
         -------------
-        The Jacobian matrix ``d val_freeflat / d val_free``. Consistent with
-        standard Jacobian notation, the elements of ``val_freeflat`` correspond
-        to the rows of the Jacobian matrix and the elements of ``val_free``
-        correspond to the columns.
+        Numeric matrix:
+            The Jacobian matrix ``d val_freeflat / d val_free``. Consistent with
+            standard Jacobian notation, the elements of ``val_freeflat``
+            correspond to the rows of the Jacobian matrix and the elements of
+            ``val_free`` correspond to the columns.
         """
         freeflat_val = self.flatten(folded_val, free=True)
         jac = self._unfreeing_jacobian(freeflat_val)
