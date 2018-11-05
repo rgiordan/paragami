@@ -61,7 +61,8 @@ class HyperparameterSensitivityLinearApproximation:
         validate_optimum=True,
         hessian_at_opt=None,
         factorize_hessian=True,
-        hyper_par_objective_fun=None):
+        hyper_par_objective_fun=None,
+        grad_tol=1e-8):
         """
         Parameters
         --------------
@@ -101,6 +102,9 @@ class HyperparameterSensitivityLinearApproximation:
             ``f(folded opt_par, folded hyper_par)`` containing the part of
             ``objective_fun`` that depends on both ``opt_par`` and
             ``hyper_par``.  If not specified, ``objective_fun`` is used.
+        grad_tol: Float
+            The tolerance used to check that the gradient is approximately
+            zero at the optimum.
         """
 
         self._objective_fun = objective_fun
@@ -108,6 +112,7 @@ class HyperparameterSensitivityLinearApproximation:
         self._hyper_par_pattern = hyper_par_pattern
         self._opt_par_is_free = opt_par_is_free
         self._hyper_par_is_free = hyper_par_is_free
+        self._grad_tol = grad_tol
 
         # Define flattened versions of the objective function and their
         # autograd derivatives.
@@ -146,7 +151,9 @@ class HyperparameterSensitivityLinearApproximation:
     def set_base_values(self,
                         opt_par_folded_value, hyper_par_folded_value,
                         hessian_at_opt, factorize_hessian,
-                        validate=True, grad_tol=1e-8):
+                        validate=True, grad_tol=None):
+        if grad_tol is None:
+            grad_tol = self._grad_tol
 
         # Set the values of the optimal parameters.
         self._opt0 = self._opt_par_pattern.flatten(
