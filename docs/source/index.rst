@@ -10,5 +10,6 @@ paragami Documentation
    :maxdepth: 3
 
    installation
-   usage
+   example_notebooks/examples
+   api/api
    release-history
