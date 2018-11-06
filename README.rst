@@ -61,10 +61,6 @@ Documentation and Examples.
 
 .. _readthedocs: https://paragami.readthedocs.io/
 
-For API documentation, see readthedocs_.
+For examples and API documentation, see readthedocs_.
 
 Alternatively, check out the repo and run ``make html`` in ``docs/``.
-
-For motivating and expository Jupyter notebooks, see
-``docs/example_notebooks/``.  A good place to start is
-``docs/example_notebooks/front_page_example.ipynb``.

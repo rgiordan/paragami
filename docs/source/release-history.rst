@@ -2,5 +2,5 @@
 Release History
 ===============
 
-Not yet released (as of 2018-Oct-26)
+v0.1:   Nov 1st, 2018
 -------------------------------------
