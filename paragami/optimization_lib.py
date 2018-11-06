@@ -213,6 +213,11 @@ class HyperparameterSensitivityLinearApproximation:
             returns the flattened value according to ``opt_par_pattern``
             and ``opt_par_is_free``.
         """
+
+        if not self._factorize_hessian:
+            raise NotImplementedError(
+                'CG is not yet implemented for predict_opt_par_from_hyper_par')
+
         hyper1 = self._hyper_par_pattern.flatten(
             new_hyper_par_folded_value, free=self._hyper_par_is_free)
         opt_par1 = self._opt0 + self._sens_mat @ (hyper1 - self._hyper0)
