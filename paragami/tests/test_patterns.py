@@ -39,6 +39,8 @@ def _test_pattern(testcase, pattern, valid_value,
         testcase.assertEqual(len(flat_val), pattern.flat_length(free))
         folded_val = pattern.fold(flat_val, free=free)
         check_equal(valid_value, folded_val)
+        if hasattr(valid_value, 'shape'):
+            testcase.assertEqual(valid_value.shape, folded_val.shape)
 
     # Test the freeing and unfreeing Jacobians.
     def freeing_transform(flat_val):
