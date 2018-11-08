@@ -1,4 +1,5 @@
 import autograd
+import json
 import numpy as np
 from scipy.sparse import coo_matrix
 
@@ -37,6 +38,19 @@ class Pattern(object):
         raise NotImplementedError()
 
     def __eq__(self, other):
+        # if type(other) != type(self):
+        #     return False
+        # return self.as_dict() == other.as_dict()
+        raise NotImplementedError()
+
+    @classmethod
+    def json_typename(cls):
+        return '.'.join([ cls.__module__, cls.__name__])
+
+    def as_dict(self):
+        """
+        Return a dictionary of attributes that determine equality.
+        """
         raise NotImplementedError()
 
     def _freeing_transform(self, flat_val):
@@ -206,10 +220,27 @@ class Pattern(object):
         else:
             return jac
 
-    # These are currently not implemented, but we should.
-    # Maybe this should be to / from JSON.
-    # def serialize(self):
-    #     raise NotImplementedError()
-    #
-    # def unserialize(self, serialized_val):
-    #     raise NotImplementedError()
+    def to_json(self):
+        """
+        Return a JSON representation of the pattern.
+        """
+        return json.dumps(self.as_dict())
+
+    @classmethod
+    def from_json(cls, json_string):
+        """
+        Return a pattern instance from ``json_string`` created by ``to_json``.
+        """
+        raise NotImplementedError()
+
+
+# A dictionary of registered types for loading to and from Python.
+# TODO: this may not be necessary
+__json_patterns = {}
+def register_pattern_json(pattern, allow_overwrite=False):
+    pattern_name = pattern.json_typename()
+    if (not allow_overwrite) and pattern_name in __json_patterns.keys():
+        raise ValueError(
+            'A pattern named {} is already registered for JSON.'.format(
+                pattern_name))
+    __json_patterns[pattern_name] = pattern

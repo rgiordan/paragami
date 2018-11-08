@@ -1,8 +1,7 @@
 from .base_patterns import Pattern
-
 import autograd.numpy as np
-
 import copy
+import json
 
 
 def _unconstrain_array(array, lb, ub):
@@ -109,12 +108,22 @@ class NumericArrayPattern(Pattern):
         return 'Array {} (lb={}, ub={})'.format(
             self.__shape, self.__lb, self.__ub)
 
+    @classmethod
+    def __pattern_name(cls):
+        return 'NumericArrayPattern'
+
+    def as_dict(self):
+        return {
+            'pattern': self.json_typename(),
+            'lb': self.__lb,
+            'ub': self.__ub,
+            'shape': self.__shape,
+            'default_validate': self.default_validate}
+
     def __eq__(self, other):
         if type(other) != type(self):
             return False
-        return \
-            (self.bounds() == other.bounds()) & \
-            (self.shape() == other.shape())
+        return self.as_dict() == other.as_dict()
 
     def empty(self, valid):
         if valid:
@@ -192,3 +201,12 @@ class NumericArrayPattern(Pattern):
             return self._free_flat_length
         else:
             return self._flat_length
+
+    @classmethod
+    def from_json(cls, json_string):
+        json_dict = json.loads(json_string)
+        return cls(
+            lb=json_dict['lb'],
+            ub=json_dict['ub'],
+            shape=json_dict['shape'],
+            default_validate=json_dict['default_validate'])
