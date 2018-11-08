@@ -140,7 +140,7 @@ class PatternDict(Pattern):
         # save the keys in the current order.
         contents = {}
         for pattern_name, pattern in self.__pattern_dict.items():
-            contents[pattern_name] = pattern.as_dict()
+            contents[pattern_name] = pattern.to_json()
         keys = [ key for key in self.__pattern_dict.keys() ]
         return {
             'pattern': self.json_typename(),
@@ -270,6 +270,7 @@ class PatternDict(Pattern):
         for pattern_name in json_dict['keys']:
             pattern_dict[pattern_name] = get_pattern_from_json(
                 json_dict['contents'][pattern_name])
+        return pattern_dict
 
 
 ##########################
@@ -309,7 +310,7 @@ class PatternArray(Pattern):
         """
         # TODO: change the name shape -> array_shape
         # and have shape be the whole array, including the pattern.
-        self.__shape = shape
+        self.__shape = tuple(shape)
         self.__array_ranges = [range(0, t) for t in self.__shape]
 
         num_elements = np.prod(self.__shape)

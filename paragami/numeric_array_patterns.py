@@ -92,7 +92,7 @@ class NumericArrayPattern(Pattern):
             specified bounds.
         """
         self.default_validate = default_validate
-        self.__shape = shape
+        self.__shape = tuple(shape)
         self.__lb = lb
         self.__ub = ub
         assert lb >= -float('inf')
@@ -106,7 +106,7 @@ class NumericArrayPattern(Pattern):
         super().__init__(flat_length, free_flat_length)
 
     def __str__(self):
-        return 'Array {} (lb={}, ub={})'.format(
+        return 'NumericArrayPattern {} (lb={}, ub={})'.format(
             self.__shape, self.__lb, self.__ub)
 
     def as_dict(self):
