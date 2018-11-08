@@ -9,3 +9,4 @@ API
    numeric_patterns
    container_patterns
    function_wrappers
+   json

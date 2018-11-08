@@ -27,7 +27,16 @@ def register_pattern_json(pattern, allow_overwrite=False):
 
     Examples
     -------------
-    >>> register_pattern_json(paragmi.NumericArrayPattern)
+    >>> class MyCustomPattern(paragami.Pattern):
+    >>>    ... definitions ...
+    >>>
+    >>> paragami.register_pattern_json(paragmi.MyCustomPattern)
+    >>>
+    >>> my_pattern = MyCustomPattern(...)
+    >>> my_pattern_json = my_pattern.to_json()
+    >>>
+    >>> # ``my_pattern_from_json`` should be identical to ``my_pattern``.
+    >>> my_pattern_from_json = paragami.get_pattern_from_json(my_pattern_json)
     """
     pattern_name = pattern.json_typename()
     if (not allow_overwrite) and pattern_name in __json_patterns.keys():
@@ -41,12 +50,12 @@ def get_pattern_from_json(pattern_json):
     """
     Return the appropriate pattern from ``pattern_json``.
 
-    The pattern must be registered using ``register_pattern_json``.
+    The pattern must have been registered using ``register_pattern_json``.
 
     Parameters
     --------------
     pattern_json: String
-        A JSON string created with a pattern's ``to_json`` method.
+        A JSON string as created with a pattern's ``to_json`` method.
 
     Returns
     -----------

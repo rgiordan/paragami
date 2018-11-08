@@ -52,11 +52,6 @@ def _test_pattern(testcase, pattern, valid_value,
     testcase.assertTrue('pattern' in json_dict.keys())
     testcase.assertTrue(json_dict['pattern'] == json_typename)
     new_pattern = paragami.get_pattern_from_json(json_string)
-    # print('\n\nNew: {}\nOld: {}'.format(new_pattern, pattern))
-    # print('\n\nNew: {}\nOld: {}'.format(
-    #     new_pattern.as_dict(), pattern.as_dict()))
-    # print(new_pattern.as_dict() == pattern.as_dict())
-    # print('TESTING NOW:\n')
     testcase.assertTrue(new_pattern == pattern)
 
     ############################################
