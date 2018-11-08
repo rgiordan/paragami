@@ -11,8 +11,6 @@ import collections
 
 import paragami
 
-import tempfile
-
 from autograd.test_util import check_grads
 
 def _test_pattern(testcase, pattern, valid_value,
@@ -302,19 +300,18 @@ class TestJSONFiles(unittest.TestCase):
         val_folded = pattern.random()
         extra = np.random.random(5)
 
-        outfile = tempfile.NamedTemporaryFile()
-        outfile_name = outfile.name
-        outfile.close()
+        outfile_name = '/tmp/paragami_test_' + str(np.random.randint(1e6))
 
         paragami.save_folded(outfile_name, val_folded, pattern, extra=extra)
 
-        loaded_val, loaded_pattern, data = \
+        val_folded_loaded, pattern_loaded, data = \
             paragami.load_folded(outfile_name + '.npz')
 
-        self.assertTrue(loaded_pattern == pattern)
-        self.assertTrue(val_folded.keys() == loaded_val.keys())
+        self.assertTrue(pattern_loaded == pattern)
+        self.assertTrue(val_folded.keys() == val_folded_loaded.keys())
         for keyname in val_folded.keys():
-            assert_array_almost_equal(val_folded[keyname], loaded_val[keyname])
+            assert_array_almost_equal(
+                val_folded[keyname], val_folded_loaded[keyname])
         assert_array_almost_equal(extra, data['extra'])
 
 

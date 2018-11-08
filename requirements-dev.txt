@@ -6,7 +6,6 @@ flake8
 pytest
 sphinx>=1.4
 versioneer
-tempfile
 
 # These are dependencies of various sphinx extensions for documentation.
 ipython
