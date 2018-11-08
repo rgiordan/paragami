@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import itertools
 
+import json
 from scipy.sparse import coo_matrix, block_diag
 import autograd.numpy as np
 
@@ -12,7 +13,7 @@ from .base_patterns import Pattern
 # A dictionary of registered types for loading to and from JSON.
 # This allows PatternDict and PatternArray read JSON containing arbitrary
 # pattern types without executing user code.
-__json_patterns = {}
+__json_patterns = dict()
 def register_pattern_json(pattern, allow_overwrite=False):
     """
     Register a pattern for automatic conversion from JSON.
@@ -51,8 +52,10 @@ def get_pattern_from_json(pattern_json):
     -----------
     The pattern instance encoded in the ``pattern_json`` string.
     """
+
+    pattern_json_dict = json.loads(pattern_json)
     try:
-        json_pattern_name = pattern_json['pattern']
+        json_pattern_name = pattern_json_dict['pattern']
     except KeyError as err_string:
         print('A pattern JSON string must have an entry called \'pattern\' ' +
               'which is registered using ``register_pattern_json``.')
@@ -128,16 +131,6 @@ class PatternDict(Pattern):
         return \
             'OrderedDict:\n' + \
             '\n'.join(pattern_strings)
-
-    # def __eq__(self, other):
-    #     if type(other) != type(self):
-    #         return False
-    #     if self.__pattern_dict.keys() != other.keys():
-    #         return False
-    #     for pattern_name in self.__pattern_dict.keys():
-    #         if self.__pattern_dict[pattern_name] != other[pattern_name]:
-    #             return False
-    #     return True
 
     def __getitem__(self, key):
         return self.__pattern_dict[key]

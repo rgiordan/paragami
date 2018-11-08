@@ -52,6 +52,8 @@ def _test_pattern(testcase, pattern, valid_value,
     json_dict = json.loads(json_string)
     testcase.assertTrue('pattern' in json_dict.keys())
     testcase.assertTrue(json_dict['pattern'] == json_typename)
+    new_pattern = paragami.get_pattern_from_json(json_string)
+    testcase.assertTrue(new_pattern == pattern)
 
     ############################################
     # Test the freeing and unfreeing Jacobians.

@@ -230,11 +230,7 @@ class Pattern(object):
         return json.dumps(self.as_dict())
 
     @classmethod
-    def from_json(cls, json_string):
-        """
-        Return a pattern instance from ``json_string`` created by ``to_json``.
-        """
-        json_dict = json.loads(json_string)
+    def _validate_json_dict_type(cls, json_dict):
         if json_dict['pattern'] != cls.json_typename():
             error_string = \
                 ('{}.from_json must be called on a json_string made ' +
@@ -242,5 +238,13 @@ class Pattern(object):
                  'pattern type was {}.').format(
                     cls.json_typename(), json_dict['pattern'])
             raise ValueError(error_string)
+
+    @classmethod
+    def from_json(cls, json_string):
+        """
+        Return a pattern instance from ``json_string`` created by ``to_json``.
+        """
+        json_dict = json.loads(json_string)
+        cls._validate_json_dict_type(json_dict)
         del json_dict['pattern']
         return cls(**json_dict)
