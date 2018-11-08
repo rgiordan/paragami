@@ -116,11 +116,6 @@ class NumericArrayPattern(Pattern):
             'shape': self.__shape,
             'default_validate': self.default_validate}
 
-    def __eq__(self, other):
-        if type(other) != type(self):
-            return False
-        return self.as_dict() == other.as_dict()
-
     def empty(self, valid):
         if valid:
             return np.full(

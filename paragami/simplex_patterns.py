@@ -98,12 +98,19 @@ class SimplexArrayPattern(Pattern):
     def shape(self):
         return self.__shape
 
-    def __eq__(self, other):
-        if type(self) != type(other):
-            return False
-        return \
-            (self.array_shape() == other.array_shape()) & \
-            (self.simplex_size() == other.simplex_size())
+    def as_dict(self):
+        return {
+            'pattern': self.json_typename(),
+            'simplex_size': self.__simplex_size,
+            'array_shape': self.__array_shape,
+            'default_validate': self.default_validate}
+
+    # def __eq__(self, other):
+    #     if type(self) != type(other):
+    #         return False
+    #     return \
+    #         (self.array_shape() == other.array_shape()) & \
+    #         (self.simplex_size() == other.simplex_size())
 
     def empty(self, valid):
         if valid:

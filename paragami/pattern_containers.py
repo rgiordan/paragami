@@ -82,6 +82,17 @@ class PatternDict(Pattern):
     def __getitem__(self, key):
         return self.__pattern_dict[key]
 
+    def as_dict(self):
+        # json.loads returns a dictionary, not an OrderedDict, so
+        # save the keys in the current order.
+        contents = {}
+        for pattern_name, pattern in self.__pattern_dict.items():
+            contents[pattern_name] = pattern.as_dict()
+        return {
+            'pattern': self.json_typename(),
+            'keys': self.__pattern_dict.keys()
+            'contents': contents}
+
     def _check_lock(self):
         if self.__lock:
             raise ValueError(
@@ -190,6 +201,36 @@ class PatternDict(Pattern):
             return sp_jac
         else:
             return np.array(sp_jac.todense())
+
+    @classmethod
+    def from_json(cls, json_string):
+        """
+        Return a pattern instance from ``json_string`` created by ``to_json``.
+        """
+        json_dict = json.loads(json_string)
+        if json_dict['pattern'] != cls.json_typename():
+            error_string = \
+                ('{}.from_json must be called on a json_string made ' +
+                 'from a the same pattern type.  The json_string ' +
+                 'pattern type was {}.').format(
+                    cls.json_typename(), json_dict['pattern'])
+            raise ValueError(error_string)
+        pattern_dict = cls()
+        for pattern_name in json_dict['keys']:
+            pattern_dict[pattern_name] = \
+                __json_patterns[pattern_name].from_json(
+                    json_dict['contents']['pattern_name'])
+
+
+# A dictionary of registered types for loading to and from JSON.
+__json_patterns = {}
+def register_pattern_json(pattern, allow_overwrite=False):
+    pattern_name = pattern.json_typename()
+    if (not allow_overwrite) and pattern_name in __json_patterns.keys():
+        raise ValueError(
+            'A pattern named {} is already registered for JSON.'.format(
+                pattern_name))
+    __json_patterns[pattern_name] = pattern
 
 
 ##########################

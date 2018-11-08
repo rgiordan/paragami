@@ -38,10 +38,9 @@ class Pattern(object):
         raise NotImplementedError()
 
     def __eq__(self, other):
-        # if type(other) != type(self):
-        #     return False
-        # return self.as_dict() == other.as_dict()
-        raise NotImplementedError()
+        if type(other) != type(self):
+            return False
+        return self.as_dict() == other.as_dict()
 
     @classmethod
     def json_typename(cls):
@@ -245,15 +244,3 @@ class Pattern(object):
             raise ValueError(error_string)
         del json_dict['pattern']
         return cls(**json_dict)
-
-
-# A dictionary of registered types for loading to and from Python.
-# TODO: this may not be necessary.
-# __json_patterns = {}
-# def register_pattern_json(pattern, allow_overwrite=False):
-#     pattern_name = pattern.json_typename()
-#     if (not allow_overwrite) and pattern_name in __json_patterns.keys():
-#         raise ValueError(
-#             'A pattern named {} is already registered for JSON.'.format(
-#                 pattern_name))
-#     __json_patterns[pattern_name] = pattern

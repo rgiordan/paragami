@@ -201,12 +201,12 @@ class PSDSymmetricMatrixPattern(Pattern):
         return 'PDMatrix {}x{} (diag_lb = {})'.format(
             self.__size, self.__size, self.__diag_lb)
 
-    def __eq__(self, other):
-        if type(other) != type(self):
-            return False
-        return \
-            (self.size() == other.size()) & \
-            (self.diag_lb() == other.diag_lb())
+    def as_dict(self):
+        return {
+            'pattern': self.json_typename(),
+            'size': self.__size,
+            'diag_lb': self.__diag_lb,
+            'default_validate': self.default_validate}
 
     def size(self):
         """
