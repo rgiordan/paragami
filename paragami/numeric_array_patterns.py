@@ -197,21 +197,3 @@ class NumericArrayPattern(Pattern):
             return self._free_flat_length
         else:
             return self._flat_length
-
-    @classmethod
-    def from_json(cls, json_string):
-        json_dict = json.loads(json_string)
-        if json_dict['pattern'] != cls.json_typename():
-            error_string = \
-                ('{}.from_json must be called on a json_string made ' +
-                 'from a the same pattern type.  The json_string ' +
-                 'pattern type was {}.').format(
-                    cls.json_typename(), json_dict['pattern'])
-            raise ValueError(error_string)
-        del json_dict['pattern']
-        return cls(**json_dict)
-        # return cls(
-        #     lb=json_dict['lb'],
-        #     ub=json_dict['ub'],
-        #     shape=json_dict['shape'],
-        #     default_validate=json_dict['default_validate'])

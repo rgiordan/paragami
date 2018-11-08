@@ -50,6 +50,10 @@ class Pattern(object):
     def as_dict(self):
         """
         Return a dictionary of attributes that determine equality.
+
+        If the keys of the returned dictionary match the arguments to
+        ``__init__``, then the default methods for ``to_json`` and
+        ``from_json`` will work.
         """
         raise NotImplementedError()
 
@@ -231,7 +235,16 @@ class Pattern(object):
         """
         Return a pattern instance from ``json_string`` created by ``to_json``.
         """
-        raise NotImplementedError()
+        json_dict = json.loads(json_string)
+        if json_dict['pattern'] != cls.json_typename():
+            error_string = \
+                ('{}.from_json must be called on a json_string made ' +
+                 'from a the same pattern type.  The json_string ' +
+                 'pattern type was {}.').format(
+                    cls.json_typename(), json_dict['pattern'])
+            raise ValueError(error_string)
+        del json_dict['pattern']
+        return cls(**json_dict)
 
 
 # A dictionary of registered types for loading to and from Python.
