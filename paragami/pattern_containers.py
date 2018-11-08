@@ -129,15 +129,15 @@ class PatternDict(Pattern):
             'OrderedDict:\n' + \
             '\n'.join(pattern_strings)
 
-    def __eq__(self, other):
-        if type(other) != type(self):
-            return False
-        if self.__pattern_dict.keys() != other.keys():
-            return False
-        for pattern_name in self.__pattern_dict.keys():
-            if self.__pattern_dict[pattern_name] != other[pattern_name]:
-                return False
-        return True
+    # def __eq__(self, other):
+    #     if type(other) != type(self):
+    #         return False
+    #     if self.__pattern_dict.keys() != other.keys():
+    #         return False
+    #     for pattern_name in self.__pattern_dict.keys():
+    #         if self.__pattern_dict[pattern_name] != other[pattern_name]:
+    #             return False
+    #     return True
 
     def __getitem__(self, key):
         return self.__pattern_dict[key]
@@ -148,9 +148,10 @@ class PatternDict(Pattern):
         contents = {}
         for pattern_name, pattern in self.__pattern_dict.items():
             contents[pattern_name] = pattern.as_dict()
+        keys = [ key for key in self.__pattern_dict.keys() ]
         return {
             'pattern': self.json_typename(),
-            'keys': self.__pattern_dict.keys(),
+            'keys': keys,
             'contents': contents}
 
     def _check_lock(self):
@@ -351,9 +352,9 @@ class PatternArray(Pattern):
 
     def as_dict(self):
         return {
-            'pattern': self.json_pattern_name(),
+            'pattern': self.json_typename(),
             'shape': self.__shape,
-            'base_pattern': base_pattern.to_json() }
+            'base_pattern': self.__base_pattern.to_json() }
 
     def shape(self):
         return self.__shape
@@ -361,14 +362,14 @@ class PatternArray(Pattern):
     def base_pattern(self):
         return self.__base_pattern
 
-    def __eq__(self, other):
-        if type(other) != type(self):
-            return False
-        if self.__shape != other.shape():
-            return False
-        if self.__base_pattern != other.base_pattern():
-            return False
-        return True
+    # def __eq__(self, other):
+    #     if type(other) != type(self):
+    #         return False
+    #     if self.__shape != other.shape():
+    #         return False
+    #     if self.__base_pattern != other.base_pattern():
+    #         return False
+    #     return True
 
     def empty(self, valid):
         empty_pattern = self.__base_pattern.empty(valid=valid)
