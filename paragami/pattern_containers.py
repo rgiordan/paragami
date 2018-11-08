@@ -61,7 +61,6 @@ def get_pattern_from_json(pattern_json):
     -----------
     The pattern instance encoded in the ``pattern_json`` string.
     """
-
     pattern_json_dict = json.loads(pattern_json)
     try:
         json_pattern_name = pattern_json_dict['pattern']
@@ -77,6 +76,58 @@ def get_pattern_from_json(pattern_json):
                 json_pattern_name))
         raise KeyError(err_string)
     return __json_patterns[json_pattern_name].from_json(pattern_json)
+
+
+def save_folded(file, folded_val, pattern, **argk):
+    """
+    Save a folded value to a file with its pattern.
+
+    Flatten a folded value and save it with its pattern to a file using
+    ``numpy.savez``.  Additional keyword arguments will also be saved to the
+    file.
+
+    Parameters
+    ---------------
+    file: String or file
+        Follows the conventions of ``numpy.savez``.  Note that the ``npz``
+        extension will be added if it is not present.
+    folded_val:
+        The folded value of a parameter.
+    pattern:
+        A ``paragami`` pattern for the folded value.
+    """
+    flat_val = pattern.flatten(folded_val, free=False)
+    pattern_json = pattern.to_json()
+    np.savez(file, flat_val=flat_val, pattern_json=pattern_json, **argk)
+
+
+def load_folded(file):
+    """
+    Load a folded value and its pattern from a file together with any
+    additional data.
+
+    Note that ``pattern`` must be registered with ``register_pattern_json``
+    to use ``load_folded``.
+
+    Parameters
+    ---------------
+    file: String or file
+        A file or filename of data saved with ``save_folded``.
+
+    Returns
+    -----------
+    folded_val:
+        The folded value of the saved parameter.
+    pattern:
+        The ``paragami`` pattern of the saved parameter.
+    data:
+        The data as returned from ``np.load``.  Additional saved values will
+        exist as keys of ``data``.
+    """
+    data = np.load(file)
+    pattern = get_pattern_from_json(str(data['pattern_json']))
+    folded_val = pattern.fold(data['flat_val'], free=False)
+    return folded_val, pattern, data
 
 
 ##########################
