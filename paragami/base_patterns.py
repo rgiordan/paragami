@@ -235,12 +235,12 @@ class Pattern(object):
 
 
 # A dictionary of registered types for loading to and from Python.
-# TODO: this may not be necessary
-__json_patterns = {}
-def register_pattern_json(pattern, allow_overwrite=False):
-    pattern_name = pattern.json_typename()
-    if (not allow_overwrite) and pattern_name in __json_patterns.keys():
-        raise ValueError(
-            'A pattern named {} is already registered for JSON.'.format(
-                pattern_name))
-    __json_patterns[pattern_name] = pattern
+# TODO: this may not be necessary.
+# __json_patterns = {}
+# def register_pattern_json(pattern, allow_overwrite=False):
+#     pattern_name = pattern.json_typename()
+#     if (not allow_overwrite) and pattern_name in __json_patterns.keys():
+#         raise ValueError(
+#             'A pattern named {} is already registered for JSON.'.format(
+#                 pattern_name))
+#     __json_patterns[pattern_name] = pattern
