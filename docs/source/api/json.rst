@@ -1,5 +1,39 @@
-Converting to and from JSON
-================================
+Writing and reading patterns and values from disk
+====================================================
+
+Saving Folded Values with Patterns
+--------------------------------------
+
+Flattning makes it easy to save and load structured data to and from disk. ::
+
+    pattern = paragami.PatternDict()
+    pattern['num'] = paragami.NumericArrayPattern((1, 2))
+    pattern['mat'] = paragami.PSDSymmetricMatrixPattern(5)
+
+    val_folded = pattern.random()
+    extra = np.random.random(5)
+
+    outfile = tempfile.NamedTemporaryFile()
+    outfile_name = outfile.name
+    outfile.close()
+
+    paragami.save_folded(outfile_name, val_folded, pattern, extra=extra)
+
+    val_folded_loaded, pattern_loaded, data = \
+        paragami.load_folded(outfile_name + '.npz')
+
+    # The loaded values match the saved values.
+    assert pattern == pattern_loaded
+    assert np.all(val_folded['num'] == val_folded_loaded['num'])
+    assert np.all(val_folded['mat'] == val_folded_loaded['mat'])
+    assert np.all(data['extra'] == extra)
+
+.. autofunction:: paragami.pattern_containers.save_folded
+
+.. autofunction:: paragami.pattern_containers.load_folded
+
+Saving patterns
+--------------------------------------
 
 You can convert a particular pattern class to and from JSON using the
 ``to_json`` and ``from_json`` methods.

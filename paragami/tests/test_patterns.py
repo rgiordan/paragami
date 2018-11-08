@@ -291,6 +291,34 @@ class TestContainerPatterns(unittest.TestCase):
             paragami.PatternArray((2, 3), matrix_pattern))
 
 
+class TestJSONFiles(unittest.TestCase):
+    def test_json_files(self):
+        pattern = paragami.PatternDict()
+        pattern['num'] = paragami.NumericArrayPattern((1, 2))
+        pattern['mat'] = paragami.PSDSymmetricMatrixPattern(5)
+
+        val_folded = pattern.random()
+        extra = np.random.random(5)
+
+        outfile_name = '/tmp/paragami_test_' + str(np.random.randint(1e6))
+
+        paragami.save_folded(outfile_name, val_folded, pattern, extra=extra)
+
+        val_folded_loaded, pattern_loaded, data = \
+            paragami.load_folded(outfile_name + '.npz')
+
+        self.assertTrue(pattern_loaded == pattern)
+        self.assertTrue(val_folded.keys() == val_folded_loaded.keys())
+        for keyname in val_folded.keys():
+            assert_array_almost_equal(
+                val_folded[keyname], val_folded_loaded[keyname])
+        assert_array_almost_equal(extra, data['extra'])
+
+
+
+
+
+
 class TestHelperFunctions(unittest.TestCase):
     def _test_logsumexp(self, mat, axis):
         # Test the more numerically stable version with this simple
