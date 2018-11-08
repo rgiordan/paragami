@@ -1,4 +1,5 @@
 from .base_patterns import Pattern
+from .pattern_containers import register_pattern_json
 
 import autograd.numpy as np
 
@@ -201,12 +202,12 @@ class PSDSymmetricMatrixPattern(Pattern):
         return 'PDMatrix {}x{} (diag_lb = {})'.format(
             self.__size, self.__size, self.__diag_lb)
 
-    def __eq__(self, other):
-        if type(other) != type(self):
-            return False
-        return \
-            (self.size() == other.size()) & \
-            (self.diag_lb() == other.diag_lb())
+    def as_dict(self):
+        return {
+            'pattern': self.json_typename(),
+            'size': self.__size,
+            'diag_lb': self.__diag_lb,
+            'default_validate': self.default_validate}
 
     def size(self):
         """
@@ -294,3 +295,6 @@ class PSDSymmetricMatrixPattern(Pattern):
             folded_val = np.reshape(flat_val, (self.__size, self.__size))
             self.check_folded(folded_val, validate)
             return folded_val
+
+
+register_pattern_json(PSDSymmetricMatrixPattern)

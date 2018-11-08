@@ -1,4 +1,5 @@
 import autograd
+import json
 import numpy as np
 from scipy.sparse import coo_matrix
 
@@ -37,6 +38,22 @@ class Pattern(object):
         raise NotImplementedError()
 
     def __eq__(self, other):
+        if type(other) != type(self):
+            return False
+        return self.as_dict() == other.as_dict()
+
+    @classmethod
+    def json_typename(cls):
+        return '.'.join([ cls.__module__, cls.__name__])
+
+    def as_dict(self):
+        """
+        Return a dictionary of attributes that determine equality.
+
+        If the keys of the returned dictionary match the arguments to
+        ``__init__``, then the default methods for ``to_json`` and
+        ``from_json`` will work.
+        """
         raise NotImplementedError()
 
     def _freeing_transform(self, flat_val):
@@ -206,10 +223,28 @@ class Pattern(object):
         else:
             return jac
 
-    # These are currently not implemented, but we should.
-    # Maybe this should be to / from JSON.
-    # def serialize(self):
-    #     raise NotImplementedError()
-    #
-    # def unserialize(self, serialized_val):
-    #     raise NotImplementedError()
+    def to_json(self):
+        """
+        Return a JSON representation of the pattern.
+        """
+        return json.dumps(self.as_dict())
+
+    @classmethod
+    def _validate_json_dict_type(cls, json_dict):
+        if json_dict['pattern'] != cls.json_typename():
+            error_string = \
+                ('{}.from_json must be called on a json_string made ' +
+                 'from a the same pattern type.  The json_string ' +
+                 'pattern type was {}.').format(
+                    cls.json_typename(), json_dict['pattern'])
+            raise ValueError(error_string)
+
+    @classmethod
+    def from_json(cls, json_string):
+        """
+        Return a pattern instance from ``json_string`` created by ``to_json``.
+        """
+        json_dict = json.loads(json_string)
+        cls._validate_json_dict_type(json_dict)
+        del json_dict['pattern']
+        return cls(**json_dict)

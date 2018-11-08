@@ -1,8 +1,8 @@
 from .base_patterns import Pattern
-
+from .pattern_containers import register_pattern_json
 import autograd.numpy as np
-
 import copy
+import json
 
 
 def _unconstrain_array(array, lb, ub):
@@ -92,7 +92,7 @@ class NumericArrayPattern(Pattern):
             specified bounds.
         """
         self.default_validate = default_validate
-        self.__shape = shape
+        self.__shape = tuple(shape)
         self.__lb = lb
         self.__ub = ub
         assert lb >= -float('inf')
@@ -106,15 +106,16 @@ class NumericArrayPattern(Pattern):
         super().__init__(flat_length, free_flat_length)
 
     def __str__(self):
-        return 'Array {} (lb={}, ub={})'.format(
+        return 'NumericArrayPattern {} (lb={}, ub={})'.format(
             self.__shape, self.__lb, self.__ub)
 
-    def __eq__(self, other):
-        if type(other) != type(self):
-            return False
-        return \
-            (self.bounds() == other.bounds()) & \
-            (self.shape() == other.shape())
+    def as_dict(self):
+        return {
+            'pattern': self.json_typename(),
+            'lb': self.__lb,
+            'ub': self.__ub,
+            'shape': self.__shape,
+            'default_validate': self.default_validate}
 
     def empty(self, valid):
         if valid:
@@ -192,3 +193,6 @@ class NumericArrayPattern(Pattern):
             return self._free_flat_length
         else:
             return self._flat_length
+
+
+register_pattern_json(NumericArrayPattern)

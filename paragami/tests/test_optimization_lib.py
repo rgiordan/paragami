@@ -240,8 +240,8 @@ class TestPreconditionedFunction(unittest.TestCase):
         eig_vals = np.linalg.eigvals(mat)
         ev_min = np.min(eig_vals)
         ev_max = np.max(eig_vals)
-        ev0 = ev_min + (ev_max - ev_min) / 3
-        ev1 = ev_min + 2 * (ev_max - ev_min) / 3
+        ev0 = np.real(ev_min + (ev_max - ev_min) / 3)
+        ev1 = np.real(ev_min + 2 * (ev_max - ev_min) / 3)
 
         for test_ev_min in [None, ev0]:
             for test_ev_max in [None, ev1]:

@@ -1,9 +1,11 @@
 
 from .base_patterns import Pattern
+from .pattern_containers import register_pattern_json
 
 import autograd.numpy as np
 import autograd.scipy as sp
 
+import json
 import warnings
 
 
@@ -98,12 +100,12 @@ class SimplexArrayPattern(Pattern):
     def shape(self):
         return self.__shape
 
-    def __eq__(self, other):
-        if type(self) != type(other):
-            return False
-        return \
-            (self.array_shape() == other.array_shape()) & \
-            (self.simplex_size() == other.simplex_size())
+    def as_dict(self):
+        return {
+            'pattern': self.json_typename(),
+            'simplex_size': self.__simplex_size,
+            'array_shape': self.__array_shape,
+            'default_validate': self.default_validate}
 
     def empty(self, valid):
         if valid:
@@ -144,3 +146,18 @@ class SimplexArrayPattern(Pattern):
             return _unconstrain_simplex_matrix(folded_val).flatten()
         else:
             return folded_val.flatten()
+
+    @classmethod
+    def from_json(cls, json_string):
+        """
+        Return a pattern instance from ``json_string`` created by ``to_json``.
+        """
+        json_dict = json.loads(json_string)
+        cls._validate_json_dict_type(json_dict)
+        return cls(
+            simplex_size=json_dict['simplex_size'],
+            array_shape=tuple(json_dict['array_shape']),
+            default_validate=json_dict['default_validate'])
+
+
+register_pattern_json(SimplexArrayPattern)

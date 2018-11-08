@@ -6,6 +6,7 @@ from numpy.testing import assert_array_almost_equal
 import numpy as np
 import scipy as sp
 
+import json
 import collections
 
 import paragami
@@ -17,6 +18,8 @@ def _test_pattern(testcase, pattern, valid_value,
                   jacobian_ad_test=True):
 
     print('Testing pattern {}'.format(pattern))
+
+    ###############################
     # Execute required methods.
     empty_val = pattern.empty(valid=True)
     pattern.flatten(empty_val, free=False)
@@ -30,9 +33,7 @@ def _test_pattern(testcase, pattern, valid_value,
     # Make sure to test != using a custom test.
     testcase.assertTrue(pattern == pattern)
 
-    # pattern_serial = pattern.serialize()
-    # pattern.unserialize(pattern_serial)
-
+    ###############################
     # Test folding and unfolding.
     for free in [True, False]:
         flat_val = pattern.flatten(valid_value, free=free)
@@ -42,6 +43,18 @@ def _test_pattern(testcase, pattern, valid_value,
         if hasattr(valid_value, 'shape'):
             testcase.assertEqual(valid_value.shape, folded_val.shape)
 
+    ####################################
+    # Test conversion to and from JSON.
+    pattern_dict = pattern.as_dict()
+    json_typename = pattern.json_typename()
+    json_string = pattern.to_json()
+    json_dict = json.loads(json_string)
+    testcase.assertTrue('pattern' in json_dict.keys())
+    testcase.assertTrue(json_dict['pattern'] == json_typename)
+    new_pattern = paragami.get_pattern_from_json(json_string)
+    testcase.assertTrue(new_pattern == pattern)
+
+    ############################################
     # Test the freeing and unfreeing Jacobians.
     def freeing_transform(flat_val):
         return pattern.flatten(
