@@ -6,6 +6,66 @@ import autograd.numpy as np
 
 from .base_patterns import Pattern
 
+####################
+# JSON helpers.
+
+# A dictionary of registered types for loading to and from JSON.
+# This allows PatternDict and PatternArray read JSON containing arbitrary
+# pattern types without executing user code.
+__json_patterns = {}
+def register_pattern_json(pattern, allow_overwrite=False):
+    """
+    Register a pattern for automatic conversion from JSON.
+
+    Parameters
+    ------------
+    pattern: A Pattern class
+        The pattern to register.
+    allow_overwrite: Boolean
+        If true, allow overwriting already-registered patterns.
+
+    Examples
+    -------------
+    >>> register_pattern_json(paragmi.NumericArrayPattern)
+    """
+    pattern_name = pattern.json_typename()
+    if (not allow_overwrite) and pattern_name in __json_patterns.keys():
+        raise ValueError(
+            'A pattern named {} is already registered for JSON.'.format(
+                pattern_name))
+    __json_patterns[pattern_name] = pattern
+
+
+def get_pattern_from_json(pattern_json):
+    """
+    Return the appropriate pattern from ``pattern_json``.
+
+    The pattern must be registered using ``register_pattern_json``.
+
+    Parameters
+    --------------
+    pattern_json: String
+        A JSON string created with a pattern's ``to_json`` method.
+
+    Returns
+    -----------
+    The pattern instance encoded in the ``pattern_json`` string.
+    """
+    try:
+        json_pattern_name = pattern_json['pattern']
+    except KeyError as err_string:
+        print('A pattern JSON string must have an entry called \'pattern\' ' +
+              'which is registered using ``register_pattern_json``.')
+        raise KeyError(err_string)
+
+    if not json_pattern_name in __json_patterns.keys():
+        err_string = (
+            'Before converting from JSON, the pattern {} must be' +
+            'registered with ``register_pattern_json``.'.format(
+                json_pattern_name))
+        raise KeyError(err_string)
+    return __json_patterns[json_pattern_name].from_json(pattern_json)
+
 
 ##########################
 # Dictionary of patterns.
@@ -90,7 +150,7 @@ class PatternDict(Pattern):
             contents[pattern_name] = pattern.as_dict()
         return {
             'pattern': self.json_typename(),
-            'keys': self.__pattern_dict.keys()
+            'keys': self.__pattern_dict.keys(),
             'contents': contents}
 
     def _check_lock(self):
@@ -204,9 +264,6 @@ class PatternDict(Pattern):
 
     @classmethod
     def from_json(cls, json_string):
-        """
-        Return a pattern instance from ``json_string`` created by ``to_json``.
-        """
         json_dict = json.loads(json_string)
         if json_dict['pattern'] != cls.json_typename():
             error_string = \
@@ -217,20 +274,8 @@ class PatternDict(Pattern):
             raise ValueError(error_string)
         pattern_dict = cls()
         for pattern_name in json_dict['keys']:
-            pattern_dict[pattern_name] = \
-                __json_patterns[pattern_name].from_json(
-                    json_dict['contents']['pattern_name'])
-
-
-# A dictionary of registered types for loading to and from JSON.
-__json_patterns = {}
-def register_pattern_json(pattern, allow_overwrite=False):
-    pattern_name = pattern.json_typename()
-    if (not allow_overwrite) and pattern_name in __json_patterns.keys():
-        raise ValueError(
-            'A pattern named {} is already registered for JSON.'.format(
-                pattern_name))
-    __json_patterns[pattern_name] = pattern
+            pattern_dict[pattern_name] = get_pattern_from_json(
+                json_dict['contents'][pattern_name])
 
 
 ##########################
@@ -303,6 +348,12 @@ class PatternArray(Pattern):
     def __str__(self):
         return('PatternArray {} of {}'.format(
             self.__shape, self.__base_pattern))
+
+    def as_dict(self):
+        return {
+            'pattern': self.json_pattern_name(),
+            'shape': self.__shape,
+            'base_pattern': base_pattern.to_json() }
 
     def shape(self):
         return self.__shape
@@ -408,3 +459,20 @@ class PatternArray(Pattern):
             return sp_jac
         else:
             return np.array(sp_jac.todense())
+
+    @classmethod
+    def from_json(cls, json_string):
+        json_dict = json.loads(json_string)
+        if json_dict['pattern'] != cls.json_typename():
+            error_string = \
+                ('{}.from_json must be called on a json_string made ' +
+                 'from a the same pattern type.  The json_string ' +
+                 'pattern type was {}.').format(
+                    cls.json_typename(), json_dict['pattern'])
+            raise ValueError(error_string)
+        base_pattern = get_pattern_from_json(json_dict['base_pattern'])
+        return cls(shape=json_dict['shape'], base_pattern=base_pattern)
+
+
+register_pattern_json(PatternDict)
+register_pattern_json(PatternArray)

@@ -1,4 +1,5 @@
 from .base_patterns import Pattern
+from .pattern_containers import register_pattern_json
 import autograd.numpy as np
 import copy
 import json
@@ -192,3 +193,6 @@ class NumericArrayPattern(Pattern):
             return self._free_flat_length
         else:
             return self._flat_length
+
+
+register_pattern_json(NumericArrayPattern)

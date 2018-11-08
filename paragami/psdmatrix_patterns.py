@@ -1,4 +1,5 @@
 from .base_patterns import Pattern
+from .pattern_containers import register_pattern_json
 
 import autograd.numpy as np
 
@@ -294,3 +295,6 @@ class PSDSymmetricMatrixPattern(Pattern):
             folded_val = np.reshape(flat_val, (self.__size, self.__size))
             self.check_folded(folded_val, validate)
             return folded_val
+
+
+register_pattern_json(PSDSymmetricMatrixPattern)

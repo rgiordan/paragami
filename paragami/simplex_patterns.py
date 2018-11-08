@@ -1,5 +1,6 @@
 
 from .base_patterns import Pattern
+from .pattern_containers import register_pattern_json
 
 import autograd.numpy as np
 import autograd.scipy as sp
@@ -151,3 +152,6 @@ class SimplexArrayPattern(Pattern):
             return _unconstrain_simplex_matrix(folded_val).flatten()
         else:
             return folded_val.flatten()
+
+
+register_pattern_json(SimplexArrayPattern)
