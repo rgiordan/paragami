@@ -459,93 +459,107 @@ class ParametricSensitivityTaylorExpansionForwardDiff(object):
             ```objective_function``` is used.
         """
 
-        self.objective_functor = objective_functor
-        self.input_par = input_par
-        self.hyper_par = hyper_par
-        self.input_is_free = input_is_free
-        self.hyper_is_free = hyper_is_free
+        self._objective_function = objective_function
+        self._objective_function_hessian = \
+            autograd.hessian(self._objective_function, argnum=0)
 
-        if hyper_par_objective_functor is None:
-            self.hyper_par_objective_functor = objective_functor
+        # In order to calculate derivatives d^kinput_dhyper^k, we will be
+        # Taylor expanding the gradient of the objective with respect to eta.
+        self._objective_function_eta_grad = \
+            autograd.grad(self._objective_function, argnum=0)
+        self._objective_function_cross_hess = \
+            autograd.grad(self._objective_function_eta_grad, argnum=1)
+
+        if hyper_par_objective_function is None:
+            self._hyper_par_objective_function = self._objective_function
         else:
-            self.hyper_par_objective_functor = hyper_par_objective_functor
-
-        self.objective = obj_lib.Objective(
-            self.input_par, self.objective_functor)
-        self.joint_objective = obj_lib.TwoParameterObjective(
-            self.input_par, self.hyper_par, self.hyper_par_objective_functor)
+            self._hyper_par_objective_function = hyper_par_objective_function
 
         self.set_base_values(input_val0, hyper_val0)
-        self.set_order(order)
+        self._set_order(order)
 
-    def _set_par_to_base_values(self):
-        set_par(self.input_par, self.input_val0, self.input_is_free)
-        set_par(self.hyper_par, self.hyper_val0, self.hyper_is_free)
+    def set_base_values(self, input_val0, hyper_val0, hess0=None):
+        """
+        Set the values at which the Taylor series is to be evaluated.
 
-    def _cache_and_eval(self, diff_fun, *argv, **argk):
-        result = diff_fun(*argv, **argk)
-        self.set_par_to_base_values()
-        return result
-
-    def _set_base_values(self, input_val0, hyper_val0, hess0=None):
-        self.input_val0 = deepcopy(input_val0)
-        self.hyper_val0 = deepcopy(hyper_val0)
-        self.set_par_to_base_values()
+        Parameters:
+        ---------------
+        input_val0: numpy array
+            The value of input_par at the optimum.
+        hyper_val0: numpy array
+            The value of hyper_par at which input_val0 was found.
+        hess0: numpy array
+            Optional.  The Hessian of the objective at (input_val0, hyper_val0).
+            If not specified it is calculated at initialization.
+        """
+        self._input_val0 = deepcopy(input_val0)
+        self._hyper_val0 = deepcopy(hyper_val0)
 
         if hess0 is None:
-            self.hess0 = self.objective.fun_free_hessian(self.input_val0)
+            self._hess0 = \
+                self.objective._objective_function_hessian(self._input_val0)
         else:
-            self.hess0 = hess0
-        self.hess0_chol = sp.linalg.cho_factor(self.hess0)
-
-    # In order to calculate derivatives d^kinput_dhyper^k, we will be Taylor
-    # expanding the gradient of the objective.
-    def objective_gradient(self, input_val, hyper_val, *argv, **argk):
-        return self.joint_objective.fun_grad1(
-            input_val, hyper_val, self.input_is_free, self.hyper_is_free,
-            *argv, **argk)
+            self._hess0 = hess0
+        self._hess0_chol = sp.linalg.cho_factor(self._hess0)
 
     # Get a function returning the next derivative from the Taylor terms dterms.
-    def get_dkinput_dhyperk_from_terms(self, dterms):
+    def _get_dkinput_dhyperk_from_terms(self, dterms):
         def dkinput_dhyperk(input_val, hyper_val, dhyper, tolerance=1e-8):
             if tolerance is not None:
                 # Make sure you're evaluating sensitivity at the base parameters.
                 assert np.max(np.abs(input_val - self.input_val0)) <= tolerance
                 assert np.max(np.abs(hyper_val - self.hyper_val0)) <= tolerance
             return evaluate_dketa_depsk(
-                self.hess0, dterms, self.input_val0, self.hyper_val0, dhyper)
+                self._hess0, dterms,
+                self._input_val0, self._hyper_val0, dhyper)
         return dkinput_dhyperk
 
-    def differentiate_terms(self, dterms, eval_next_eta_deriv):
+    def _differentiate_terms(self, dterms, eval_next_eta_deriv):
         dterms_derivs = []
         for term in dterms:
             dterms_derivs += term.differentiate(eval_next_eta_deriv)
         return _consolidate_terms(dterms_derivs)
 
-    def set_order(self, order):
-        self.order = order
+    def _set_order(self, order):
+        self._order = order
 
         # You need one more gradient derivative than the order of the Taylor
         # approximation.
-        self.eval_g_derivs = _generate_two_term_derivative_array(
-            self.objective_gradient, order=self.order + 1)
+        self._eval_g_derivs = _generate_two_term_derivative_array(
+            self._objective_function_eta_grad, order=self._order + 1)
 
-        self.taylor_terms_list = [ _get_taylor_base_terms(self.eval_g_derivs) ]
-        self.dkinput_dhyperk_list = []
-        for k in range(self.order - 1):
-            next_dkinput_dhyperk = self.get_dkinput_dhyperk_from_terms(
-                self.taylor_terms_list[k])
-            next_taylor_terms = self.differentiate_terms(
-                self.taylor_terms_list[k],
-                next_dkinput_dhyperk)
-            self.dkinput_dhyperk_list.append(next_dkinput_dhyperk)
-            self.taylor_terms_list.append(next_taylor_terms)
+        self._taylor_terms_list = \
+            [ _get_taylor_base_terms(self._eval_g_derivs) ]
+        self._dkinput_dhyperk_list = []
+        for k in range(self._order - 1):
+            next_dkinput_dhyperk = \
+                self._get_dkinput_dhyperk_from_terms(
+                    self._taylor_terms_list[k])
+            next_taylor_terms = \
+                self._differentiate_terms(
+                    self._taylor_terms_list[k], next_dkinput_dhyperk)
+            self._dkinput_dhyperk_list.append(next_dkinput_dhyperk)
+            self._taylor_terms_list.append(next_taylor_terms)
 
-        self.dkinput_dhyperk_list.append(
-            self.get_dkinput_dhyperk_from_terms(
-                self.taylor_terms_list[self.order - 1]))
+        self._dkinput_dhyperk_list.append(
+            self._get_dkinput_dhyperk_from_terms(
+                self._taylor_terms_list[self._order - 1]))
 
-    def evaluate_dkinput_dhyperk(self, dhyper, k, *argv, **argk):
+    def evaluate_dkinput_dhyperk(self, dhyper, k):
+        """
+        Evaluate the derivative d^k input / d hyper^k in the direction dhyper.
+
+        Parameters
+        --------------
+        dhyper: numpy array
+            The direction (hyper_val - hyper_val0).
+        k: integer
+            The order of the derivative.
+
+        Returns
+        ------------
+            The value of the k^th derivative in the directoin dhyper.
+        """
         if k <= 0:
             raise ValueError('k must be at least one.')
         if k > self.order:
@@ -553,31 +567,58 @@ class ParametricSensitivityTaylorExpansionForwardDiff(object):
                 'k must be no greater than the declared order={}'.format(
                     self.order))
         deriv_fun = self.dkinput_dhyperk_list[k - 1]
-        return self.cache_and_eval(
-            deriv_fun, self.input_val0, self.hyper_val0, dhyper, *argv, **argk)
+        return deriv_fun(self._input_val0, self._hyper_val0, dhyper)
 
-    def evaluate_taylor_series(
-        self, dhyper, *argv, add_offset=True, max_order=None, **argk):
+    def evaluate_taylor_series(self, dhyper, add_offset=True, max_order=None):
+        """
+        Evaluate the derivative d^k input / d hyper^k in the direction dhyper.
+
+        Parameters
+        --------------
+        dhyper: numpy array
+            The direction (hyper_val - hyper_val0).
+        add_offset: boolean
+            Optional.  Whether to add the initial constant input_val0 to the
+            Taylor series.
+        max_order: integer
+            Optional.  The order of the Taylor series.  Defaults to the
+            ```order``` argument to ```__init__```.
+
+        Returns
+        ------------
+            The Taylor series approximation to input_vak(hyper_val) if
+            ```add_offset``` is ```True```, or to
+            input_val(hyper_val) - input_val0 if ```False```.
+        """
         if max_order is None:
-            max_order = self.order
+            max_order = self._order
         if max_order <= 0:
             raise ValueError('max_order must be greater than zero.')
-        if max_order > self.order:
+        if max_order > self._order:
             raise ValueError(
                 'max_order must be no greater than the declared order={}'.format(
-                    self.order))
+                    self._order))
 
-        dinput = self.evaluate_dkinput_dhyperk(dhyper, 1, *argv,  **argk)
-        for k in range(2, max_order + 1):
+        dinput = 0
+        for k in range(1, max_order + 1):
             dinput += self.evaluate_dkinput_dhyperk(dhyper, k) / \
                 float(math.factorial(k))
 
         if add_offset:
-            return dinput + self.input_val0
+            return dinput + self._input_val0
         else:
             return dinput
 
     def print_terms(self, k=None):
+        """
+        Print the derivative terms in the Taylor series.
+
+        Parameters
+        ---------------
+        k: integer
+            Optional.  Which term to pring.  If unspecified, all terms are
+            printed.
+        """
         if k is not None and k > self.order:
             raise ValueError(
                 'k must be no greater than order={}'.format(self.order))
@@ -586,100 +627,3 @@ class ParametricSensitivityTaylorExpansionForwardDiff(object):
                 print('\nTerms for order {}:'.format(order + 1))
                 for term in self.taylor_terms_list[order]:
                     print(term)
-
-
-
-# This is a class for computing a linear approximation to
-# input_par(hyper_par) = argmax_input_par objective(input_par, hyper_par).
-# This approximation uses reverse mode automatic differentiation.
-#
-# Args:
-#   - objective_functor: A functor that evaluates an optimization objective
-#   with respect to input_par at hyperparameter hyper_par.
-#   - input_par: The input Parameter for the optimization problem:
-#   - hyper_par: The hyperparameter for the optimization problem.
-#   - input_val0: The value of input_par at the optimum.
-#   - hyper_val0: The value of hyper_par at which input_val0 was found.
-#   - input_is_free: Whether or not input_val0 is the free (vs vector) value
-#   for input_par.  Defaults to free.
-#   - hyper_is_free: Whether or not hyper_val0 is the free (vs vector) value
-#   for hyper_par.  Defaults to not free (i.e. to vector).
-#   - hess0: Optional, the Hessian of the objective at (input_val0, hyper_val0).
-#   If not specified it is calculated at initialization.
-#   - hyper_par_objective_functor: Optional, a functor containing the dependence
-#   of objective_functor on the hyperparameter.  Sometimes only a small,
-#   easily calculated part of the objective depends on the hyperparameter,
-#   and by specifying hyper_par_objective_functor the necessary calculations
-#   can be more efficient.  If unset, objective_functor is used.
-#
-# Methods:
-#  - get_dinput_dhyper:
-#   Args: None.
-#   Returns:
-#       The Jacobian matrix d(input_par) / d(hyper_par) evaluated at
-#       input_val0..
-#
-#  - predict_input_par_from_hyperparameters:
-#   Args:
-#       new_hyper_par_value: A new value of the hyperparameters (either
-#           as a free or constrained vector according to hyper_is_free).
-#   Returns:
-#       A linear approximation to input_par(hyper_par) evaluated at input_val0.
-class ParametricSensitivityLinearApproximation(object):
-    def __init__(
-        self, objective_functor,
-        input_par, hyper_par,
-        input_val0, hyper_val0,
-        input_is_free=True, hyper_is_free=False,
-        hess0=None, hyper_par_objective_functor=None):
-
-        self.objective_functor = objective_functor
-        self.input_par = input_par
-        self.hyper_par = hyper_par
-        self.input_is_free = input_is_free
-        self.hyper_is_free = hyper_is_free
-
-        if hyper_par_objective_functor is None:
-            self.hyper_par_objective_functor = objective_functor
-        else:
-            self.hyper_par_objective_functor = hyper_par_objective_functor
-
-        self.objective = obj_lib.Objective(
-            self.input_par, self.objective_functor)
-        self.joint_objective = obj_lib.TwoParameterObjective(
-            self.input_par, self.hyper_par, self.hyper_par_objective_functor)
-
-        self.set_base_values(input_val0, hyper_val0)
-
-    def set_par_to_base_values(self):
-        set_par(self.input_par, self.input_val0, self.input_is_free)
-        set_par(self.hyper_par, self.hyper_val0, self.hyper_is_free)
-
-    def set_base_values(self, input_val0, hyper_val0, hess0=None):
-        self.input_val0 = deepcopy(input_val0)
-        self.hyper_val0 = deepcopy(hyper_val0)
-        self.set_par_to_base_values()
-
-        if hess0 is None:
-            self.hess0 = self.objective.fun_free_hessian(self.input_val0)
-        else:
-            self.hess0 = hess0
-        self.hess0_chol = sp.linalg.cho_factor(self.hess0)
-
-        self.hyper_par_cross_hessian0 = \
-            self.joint_objective.fun_hessian_free1_vector2(
-                self.input_val0, self.hyper_val0)
-
-        self.hyper_par_sensitivity = \
-            -1 * sp.linalg.cho_solve(
-                self.hess0_chol, self.hyper_par_cross_hessian0)
-
-    # Methods:
-    def get_dinput_dhyper(self):
-        return self.hyper_par_sensitivity
-
-    def predict_input_par_from_hyperparameters(self, new_hyper_par_value):
-        hyper_par_diff = new_hyper_par_value - self.hyper_val0
-        return \
-            self.input_val0 + \
-            self.hyper_par_sensitivity @ hyper_par_diff
