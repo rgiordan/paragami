@@ -628,6 +628,8 @@ def differentiate_terms(hess0, dterms):
 
 class ParametricSensitivityTaylorExpansion(object):
     """
+    Evaluate the Taylor series of an optimum on a hyperparameter.
+
     This is a class for computing the Taylor series of
     eta(eps) = argmax_eta objective(eta, eps) using forward-mode automatic
     differentation.
@@ -641,10 +643,9 @@ class ParametricSensitivityTaylorExpansion(object):
     evaluate_taylor_series:
         Evaluate the Taylor series.
     """
-    def __init__(
-        self, objective_function,
-        input_val0, hyper_val0, order,
-        hess0=None, hyper_par_objective_function=None):
+    def __init__(self, objective_function,
+                 input_val0, hyper_val0, order,
+                 hess0=None, hyper_par_objective_function=None):
         """
         Parameters
         ------------------
@@ -653,23 +654,24 @@ class ParametricSensitivityTaylorExpansion(object):
             (eta, eps), where eta is the parameter that is optimized and
             eps is a hyperparameter.
         input_val0: numpy array
-            The value of input_par at the optimum.
+            The value of ``input_par`` at the optimum.
         hyper_val0: numpy array
-            The value of hyper_par at which input_val0 was found.
+            The value of ``hyper_par`` at which ``input_val0`` was found.
         order: positive integer
             The maximum order of the Taylor series to be calculated.
         hess0: numpy array
-            Optional.  The Hessian of the objective at (input_val0, hyper_val0).
+            Optional.  The Hessian of the objective at
+            (``input_val0``, ``hyper_val0``).
             If not specified it is calculated at initialization.
-         hyper_par_objective_function:
+        hyper_par_objective_function:
             Optional.  A function containing the dependence
-            of objective_functor on the hyperparameter.  Sometimes only a small,
-            easily calculated part of the objective depends on the
-            hyperparameter, and by specifying hyper_par_objective_functor the
+            of ``objective_function`` on the hyperparameter.  Sometimes
+            only a small, easily calculated part of the objective depends
+            on the hyperparameter, and by specifying
+            ``hyper_par_objective_function`` the
             necessary calculations can be more efficient.  If
             unset, ``objective_function`` is used.
         """
-
         warnings.warn(
             'The ParametricSensitivityTaylorExpansion is experimental.')
         self._objective_function = objective_function
@@ -785,7 +787,7 @@ class ParametricSensitivityTaylorExpansion(object):
 
     def evaluate_taylor_series(self, dhyper, add_offset=True, max_order=None):
         """
-        Evaluate the derivative d^k input / d hyper^k in the direction dhyper.
+        Evaluate the derivative ``d^k input / d hyper^k`` in the direction dhyper.
 
         Parameters
         --------------
@@ -800,9 +802,9 @@ class ParametricSensitivityTaylorExpansion(object):
 
         Returns
         ------------
-            The Taylor series approximation to input_vak(hyper_val) if
+            The Taylor series approximation to ``input_vak(hyper_val)`` if
             ``add_offset`` is ``True``, or to
-            input_val(hyper_val) - input_val0 if ``False``.
+            ``input_val(hyper_val) - input_val0`` if ``False``.
         """
         if max_order is None:
             max_order = self._order
