@@ -89,10 +89,10 @@ class HyperparameterSensitivityLinearApproximation:
             The folded of ``hyper_par_folded_value`` at which ``opt_par``
             optimizes ``objective_fun``.
         opt_par_is_free: Boolean
-            Whether to use the free parameterization for ``opt_par``` when
+            Whether to use the free parameterization for ``opt_par`` when
             linearzing.
         hyper_par_is_free: Boolean
-            Whether to use the free parameterization for ``hyper_par``` when
+            Whether to use the free parameterization for ``hyper_par`` when
             linearzing.
         validate_optimum: Boolean
             When setting the values of ``opt_par`` and ``hyper_par``, check
@@ -301,12 +301,22 @@ class DerivativeTerm:
 
     The nomenclature assumes that
     we are calculating derivatives of g(eta, eps) at (eta0, eps0).  This
-    can be used to calculate d^k\hat\eta / d\eps^k | (eta0, eps0) where
-    \hat\eta: g(\hat\eta, \eps) = 0.
+    can be used to calculate
+
+    .. math::
+        d^k\hat{\\eta} / d\\eps^k | (\\eta_0, \\eps_0)
+
+    where :math:`\hat{\\eta}: g(\hat{\\eta}, \\eps) = 0`.
 
     Attributes
     -----------------
-    See the arguments to ```__init___```.
+    eps_order:
+        The total number of epsilon derivatives of g.
+    eta_orders:
+        A vector of length order - 1.  Entry i contains the number
+        of terms d\eta^{i + 1} / d\epsilon^{i + 1}.
+    prefactor:
+        The constant multiple in front of this term.
 
     Methods
     ------------
@@ -330,14 +340,14 @@ class DerivativeTerm:
             The total number of epsilon derivatives of g.
         eta_orders:
             A vector of length order - 1.  Entry i contains the number
-            of terms d\eta^{i + 1} / d\epsilon^{i + 1}.
+            of terms :math:`d\\eta^{i + 1} / d\\epsilon^{i + 1}`.
         prefactor:
             The constant multiple in front of this term.
         eval_eta_derivs:
-            A vector of functions to evaluate d\eta^i / d\epsilon^i.
+            A vector of functions to evaluate :math:`d\\eta^i / d\\epsilon^i`.
             The functions should take arguments (eta0, eps0, deps) and the
-            i^{th} entry should evaluate
-            d\eta^i / d\epsilon^i (deps^i) |_{eta0, eps0}.
+            i-th entry should evaluate
+            :math:`d\\eta^i / d\\epsilon^i (d \\epsilon^i) |_{\\eta_0, \\epsilon_0}`.
         eval_g_derivs:
             A list of lists of g jacobian vector product functions.
             The array should be such that
@@ -481,8 +491,8 @@ def _generate_two_term_derivative_array(fun, order):
     Returns
     ------------
     An array of functions where element eval_fun_derivs[i][j] is a function
-    eval_fun_derivs[i][j](x1, x2, ..., v1, ... vi, w1, ..., wj)) =
-    d^{i + j}fun / (dx1^i dx2^j) v1 ... vi w1 ... wj.
+    ``eval_fun_derivs[i][j](x1, x2, ..., v1, ... vi, w1, ..., wj)) =
+    d^{i + j}fun / (dx1^i dx2^j) v1 ... vi w1 ... wj``.
     """
     eval_fun_derivs = [[ fun ]]
     for x1_ind in range(order):
@@ -526,6 +536,7 @@ def _consolidate_terms(dterms):
 
     return consolidated_dterms
 
+
 def evaluate_terms(dterms, eta0, eps0, deps, include_highest_eta_order=True):
     """
     Evaluate a list of derivative terms.
@@ -542,7 +553,7 @@ def evaluate_terms(dterms, eta0, eps0, deps, include_highest_eta_order=True):
         The change in epsilon by which to multiply the Jacobians.
     include_highest_eta_order: boolean
         If true, include the term with
-        d^k eta / deps^k, where k == order.  The main use of these
+        ``d^k eta / deps^k``, where ``k == order``.  The main use of these
         DerivativeTerms at the time of writing is precisely to evaluate this
         term using the other terms, and this can be accomplished by setting
         include_highest_eta_order to False.
@@ -621,26 +632,14 @@ class ParametricSensitivityTaylorExpansion(object):
     eta(eps) = argmax_eta objective(eta, eps) using forward-mode automatic
     differentation.
 
-    Methods:
-      - evaluate_dkinput_dhyperk.
-          Args:
-              - dhyper: The difference hyper_val1 - hyper_val0 by which the
-              derivatives are multiplied.
-              - k: The order of the derivative to return.
-          Returns:
-              dkinput_dhyperk * (hyper_val1 - hyper_val0).
-      - evaluate_taylor_series
-          Args:
-              - dhyper: The difference hyper_val1 - hyper_val0 by which the
-              derivatives are multiplied.
-              - add_offset: Whether the Taylor expansion includes the
-              offset input_val0.
-              - max_order: The maximum order of the Taylor expansion to use.
-              Higher orders will be slower to evaluate.  Defaults to the
-              highest order possible, i.e. the order specified at initialization.
-          Returns:
-              The value of the Taylor series expansion of \hat\eta(\eps) at
-              hyper_val0 + dhyper.
+    ..note:: This is an class is experimental and should be used with caution.
+
+    Methods
+    --------------
+    evaluate_dkinput_dhyperk:
+        Evaluate the k-th derivative.
+    evaluate_taylor_series:
+        Evaluate the Taylor series.
     """
     def __init__(
         self, objective_function,
@@ -649,7 +648,7 @@ class ParametricSensitivityTaylorExpansion(object):
         """
         Parameters
         ------------------
-        objective_function: callable function.
+        objective_function: callable function
             The optimization objective as a function of two arguments
             (eta, eps), where eta is the parameter that is optimized and
             eps is a hyperparameter.
@@ -662,13 +661,13 @@ class ParametricSensitivityTaylorExpansion(object):
         hess0: numpy array
             Optional.  The Hessian of the objective at (input_val0, hyper_val0).
             If not specified it is calculated at initialization.
-         hyper_par_objective_funcion:
+         hyper_par_objective_function:
             Optional.  A function containing the dependence
             of objective_functor on the hyperparameter.  Sometimes only a small,
             easily calculated part of the objective depends on the
             hyperparameter, and by specifying hyper_par_objective_functor the
-            necessary calculations can be more efficient.  If unset,
-            ```objective_function``` is used.
+            necessary calculations can be more efficient.  If
+            unset, ``objective_function`` is used.
         """
 
         warnings.warn(
@@ -696,7 +695,7 @@ class ParametricSensitivityTaylorExpansion(object):
         """
         Set the values at which the Taylor series is to be evaluated.
 
-        Parameters:
+        Parameters
         ---------------
         input_val0: numpy array
             The value of input_par at the optimum.
@@ -797,13 +796,13 @@ class ParametricSensitivityTaylorExpansion(object):
             Taylor series.
         max_order: integer
             Optional.  The order of the Taylor series.  Defaults to the
-            ```order``` argument to ```__init__```.
+            ``order`` argument to ``__init__``.
 
         Returns
         ------------
             The Taylor series approximation to input_vak(hyper_val) if
-            ```add_offset``` is ```True```, or to
-            input_val(hyper_val) - input_val0 if ```False```.
+            ``add_offset`` is ``True``, or to
+            input_val(hyper_val) - input_val0 if ``False``.
         """
         if max_order is None:
             max_order = self._order
@@ -831,7 +830,7 @@ class ParametricSensitivityTaylorExpansion(object):
         Parameters
         ---------------
         k: integer
-            Optional.  Which term to pring.  If unspecified, all terms are
+            Optional.  Which term to print.  If unspecified, all terms are
             printed.
         """
         if k is not None and k > self._order:
