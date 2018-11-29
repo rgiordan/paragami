@@ -304,30 +304,71 @@ class DerivativeTerm:
         use ``DerivativeTerm`` directly, and should rather use
         ``ParametricSensitivityTaylorExpansion``.
 
+    Let :math:`\hat{\\eta}(\\epsilon)` be such that
+    :math:`g(\hat{\\eta}(\\epsilon), \\epsilon) = 0`.
     The nomenclature assumes that
-    we are calculating derivatives of g(eta, eps) at (eta0, eps0).  This
-    can be used to calculate
+    the term arises from calculating total derivatives of
+    :math:`g(\hat{\\eta}(\\epsilon), \\epsilon)`,
+    with respect to :math:`\\epsilon`, so such a term arose from repeated
+    applications of the chain and product rule of differentiation with respect
+    to :math:`\\epsilon`.
+
+    In the ``ParametricSensitivityTaylorExpansion`` class, such terms are
+    then used to calculate
 
     .. math::
-        d^k\hat{\\eta} / d\\eps^k | (\\eta_0, \\eps_0)
+        \\frac{d^k\hat{\\eta}}{d\\epsilon^k} |_{\\eta_0, \\epsilon_0}.
 
-    where :math:`\hat{\\eta}: g(\hat{\\eta}, \\eps) = 0`.
+    We assume the term will only be calculated summed against a single value
+    of :math:`\\Delta\\epsilon`, so we do not need to keep track of the
+    order in which the derivatives are evaluated.
 
-    Every term in the Taylor expansion of :math:`g(\\eta, \\eps)` is a product
-    the following terms.
+    Every term arising from differentiation of :math:`g(\hat{\\eta}(\\epsilon),
+    \\epsilon)` with respect to :math:`\\epsilon` is a product the following
+    types of terms.
 
     First, there are the partial derivatives of :math:`g` itself.
 
     .. math::
-        \\frac{\\partial g(\hat{\\eta}, \\eps)}{\\partial \\eta^m \\epsilon^n}
+        \\frac{\\partial^{m+n} g(\\eta, \\epsilon)}
+              {\\partial \\eta^m \\epsilon^n}
 
     In the preceding display, ``m``
-    is the total number of :math:`\\eta` derivatives implied by
-    ``eta_orders``, and ``n = eps_order``.
+    is the total number of :math:`\\eta` derivatives, i.e.
+    ``m = np.sum(eta_orders)``, and ``n = eps_order``.
 
     Each partial derivative of :math:`g` with respect to :math:`\\epsilon`
     will multiply one :math:`\\Delta \\epsilon` term directly.  Each
-    partial derivative with respect to :math:`\\eta` will multiply
+    partial derivative with respect to :math:`\\eta` will multiply a term
+    of the form
+
+    .. math::
+        \\frac{d^p \hat{\\eta}}{d \\epsilon^p}
+
+    which will in turn multiply :math:`p` different :math:`\\Delta \\epsilon`
+    terms. The number of such terms of order :math:`p` are given by the entry
+    ``eta_orders[p - 1]``.  Each such terms arises from a single partial
+    derivative of :math:`g` with respect to :math:`\\eta`, which is why
+    the above ``m = np.sum(eta_orders)``.
+
+    Finally, the term is multiplied by the constant ``prefactor``.
+
+    For example, suppose that ``eta_orders = [1, 0, 2]``, ``prefactor = 1.5``,
+    and ``epsilon_order = 2``.  Then the derivative term is
+
+    .. math::
+        1.5 \\cdot
+        \\frac{\\partial^{5} g(\hat{\\eta}, \\epsilon)}
+              {\\partial \\eta^3 \\epsilon^2} \\cdot
+        \\frac{d \hat{\\eta}}{d \\epsilon} \\cdot
+        \\frac{d^3 \hat{\\eta}}{d \\epsilon^3} \\cdot
+        \\frac{d^3 \hat{\\eta}}{d \\epsilon^3} \\cdot
+
+    ...which will multiply a total of
+    ``9 = epsilon_order + np.sum(eta_orders * [1, 2, 3])``
+    :math:`\\Delta \\epsilon` terms.  Such a term would arise in
+    the 9-th order Taylor expansion of :math:`g(\hat{\\eta}(\\epsilon),
+    \\epsilon)` in :math:`\\epsilon`.
 
     Attributes
     -----------------
