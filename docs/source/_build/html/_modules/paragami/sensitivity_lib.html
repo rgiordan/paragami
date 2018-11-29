@@ -1,0 +1,1071 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>paragami.sensitivity_lib &mdash; paragami 0.2.post27.dev0+g089cd6c documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> paragami
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2.post27.dev0+g089cd6c
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example_notebooks/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release-history.html">Release History</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">paragami</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>paragami.sensitivity_lib</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for paragami.sensitivity_lib</h1><div class="highlight"><pre>
+<span></span><span class="c1">##########################################################################</span>
+<span class="c1"># Functions for evaluating the sensitivity of optima to hyperparameters. #</span>
+<span class="c1">##########################################################################</span>
+
+<span class="kn">import</span> <span class="nn">autograd</span>
+<span class="kn">import</span> <span class="nn">autograd.numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="n">factorial</span>
+<span class="kn">from</span> <span class="nn">scipy.linalg</span> <span class="k">import</span> <span class="n">cho_factor</span><span class="p">,</span> <span class="n">cho_solve</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">from</span> <span class="nn">.function_patterns</span> <span class="k">import</span> <span class="n">FlattenedFunction</span>
+
+
+<div class="viewcode-block" id="HyperparameterSensitivityLinearApproximation"><a class="viewcode-back" href="../../api/sensitivity_functions.html#paragami.sensitivity_lib.HyperparameterSensitivityLinearApproximation">[docs]</a><span class="k">class</span> <span class="nc">HyperparameterSensitivityLinearApproximation</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Linearly approximate dependence of an optimum on a hyperparameter.</span>
+
+<span class="sd">    Suppose we have an optimization problem in which the objective</span>
+<span class="sd">    depends on a hyperparameter:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \hat{\\theta} = \mathrm{argmin}_{\\theta} f(\\theta, \\lambda).</span>
+
+<span class="sd">    The optimal parameter, :math:`\hat{\\theta}`, is a function of</span>
+<span class="sd">    :math:`\\lambda` through the optimization problem.  In general, this</span>
+<span class="sd">    dependence is complex and nonlinear.  To approximate this dependence,</span>
+<span class="sd">    this class uses the linear approximation:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \hat{\\theta}(\\lambda) \\approx \hat{\\theta}(\\lambda_0) +</span>
+<span class="sd">            \\frac{d\hat{\\theta}}{d\\lambda}|_{\\lambda_0}</span>
+<span class="sd">                (\\lambda - \\lambda_0).</span>
+
+<span class="sd">    In terms of the arguments to this function,</span>
+<span class="sd">    :math:`\\theta` corresponds to ``opt_par``,</span>
+<span class="sd">    :math:`\\lambda` corresponds to ``hyper_par``,</span>
+<span class="sd">    and :math:`f` corresponds to ``objective_fun``.</span>
+
+<span class="sd">    Because ``opt_par`` and ``hyper_par`` in general are structured,</span>
+<span class="sd">    constrained data, the linear approximation is evaluated in flattened</span>
+<span class="sd">    space using user-specified patterns.</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    ------------</span>
+<span class="sd">    set_base_values:</span>
+<span class="sd">        Set the base values, :math:`\\lambda_0` and</span>
+<span class="sd">        :math:`\\theta_0 := \hat\\theta(\\lambda_0)`, at which the linear</span>
+<span class="sd">        approximation is evaluated.</span>
+<span class="sd">    get_dopt_dhyper:</span>
+<span class="sd">        Return the Jacobian matrix</span>
+<span class="sd">        :math:`\\frac{d\hat{\\theta}}{d\\lambda}|_{\\lambda_0}` in flattened</span>
+<span class="sd">        space.</span>
+<span class="sd">    get_hessian_at_opt:</span>
+<span class="sd">        Return the Hessian of the objective function in the</span>
+<span class="sd">        flattened space.</span>
+<span class="sd">    predict_opt_par_from_hyper_par:</span>
+<span class="sd">        Use the linear approximation to predict</span>
+<span class="sd">        the folded value of ``opt_par`` from a folded value of ``hyper_par``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="HyperparameterSensitivityLinearApproximation.__init__"><a class="viewcode-back" href="../../api/sensitivity_functions.html#paragami.sensitivity_lib.HyperparameterSensitivityLinearApproximation.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">objective_fun</span><span class="p">,</span>
+        <span class="n">opt_par_pattern</span><span class="p">,</span> <span class="n">hyper_par_pattern</span><span class="p">,</span>
+        <span class="n">opt_par_folded_value</span><span class="p">,</span> <span class="n">hyper_par_folded_value</span><span class="p">,</span>
+        <span class="n">opt_par_is_free</span><span class="p">,</span> <span class="n">hyper_par_is_free</span><span class="p">,</span>
+        <span class="n">validate_optimum</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">hessian_at_opt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">factorize_hessian</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">hyper_par_objective_fun</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">grad_tol</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        --------------</span>
+<span class="sd">        objective_fun: Callable function</span>
+<span class="sd">            A callable function, optimized by ``opt_par`` at a particular value</span>
+<span class="sd">            of ``hyper_par``.  The function must be of the form</span>
+<span class="sd">            ``f(folded opt_par, folded hyper_par)``.</span>
+<span class="sd">        opt_par_pattern:</span>
+<span class="sd">            A pattern for ``opt_par``, the optimal parameter.</span>
+<span class="sd">        opt_par_pattern:</span>
+<span class="sd">            A pattern for ``hyper_par``, the hyperparameter.</span>
+<span class="sd">        opt_par_folded_value:</span>
+<span class="sd">            The folded value of ``opt_par`` at which ``objective_fun`` is</span>
+<span class="sd">            optimized for the given value of ``hyper_par``.</span>
+<span class="sd">        hyper_par_folded_value:</span>
+<span class="sd">            The folded of ``hyper_par_folded_value`` at which ``opt_par``</span>
+<span class="sd">            optimizes ``objective_fun``.</span>
+<span class="sd">        opt_par_is_free: Boolean</span>
+<span class="sd">            Whether to use the free parameterization for ``opt_par`` when</span>
+<span class="sd">            linearzing.</span>
+<span class="sd">        hyper_par_is_free: Boolean</span>
+<span class="sd">            Whether to use the free parameterization for ``hyper_par`` when</span>
+<span class="sd">            linearzing.</span>
+<span class="sd">        validate_optimum: Boolean</span>
+<span class="sd">            When setting the values of ``opt_par`` and ``hyper_par``, check</span>
+<span class="sd">            that ``opt_par`` is, in fact, a critical point of</span>
+<span class="sd">            ``objective_fun``.</span>
+<span class="sd">        hessian_at_opt: Numeric matrix (optional)</span>
+<span class="sd">            The Hessian of ``objective_fun`` at the optimum.  If not specified,</span>
+<span class="sd">            it is calculated using automatic differentiation.</span>
+<span class="sd">        factorize_hessian: Boolean</span>
+<span class="sd">            If ``True``, solve the required linear system using a Cholesky</span>
+<span class="sd">            factorization.  If ``False``, use the conjugate gradient algorithm</span>
+<span class="sd">            to avoid forming or inverting the Hessian.</span>
+<span class="sd">        hyper_par_objective_fun: Callable function</span>
+<span class="sd">            A callable function of the form</span>
+<span class="sd">            ``f(folded opt_par, folded hyper_par)`` containing the part of</span>
+<span class="sd">            ``objective_fun`` that depends on both ``opt_par`` and</span>
+<span class="sd">            ``hyper_par``.  If not specified, ``objective_fun`` is used.</span>
+<span class="sd">        grad_tol: Float</span>
+<span class="sd">            The tolerance used to check that the gradient is approximately</span>
+<span class="sd">            zero at the optimum.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objective_fun</span> <span class="o">=</span> <span class="n">objective_fun</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_opt_par_pattern</span> <span class="o">=</span> <span class="n">opt_par_pattern</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_pattern</span> <span class="o">=</span> <span class="n">hyper_par_pattern</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_opt_par_is_free</span> <span class="o">=</span> <span class="n">opt_par_is_free</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_is_free</span> <span class="o">=</span> <span class="n">hyper_par_is_free</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_grad_tol</span> <span class="o">=</span> <span class="n">grad_tol</span>
+
+        <span class="c1"># Define flattened versions of the objective function and their</span>
+        <span class="c1"># autograd derivatives.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_obj_fun</span> <span class="o">=</span> \
+            <span class="n">FlattenedFunction</span><span class="p">(</span>
+                <span class="n">original_fun</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_objective_fun</span><span class="p">,</span>
+                <span class="n">patterns</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_opt_par_pattern</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_pattern</span><span class="p">],</span>
+                <span class="n">free</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_opt_par_is_free</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_is_free</span><span class="p">],</span>
+                <span class="n">argnums</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_obj_fun_grad</span> <span class="o">=</span> <span class="n">autograd</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_obj_fun</span><span class="p">,</span> <span class="n">argnum</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_obj_fun_hessian</span> <span class="o">=</span> <span class="n">autograd</span><span class="o">.</span><span class="n">hessian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_obj_fun</span><span class="p">,</span> <span class="n">argnum</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_obj_fun_hvp</span> <span class="o">=</span> <span class="n">autograd</span><span class="o">.</span><span class="n">hessian_vector_product</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_obj_fun</span><span class="p">,</span> <span class="n">argnum</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">hyper_par_objective_fun</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_objective_fun</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objective_fun</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_obj_fun</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj_fun</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_objective_fun</span> <span class="o">=</span> <span class="n">hyper_par_objective_fun</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_obj_fun</span> <span class="o">=</span> \
+                <span class="n">FlattenedFunction</span><span class="p">(</span>
+                    <span class="n">original_fun</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_objective_fun</span><span class="p">,</span>
+                    <span class="n">patterns</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_opt_par_pattern</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_pattern</span><span class="p">],</span>
+                    <span class="n">free</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_opt_par_is_free</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_is_free</span><span class="p">],</span>
+                    <span class="n">argnums</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># TODO: is this the right default order?  Make this flexible.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_obj_fun_grad</span> <span class="o">=</span> <span class="n">autograd</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hyper_obj_fun</span><span class="p">,</span> <span class="n">argnum</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_obj_cross_hess</span> <span class="o">=</span> <span class="n">autograd</span><span class="o">.</span><span class="n">jacobian</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_obj_fun_grad</span><span class="p">,</span> <span class="n">argnum</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_base_values</span><span class="p">(</span>
+            <span class="n">opt_par_folded_value</span><span class="p">,</span> <span class="n">hyper_par_folded_value</span><span class="p">,</span>
+            <span class="n">hessian_at_opt</span><span class="p">,</span> <span class="n">factorize_hessian</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="n">validate_optimum</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">set_base_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                        <span class="n">opt_par_folded_value</span><span class="p">,</span> <span class="n">hyper_par_folded_value</span><span class="p">,</span>
+                        <span class="n">hessian_at_opt</span><span class="p">,</span> <span class="n">factorize_hessian</span><span class="p">,</span>
+                        <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">grad_tol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">grad_tol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">grad_tol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_grad_tol</span>
+
+        <span class="c1"># Set the values of the optimal parameters.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_opt0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_opt_par_pattern</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span>
+            <span class="n">opt_par_folded_value</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_opt_par_is_free</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hyper0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_pattern</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span>
+            <span class="n">hyper_par_folded_value</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_is_free</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">validate</span><span class="p">:</span>
+            <span class="c1"># Check that the gradient of the objective is zero at the optimum.</span>
+            <span class="n">grad0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj_fun_grad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_opt0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper0</span><span class="p">)</span>
+            <span class="n">grad0_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">grad0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">grad0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">grad_tol</span><span class="p">:</span>
+                <span class="n">err_msg</span> <span class="o">=</span> \
+                    <span class="s1">&#39;The gradient is not zero at the putatively optimal &#39;</span> <span class="o">+</span> \
+                    <span class="s1">&#39;values.  ||grad|| = </span><span class="si">{}</span><span class="s1"> &gt; </span><span class="si">{}</span><span class="s1"> = grad_tol&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">grad0_norm</span><span class="p">,</span> <span class="n">grad_tol</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg</span><span class="p">)</span>
+
+        <span class="c1"># Set the values of the Hessian at the optimum.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_factorize_hessian</span> <span class="o">=</span> <span class="n">factorize_hessian</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factorize_hessian</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hessian_at_opt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hess0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obj_fun_hessian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_opt0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hess0</span> <span class="o">=</span> <span class="n">hessian_at_opt</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hess0_chol</span> <span class="o">=</span> <span class="n">cho_factor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hess0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hessian_at_opt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;If factorize_hessian is False, &#39;</span> <span class="o">+</span>
+                                 <span class="s1">&#39;hessian_at_opt must be None.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hess0</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hess0_chol</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cross_hess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_obj_cross_hess</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_opt0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sens_mat</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">cho_solve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hess0_chol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cross_hess</span><span class="p">)</span>
+
+    <span class="c1"># Methods:</span>
+    <span class="k">def</span> <span class="nf">get_dopt_dhyper</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sens_mat</span>
+
+    <span class="k">def</span> <span class="nf">get_hessian_at_opt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hess0</span>
+
+<div class="viewcode-block" id="HyperparameterSensitivityLinearApproximation.predict_opt_par_from_hyper_par"><a class="viewcode-back" href="../../api/sensitivity_functions.html#paragami.sensitivity_lib.HyperparameterSensitivityLinearApproximation.predict_opt_par_from_hyper_par">[docs]</a>    <span class="k">def</span> <span class="nf">predict_opt_par_from_hyper_par</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_hyper_par_folded_value</span><span class="p">,</span>
+                                       <span class="n">fold_output</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Predict ``opt_par`` using the linear approximation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ------------</span>
+<span class="sd">        new_hyper_par_folded_value:</span>
+<span class="sd">            The folded value of ``hyper_par`` at which to approximate</span>
+<span class="sd">            ``opt_par``.</span>
+<span class="sd">        fold_output: Boolean</span>
+<span class="sd">            Whether to return ``opt_par`` as a folded value.  If ``False``,</span>
+<span class="sd">            returns the flattened value according to ``opt_par_pattern``</span>
+<span class="sd">            and ``opt_par_is_free``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factorize_hessian</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s1">&#39;CG is not yet implemented for predict_opt_par_from_hyper_par&#39;</span><span class="p">)</span>
+
+        <span class="n">hyper1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_pattern</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span>
+            <span class="n">new_hyper_par_folded_value</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_is_free</span><span class="p">)</span>
+        <span class="n">opt_par1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_opt0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sens_mat</span> <span class="o">@</span> <span class="p">(</span><span class="n">hyper1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fold_output</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_opt_par_pattern</span><span class="o">.</span><span class="n">fold</span><span class="p">(</span>
+                <span class="n">opt_par1</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_opt_par_is_free</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">opt_par1</span></div></div>
+
+
+<span class="c1">################################</span>
+<span class="c1"># Higher-order approximations. #</span>
+<span class="c1">################################</span>
+
+<span class="k">def</span> <span class="nf">_append_jvp</span><span class="p">(</span><span class="n">fun</span><span class="p">,</span> <span class="n">num_base_args</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">argnum</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Append a jacobian vector product to a function.</span>
+
+<span class="sd">    This function is designed to be used recursively to calculate</span>
+<span class="sd">    higher-order Jacobian-vector products.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    --------------</span>
+<span class="sd">    fun: Callable function</span>
+<span class="sd">        The function to be differentiated.</span>
+<span class="sd">    num_base_args: integer</span>
+<span class="sd">        The number of inputs to the base function, i.e.,</span>
+<span class="sd">        to the function before any differentiation.</span>
+<span class="sd">     argnum: inteeger</span>
+<span class="sd">        Which argument should be differentiated with respect to.</span>
+<span class="sd">        Must be between 0 and num_base_args - 1.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ------------</span>
+<span class="sd">    Denote the base args x1, ..., xB, where B == num_base_args.</span>
+<span class="sd">    Let argnum = k.  Then _append_jvp returns a function,</span>
+<span class="sd">    fun_jvp(x1, ..., xB, ..., v) =</span>
+<span class="sd">    \sum_i (dfun_dx_{ki}) v_i | (x1, ..., xB).</span>
+<span class="sd">    That is, it returns the Jacobian vector product where the Jacobian</span>
+<span class="sd">    is taken with respect to xk, and the vector product is with the</span>
+<span class="sd">    final argument.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">argnum</span> <span class="o">&lt;</span> <span class="n">num_base_args</span>
+
+    <span class="n">fun_jvp</span> <span class="o">=</span> <span class="n">autograd</span><span class="o">.</span><span class="n">make_jvp</span><span class="p">(</span><span class="n">fun</span><span class="p">,</span> <span class="n">argnum</span><span class="o">=</span><span class="n">argnum</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">obj_jvp_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">argv</span><span class="p">):</span>
+        <span class="c1"># These are the base arguments -- the points at which the</span>
+        <span class="c1"># Jacobians are evaluated.</span>
+        <span class="n">base_args</span> <span class="o">=</span> <span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">num_base_args</span><span class="p">]</span>
+
+        <span class="c1"># The rest of the arguments are the vectors, with which inner</span>
+        <span class="c1"># products are taken in the order they were passed to</span>
+        <span class="c1"># _append_jvp.</span>
+        <span class="n">vec_args</span> <span class="o">=</span> <span class="n">argv</span><span class="p">[</span><span class="n">num_base_args</span><span class="p">:]</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vec_args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="c1"># Then this is being applied to an existing Jacobian</span>
+            <span class="c1"># vector product.  The last will be the new vector, and</span>
+            <span class="c1"># we need to evaluate the function at the previous vectors.</span>
+            <span class="c1"># The new jvp will be appended to the end of the existing</span>
+            <span class="c1"># list.</span>
+            <span class="n">old_vec_args</span> <span class="o">=</span> <span class="n">vec_args</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">fun_jvp</span><span class="p">(</span><span class="o">*</span><span class="n">base_args</span><span class="p">,</span> <span class="o">*</span><span class="n">old_vec_args</span><span class="p">)(</span><span class="n">vec_args</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">fun_jvp</span><span class="p">(</span><span class="o">*</span><span class="n">base_args</span><span class="p">)(</span><span class="o">*</span><span class="n">vec_args</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">obj_jvp_wrapper</span>
+
+
+<span class="k">class</span> <span class="nc">DerivativeTerm</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A single term in a Taylor expansion of a two-parameter objective with</span>
+<span class="sd">    methods for computing its derivatives.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        This class is intended for internal use.  Most users should not</span>
+<span class="sd">        use ``DerivativeTerm`` directly, and should rather use</span>
+<span class="sd">        ``ParametricSensitivityTaylorExpansion``.</span>
+
+<span class="sd">    The nomenclature assumes that</span>
+<span class="sd">    we are calculating derivatives of g(eta, eps) at (eta0, eps0).  This</span>
+<span class="sd">    can be used to calculate</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        d^k\hat{\\eta} / d\\eps^k | (\\eta_0, \\eps_0)</span>
+
+<span class="sd">    where :math:`\hat{\\eta}: g(\hat{\\eta}, \\eps) = 0`.</span>
+
+<span class="sd">    Every term in the Taylor expansion of :math:`g(\\eta, \\eps)` is a product</span>
+<span class="sd">    the following terms.</span>
+
+<span class="sd">    First, there are the partial derivatives of :math:`g` itself.</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \\frac{\\partial g(\hat{\\eta}, \\eps)}{\\partial \\eta^m \\epsilon^n}</span>
+
+<span class="sd">    In the preceding display, ``m``</span>
+<span class="sd">    is the total number of :math:`\\eta` derivatives implied by</span>
+<span class="sd">    ``eta_orders``, and ``n = eps_order``.</span>
+
+<span class="sd">    Each partial derivative of :math:`g` with respect to :math:`\\epsilon`</span>
+<span class="sd">    will multiply one :math:`\\Delta \\epsilon` term directly.  Each</span>
+<span class="sd">    partial derivative with respect to :math:`\\eta` will multiply</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    -----------------</span>
+<span class="sd">    eps_order:</span>
+<span class="sd">        The total number of epsilon derivatives of g.</span>
+<span class="sd">    eta_orders:</span>
+<span class="sd">        A vector of length order - 1.  Entry i contains the number</span>
+<span class="sd">        of terms d\eta^{i + 1} / d\epsilon^{i + 1}.</span>
+<span class="sd">    prefactor:</span>
+<span class="sd">        The constant multiple in front of this term.</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    ------------</span>
+<span class="sd">    evaluate:</span>
+<span class="sd">        Get the value of the current derivative term.</span>
+<span class="sd">    differentiate:</span>
+<span class="sd">        Get a list of derivatives terms resulting from differentiating this</span>
+<span class="sd">        term.</span>
+<span class="sd">    check_similarity:</span>
+<span class="sd">        Return a boolean indicating whether this term is equivalent to another</span>
+<span class="sd">        term in the order of its derivative.</span>
+<span class="sd">    combine_with:</span>
+<span class="sd">        Return the sum of this term and another term.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eps_order</span><span class="p">,</span> <span class="n">eta_orders</span><span class="p">,</span> <span class="n">prefactor</span><span class="p">,</span>
+                 <span class="n">eval_eta_derivs</span><span class="p">,</span> <span class="n">eval_g_derivs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        -------------</span>
+<span class="sd">        eps_order:</span>
+<span class="sd">            The total number of epsilon derivatives of g.</span>
+<span class="sd">        eta_orders:</span>
+<span class="sd">            A vector of length order - 1.  Entry i contains the number</span>
+<span class="sd">            of terms :math:`d\\eta^{i + 1} / d\\epsilon^{i + 1}`.</span>
+<span class="sd">        prefactor:</span>
+<span class="sd">            The constant multiple in front of this term.</span>
+<span class="sd">        eval_eta_derivs:</span>
+<span class="sd">            A vector of functions to evaluate :math:`d\\eta^i / d\\epsilon^i`.</span>
+<span class="sd">            The functions should take arguments (eta0, eps0, deps) and the</span>
+<span class="sd">            i-th entry should evaluate</span>
+<span class="sd">            :math:`d\\eta^i / d\\epsilon^i (d \\epsilon^i) |_{\\eta_0, \\epsilon_0}`.</span>
+<span class="sd">        eval_g_derivs:</span>
+<span class="sd">            A list of lists of g jacobian vector product functions.</span>
+<span class="sd">            The array should be such that</span>
+<span class="sd">            eval_g_derivs[i][j](eta0, eps0, v1 ... vi, w1 ... wj)</span>
+<span class="sd">            evaluates d^{i + j} G / (deta^i)(deps^j)(v1 ... vi)(w1 ... wj).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Base properties.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eps_order</span> <span class="o">=</span> <span class="n">eps_order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span> <span class="o">=</span> <span class="n">eta_orders</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prefactor</span> <span class="o">=</span> <span class="n">prefactor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_eval_eta_derivs</span> <span class="o">=</span> <span class="n">eval_eta_derivs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_eval_g_derivs</span> <span class="o">=</span> <span class="n">eval_g_derivs</span>
+
+        <span class="c1"># Derived quantities.</span>
+
+        <span class="c1"># The order is the total number of epsilon derivatives.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_order</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">eps_order</span> <span class="o">+</span> \
+            <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)))</span>
+
+        <span class="c1"># The derivative of g needed for this particular term.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval_g_deriv</span> <span class="o">=</span> \
+            <span class="n">eval_g_derivs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">eta_orders</span><span class="p">)][</span><span class="bp">self</span><span class="o">.</span><span class="n">eps_order</span><span class="p">]</span>
+
+        <span class="c1"># Sanity checks.</span>
+        <span class="c1"># The rules of differentiation require that these assertions be true</span>
+        <span class="c1"># -- that is, if terms are generated using the differentiate()</span>
+        <span class="c1"># method from other well-defined terms, these assertions should always</span>
+        <span class="c1"># be sastisfied.</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eps_order</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_order</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps_order</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="c1"># Redundant</span>
+        <span class="k">for</span> <span class="n">eta_order</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">eta_order</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eta_order</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_eval_eta_derivs</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_order</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">eval_g_derivs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">eta_deriv_list</span> <span class="ow">in</span> <span class="n">eval_g_derivs</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">eta_deriv_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps_order</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;Order: </span><span class="si">{}</span><span class="se">\t</span><span class="si">{}</span><span class="s1"> * eta</span><span class="si">{}</span><span class="s1"> * eps[</span><span class="si">{}</span><span class="s1">]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefactor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps_order</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eta0</span><span class="p">,</span> <span class="n">eps0</span><span class="p">,</span> <span class="n">deps</span><span class="p">):</span>
+        <span class="c1"># First eta arguments, then epsilons.</span>
+        <span class="n">vec_args</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">)):</span>
+            <span class="n">eta_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">eta_order</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval_eta_derivs</span><span class="p">[</span><span class="n">i</span><span class="p">](</span><span class="n">eta0</span><span class="p">,</span> <span class="n">eps0</span><span class="p">,</span> <span class="n">deps</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">eta_order</span><span class="p">):</span>
+                    <span class="n">vec_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eps_order</span><span class="p">):</span>
+            <span class="n">vec_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">deps</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefactor</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_g_deriv</span><span class="p">(</span><span class="n">eta0</span><span class="p">,</span> <span class="n">eps0</span><span class="p">,</span> <span class="o">*</span><span class="n">vec_args</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">differentiate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eval_next_eta_deriv</span><span class="p">):</span>
+        <span class="n">derivative_terms</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">new_eval_eta_derivs</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_eval_eta_derivs</span><span class="p">)</span>
+        <span class="n">new_eval_eta_derivs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eval_next_eta_deriv</span><span class="p">)</span>
+
+        <span class="n">old_eta_orders</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">)</span>
+        <span class="n">old_eta_orders</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># dG / deps.</span>
+        <span class="n">derivative_terms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">DerivativeTerm</span><span class="p">(</span>
+                <span class="n">eps_order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eps_order</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="n">eta_orders</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">old_eta_orders</span><span class="p">),</span>
+                <span class="n">prefactor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prefactor</span><span class="p">,</span>
+                <span class="n">eval_eta_derivs</span><span class="o">=</span><span class="n">new_eval_eta_derivs</span><span class="p">,</span>
+                <span class="n">eval_g_derivs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_eval_g_derivs</span><span class="p">))</span>
+
+        <span class="c1"># dG / deta.</span>
+        <span class="n">new_eta_orders</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">old_eta_orders</span><span class="p">)</span>
+        <span class="n">new_eta_orders</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_eta_orders</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">derivative_terms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">DerivativeTerm</span><span class="p">(</span>
+                <span class="n">eps_order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eps_order</span><span class="p">,</span>
+                <span class="n">eta_orders</span><span class="o">=</span><span class="n">new_eta_orders</span><span class="p">,</span>
+                <span class="n">prefactor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prefactor</span><span class="p">,</span>
+                <span class="n">eval_eta_derivs</span><span class="o">=</span><span class="n">new_eval_eta_derivs</span><span class="p">,</span>
+                <span class="n">eval_g_derivs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_eval_g_derivs</span><span class="p">))</span>
+
+        <span class="c1"># Derivatives of each d^{i}eta / deps^i term.</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">)):</span>
+            <span class="n">eta_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">eta_order</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">new_eta_orders</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">old_eta_orders</span><span class="p">)</span>
+                <span class="n">new_eta_orders</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_eta_orders</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="n">new_eta_orders</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_eta_orders</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="n">derivative_terms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">DerivativeTerm</span><span class="p">(</span>
+                        <span class="n">eps_order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eps_order</span><span class="p">,</span>
+                        <span class="n">eta_orders</span><span class="o">=</span><span class="n">new_eta_orders</span><span class="p">,</span>
+                        <span class="n">prefactor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prefactor</span> <span class="o">*</span> <span class="n">eta_order</span><span class="p">,</span>
+                        <span class="n">eval_eta_derivs</span><span class="o">=</span><span class="n">new_eval_eta_derivs</span><span class="p">,</span>
+                        <span class="n">eval_g_derivs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_eval_g_derivs</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">derivative_terms</span>
+
+    <span class="c1"># Return whether another term matches this one in the pattern of derivatives.</span>
+    <span class="k">def</span> <span class="nf">check_similarity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">term</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;---------</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">term</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;---------</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> \
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eps_order</span> <span class="o">==</span> <span class="n">term</span><span class="o">.</span><span class="n">eps_order</span><span class="p">)</span> <span class="o">&amp;</span> \
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span> <span class="o">==</span> <span class="n">term</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">)</span>
+
+    <span class="c1"># Assert that another term has the same pattern of derivatives and</span>
+    <span class="c1"># return a new term that combines the two.</span>
+    <span class="k">def</span> <span class="nf">combine_with</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">term</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_similarity</span><span class="p">(</span><span class="n">term</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">DerivativeTerm</span><span class="p">(</span>
+            <span class="n">eps_order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eps_order</span><span class="p">,</span>
+            <span class="n">eta_orders</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">,</span>
+            <span class="n">prefactor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prefactor</span> <span class="o">+</span> <span class="n">term</span><span class="o">.</span><span class="n">prefactor</span><span class="p">,</span>
+            <span class="n">eval_eta_derivs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_eval_eta_derivs</span><span class="p">,</span>
+            <span class="n">eval_g_derivs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_eval_g_derivs</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_generate_two_term_derivative_array</span><span class="p">(</span><span class="n">fun</span><span class="p">,</span> <span class="n">order</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate an array of JVPs of the two arguments of the target function fun.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -------------</span>
+<span class="sd">    fun: callable function</span>
+<span class="sd">        The function to be differentiated.  The first two arguments</span>
+<span class="sd">        should be vectors for differentiation, i.e., fun should have signature</span>
+<span class="sd">        fun(x1, x2, ...) and return a numeric value.</span>
+<span class="sd">     order: integer</span>
+<span class="sd">        The maximum order of the derivative to be generated.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ------------</span>
+<span class="sd">    An array of functions where element eval_fun_derivs[i][j] is a function</span>
+<span class="sd">    ``eval_fun_derivs[i][j](x1, x2, ..., v1, ... vi, w1, ..., wj)) =</span>
+<span class="sd">    d^{i + j}fun / (dx1^i dx2^j) v1 ... vi w1 ... wj``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">eval_fun_derivs</span> <span class="o">=</span> <span class="p">[[</span> <span class="n">fun</span> <span class="p">]]</span>
+    <span class="k">for</span> <span class="n">x1_ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">order</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">x1_ind</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># Append one x1 derivative.</span>
+            <span class="n">next_deriv</span> <span class="o">=</span> <span class="n">_append_jvp</span><span class="p">(</span>
+                <span class="n">eval_fun_derivs</span><span class="p">[</span><span class="n">x1_ind</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">num_base_args</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">argnum</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">eval_fun_derivs</span><span class="o">.</span><span class="n">append</span><span class="p">([</span> <span class="n">next_deriv</span> <span class="p">])</span>
+        <span class="k">for</span> <span class="n">x2_ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">order</span><span class="p">):</span>
+            <span class="c1"># Append one x2 derivative.</span>
+            <span class="n">next_deriv</span> <span class="o">=</span> <span class="n">_append_jvp</span><span class="p">(</span>
+                <span class="n">eval_fun_derivs</span><span class="p">[</span><span class="n">x1_ind</span><span class="p">][</span><span class="n">x2_ind</span><span class="p">],</span> <span class="n">num_base_args</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">argnum</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">eval_fun_derivs</span><span class="p">[</span><span class="n">x1_ind</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_deriv</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">eval_fun_derivs</span>
+
+
+
+<span class="k">def</span> <span class="nf">_consolidate_terms</span><span class="p">(</span><span class="n">dterms</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Combine like derivative terms.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    -----------</span>
+<span class="sd">    dterms:</span>
+<span class="sd">        A list of DerivativeTerms.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ------------</span>
+<span class="sd">    A new list of derivative terms that evaluate equivalently where</span>
+<span class="sd">    terms with the same derivative signature have been combined.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">unmatched_indices</span> <span class="o">=</span> <span class="p">[</span> <span class="n">ind</span> <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dterms</span><span class="p">))</span> <span class="p">]</span>
+    <span class="n">consolidated_dterms</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">unmatched_indices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">match_term</span> <span class="o">=</span> <span class="n">dterms</span><span class="p">[</span><span class="n">unmatched_indices</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">unmatched_indices</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">match_term</span><span class="o">.</span><span class="n">eta_orders</span> <span class="o">==</span> <span class="n">dterms</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">):</span>
+                <span class="n">match_term</span> <span class="o">=</span> <span class="n">match_term</span><span class="o">.</span><span class="n">combine_with</span><span class="p">(</span><span class="n">dterms</span><span class="p">[</span><span class="n">ind</span><span class="p">])</span>
+                <span class="n">unmatched_indices</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span>
+        <span class="n">consolidated_dterms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">match_term</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">consolidated_dterms</span>
+
+
+<span class="k">def</span> <span class="nf">evaluate_terms</span><span class="p">(</span><span class="n">dterms</span><span class="p">,</span> <span class="n">eta0</span><span class="p">,</span> <span class="n">eps0</span><span class="p">,</span> <span class="n">deps</span><span class="p">,</span> <span class="n">include_highest_eta_order</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Evaluate a list of derivative terms.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ---------------</span>
+<span class="sd">    dterms:</span>
+<span class="sd">        A list of derivative terms.</span>
+<span class="sd">    eta0:</span>
+<span class="sd">        The value of the first argument at which the derivative is evaluated.</span>
+<span class="sd">    eps0:</span>
+<span class="sd">        The value of the second argument at which the derivative is evaluated.</span>
+<span class="sd">    deps: numpy array</span>
+<span class="sd">        The change in epsilon by which to multiply the Jacobians.</span>
+<span class="sd">    include_highest_eta_order: boolean</span>
+<span class="sd">        If true, include the term with</span>
+<span class="sd">        ``d^k eta / deps^k``, where ``k == order``.  The main use of these</span>
+<span class="sd">        DerivativeTerms at the time of writing is precisely to evaluate this</span>
+<span class="sd">        term using the other terms, and this can be accomplished by setting</span>
+<span class="sd">        include_highest_eta_order to False.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ---------------</span>
+<span class="sd">        The sum of the evaluated DerivativeTerms.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">vec</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">dterms</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">include_highest_eta_order</span> <span class="ow">or</span> <span class="p">(</span><span class="n">term</span><span class="o">.</span><span class="n">eta_orders</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">vec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">vec</span> <span class="o">=</span> <span class="n">term</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">eta0</span><span class="p">,</span> <span class="n">eps0</span><span class="p">,</span> <span class="n">deps</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">vec</span> <span class="o">+=</span> <span class="n">term</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">eta0</span><span class="p">,</span> <span class="n">eps0</span><span class="p">,</span> <span class="n">deps</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">vec</span>
+
+
+<span class="c1"># Get the terms to start a Taylor expansion.</span>
+<span class="k">def</span> <span class="nf">_get_taylor_base_terms</span><span class="p">(</span><span class="n">eval_g_derivs</span><span class="p">):</span>
+    <span class="n">dterms1</span> <span class="o">=</span> <span class="p">[</span> \
+        <span class="n">DerivativeTerm</span><span class="p">(</span>
+            <span class="n">eps_order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">eta_orders</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">prefactor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+            <span class="n">eval_eta_derivs</span><span class="o">=</span><span class="p">[],</span>
+            <span class="n">eval_g_derivs</span><span class="o">=</span><span class="n">eval_g_derivs</span><span class="p">),</span>
+        <span class="n">DerivativeTerm</span><span class="p">(</span>
+            <span class="n">eps_order</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">eta_orders</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">prefactor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+            <span class="n">eval_eta_derivs</span><span class="o">=</span><span class="p">[],</span>
+            <span class="n">eval_g_derivs</span><span class="o">=</span><span class="n">eval_g_derivs</span><span class="p">)</span> <span class="p">]</span>
+    <span class="k">return</span> <span class="n">dterms1</span>
+
+
+<span class="c1"># Given a collection of dterms (formed either with _get_taylor_base_terms</span>
+<span class="c1"># or derivatives), evaluate the implied dketa_depsk.</span>
+<span class="c1">#</span>
+<span class="c1"># Args:</span>
+<span class="c1">#   - hess0: The Hessian of the objective wrt the first argument.</span>
+<span class="c1">#   - dterms: An array of DerivativeTerms.</span>
+<span class="c1">#   - eta0: The value of the first argument.</span>
+<span class="c1">#   - eps0: The value of the second argument.</span>
+<span class="c1">#   - deps: The change in epsilon by which to multiply the Jacobians.</span>
+<span class="k">def</span> <span class="nf">evaluate_dketa_depsk</span><span class="p">(</span><span class="n">hess0</span><span class="p">,</span> <span class="n">dterms</span><span class="p">,</span> <span class="n">eta0</span><span class="p">,</span> <span class="n">eps0</span><span class="p">,</span> <span class="n">deps</span><span class="p">):</span>
+    <span class="n">vec</span> <span class="o">=</span> <span class="n">evaluate_terms</span><span class="p">(</span>
+        <span class="n">dterms</span><span class="p">,</span> <span class="n">eta0</span><span class="p">,</span> <span class="n">eps0</span><span class="p">,</span> <span class="n">deps</span><span class="p">,</span> <span class="n">include_highest_eta_order</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">vec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">hess0</span><span class="p">,</span> <span class="n">vec</span><span class="p">)</span>
+
+
+<span class="c1"># Calculate the derivative of an array of DerivativeTerms.</span>
+<span class="c1">#</span>
+<span class="c1"># Args:</span>
+<span class="c1">#   - hess0: The Hessian of the objective wrt the first argument.</span>
+<span class="c1">#   - dterms: An array of DerivativeTerms.</span>
+<span class="c1">#</span>
+<span class="c1"># Returns:</span>
+<span class="c1">#   An array of the derivatives of dterms with respect to the second argument.</span>
+<span class="k">def</span> <span class="nf">differentiate_terms</span><span class="p">(</span><span class="n">hess0</span><span class="p">,</span> <span class="n">dterms</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">eval_next_eta_deriv</span><span class="p">(</span><span class="n">eta</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">deps</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">evaluate_dketa_depsk</span><span class="p">(</span><span class="n">hess0</span><span class="p">,</span> <span class="n">dterms</span><span class="p">,</span> <span class="n">eta</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">deps</span><span class="p">)</span>
+
+    <span class="n">dterms_derivs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">dterms</span><span class="p">:</span>
+        <span class="n">dterms_derivs</span> <span class="o">+=</span> <span class="n">term</span><span class="o">.</span><span class="n">differentiate</span><span class="p">(</span><span class="n">eval_next_eta_deriv</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_consolidate_terms</span><span class="p">(</span><span class="n">dterms_derivs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dterms_derivs</span>
+
+
+
+<div class="viewcode-block" id="ParametricSensitivityTaylorExpansion"><a class="viewcode-back" href="../../api/sensitivity_functions.html#paragami.sensitivity_lib.ParametricSensitivityTaylorExpansion">[docs]</a><span class="k">class</span> <span class="nc">ParametricSensitivityTaylorExpansion</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Evaluate the Taylor series of an optimum on a hyperparameter.</span>
+
+<span class="sd">    This is a class for computing the Taylor series of</span>
+<span class="sd">    eta(eps) = argmax_eta objective(eta, eps) using forward-mode automatic</span>
+<span class="sd">    differentation.</span>
+
+<span class="sd">    .. note:: This class is experimental and should be used with caution.</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    --------------</span>
+<span class="sd">    evaluate_dkinput_dhyperk:</span>
+<span class="sd">        Evaluate the k-th derivative.</span>
+<span class="sd">    evaluate_taylor_series:</span>
+<span class="sd">        Evaluate the Taylor series.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="ParametricSensitivityTaylorExpansion.__init__"><a class="viewcode-back" href="../../api/sensitivity_functions.html#paragami.sensitivity_lib.ParametricSensitivityTaylorExpansion.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">objective_function</span><span class="p">,</span>
+                 <span class="n">input_val0</span><span class="p">,</span> <span class="n">hyper_val0</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span>
+                 <span class="n">hess0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hyper_par_objective_function</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ------------------</span>
+<span class="sd">        objective_function: callable function</span>
+<span class="sd">            The optimization objective as a function of two arguments</span>
+<span class="sd">            (eta, eps), where eta is the parameter that is optimized and</span>
+<span class="sd">            eps is a hyperparameter.</span>
+<span class="sd">        input_val0: numpy array</span>
+<span class="sd">            The value of ``input_par`` at the optimum.</span>
+<span class="sd">        hyper_val0: numpy array</span>
+<span class="sd">            The value of ``hyper_par`` at which ``input_val0`` was found.</span>
+<span class="sd">        order: positive integer</span>
+<span class="sd">            The maximum order of the Taylor series to be calculated.</span>
+<span class="sd">        hess0: numpy array</span>
+<span class="sd">            Optional.  The Hessian of the objective at</span>
+<span class="sd">            (``input_val0``, ``hyper_val0``).</span>
+<span class="sd">            If not specified it is calculated at initialization.</span>
+<span class="sd">        hyper_par_objective_function:</span>
+<span class="sd">            Optional.  A function containing the dependence</span>
+<span class="sd">            of ``objective_function`` on the hyperparameter.  Sometimes</span>
+<span class="sd">            only a small, easily calculated part of the objective depends</span>
+<span class="sd">            on the hyperparameter, and by specifying</span>
+<span class="sd">            ``hyper_par_objective_function`` the</span>
+<span class="sd">            necessary calculations can be more efficient.  If</span>
+<span class="sd">            unset, ``objective_function`` is used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s1">&#39;The ParametricSensitivityTaylorExpansion is experimental.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objective_function</span> <span class="o">=</span> <span class="n">objective_function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objective_function_hessian</span> <span class="o">=</span> \
+            <span class="n">autograd</span><span class="o">.</span><span class="n">hessian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_objective_function</span><span class="p">,</span> <span class="n">argnum</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># In order to calculate derivatives d^kinput_dhyper^k, we will be</span>
+        <span class="c1"># Taylor expanding the gradient of the objective with respect to eta.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objective_function_eta_grad</span> <span class="o">=</span> \
+            <span class="n">autograd</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_objective_function</span><span class="p">,</span> <span class="n">argnum</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objective_function_cross_hess</span> <span class="o">=</span> \
+            <span class="n">autograd</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_objective_function_eta_grad</span><span class="p">,</span> <span class="n">argnum</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">hyper_par_objective_function</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_objective_function</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objective_function</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_par_objective_function</span> <span class="o">=</span> <span class="n">hyper_par_objective_function</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_base_values</span><span class="p">(</span><span class="n">input_val0</span><span class="p">,</span> <span class="n">hyper_val0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ParametricSensitivityTaylorExpansion.set_base_values"><a class="viewcode-back" href="../../api/sensitivity_functions.html#paragami.sensitivity_lib.ParametricSensitivityTaylorExpansion.set_base_values">[docs]</a>    <span class="k">def</span> <span class="nf">set_base_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_val0</span><span class="p">,</span> <span class="n">hyper_val0</span><span class="p">,</span> <span class="n">hess0</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the values at which the Taylor series is to be evaluated.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ---------------</span>
+<span class="sd">        input_val0: numpy array</span>
+<span class="sd">            The value of input_par at the optimum.</span>
+<span class="sd">        hyper_val0: numpy array</span>
+<span class="sd">            The value of hyper_par at which input_val0 was found.</span>
+<span class="sd">        hess0: numpy array</span>
+<span class="sd">            Optional.  The Hessian of the objective at (input_val0, hyper_val0).</span>
+<span class="sd">            If not specified it is calculated at initialization.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_input_val0</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">input_val0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_val0</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">hyper_val0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">hess0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hess0</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_objective_function_hessian</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_input_val0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_val0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hess0</span> <span class="o">=</span> <span class="n">hess0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hess0_chol</span> <span class="o">=</span> <span class="n">cho_factor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hess0</span><span class="p">)</span></div>
+
+    <span class="c1"># Get a function returning the next derivative from the Taylor terms dterms.</span>
+    <span class="k">def</span> <span class="nf">_get_dkinput_dhyperk_from_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dterms</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">dkinput_dhyperk</span><span class="p">(</span><span class="n">input_val</span><span class="p">,</span> <span class="n">hyper_val</span><span class="p">,</span> <span class="n">dhyper</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">tolerance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Make sure you&#39;re evaluating sensitivity at the base parameters.</span>
+                <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">input_val</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input_val0</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">tolerance</span>
+                <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">hyper_val</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_val0</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">tolerance</span>
+            <span class="k">return</span> <span class="n">evaluate_dketa_depsk</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hess0</span><span class="p">,</span> <span class="n">dterms</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_input_val0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_val0</span><span class="p">,</span> <span class="n">dhyper</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dkinput_dhyperk</span>
+
+    <span class="k">def</span> <span class="nf">_differentiate_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dterms</span><span class="p">,</span> <span class="n">eval_next_eta_deriv</span><span class="p">):</span>
+        <span class="n">dterms_derivs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">dterms</span><span class="p">:</span>
+            <span class="n">dterms_derivs</span> <span class="o">+=</span> <span class="n">term</span><span class="o">.</span><span class="n">differentiate</span><span class="p">(</span><span class="n">eval_next_eta_deriv</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_consolidate_terms</span><span class="p">(</span><span class="n">dterms_derivs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_order</span> <span class="o">=</span> <span class="n">order</span>
+
+        <span class="c1"># You need one more gradient derivative than the order of the Taylor</span>
+        <span class="c1"># approximation.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_eval_g_derivs</span> <span class="o">=</span> <span class="n">_generate_two_term_derivative_array</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_objective_function_eta_grad</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_order</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_taylor_terms_list</span> <span class="o">=</span> \
+            <span class="p">[</span> <span class="n">_get_taylor_base_terms</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_eval_g_derivs</span><span class="p">)</span> <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dkinput_dhyperk_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_order</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">next_dkinput_dhyperk</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_get_dkinput_dhyperk_from_terms</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_taylor_terms_list</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="n">next_taylor_terms</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_differentiate_terms</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_taylor_terms_list</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">next_dkinput_dhyperk</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dkinput_dhyperk_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_dkinput_dhyperk</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_taylor_terms_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_taylor_terms</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dkinput_dhyperk_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_dkinput_dhyperk_from_terms</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_taylor_terms_list</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_order</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]))</span>
+
+<div class="viewcode-block" id="ParametricSensitivityTaylorExpansion.evaluate_dkinput_dhyperk"><a class="viewcode-back" href="../../api/sensitivity_functions.html#paragami.sensitivity_lib.ParametricSensitivityTaylorExpansion.evaluate_dkinput_dhyperk">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_dkinput_dhyperk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dhyper</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate the derivative d^k input / d hyper^k in the direction dhyper.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        --------------</span>
+<span class="sd">        dhyper: numpy array</span>
+<span class="sd">            The direction (hyper_val - hyper_val0).</span>
+<span class="sd">        k: integer</span>
+<span class="sd">            The order of the derivative.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ------------</span>
+<span class="sd">            The value of the k^th derivative in the directoin dhyper.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;k must be at least one.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;k must be no greater than the declared order=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="p">))</span>
+        <span class="n">deriv_fun</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dkinput_dhyperk_list</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">deriv_fun</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_input_val0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hyper_val0</span><span class="p">,</span> <span class="n">dhyper</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ParametricSensitivityTaylorExpansion.evaluate_taylor_series"><a class="viewcode-back" href="../../api/sensitivity_functions.html#paragami.sensitivity_lib.ParametricSensitivityTaylorExpansion.evaluate_taylor_series">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_taylor_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dhyper</span><span class="p">,</span> <span class="n">add_offset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_order</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate the derivative ``d^k input / d hyper^k`` in the direction dhyper.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        --------------</span>
+<span class="sd">        dhyper: numpy array</span>
+<span class="sd">            The direction (hyper_val - hyper_val0).</span>
+<span class="sd">        add_offset: boolean</span>
+<span class="sd">            Optional.  Whether to add the initial constant input_val0 to the</span>
+<span class="sd">            Taylor series.</span>
+<span class="sd">        max_order: integer</span>
+<span class="sd">            Optional.  The order of the Taylor series.  Defaults to the</span>
+<span class="sd">            ``order`` argument to ``__init__``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ------------</span>
+<span class="sd">            The Taylor series approximation to ``input_vak(hyper_val)`` if</span>
+<span class="sd">            ``add_offset`` is ``True``, or to</span>
+<span class="sd">            ``input_val(hyper_val) - input_val0`` if ``False``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">max_order</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">max_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_order</span>
+        <span class="k">if</span> <span class="n">max_order</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;max_order must be greater than zero.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">max_order</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;max_order must be no greater than the declared order=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="p">))</span>
+
+        <span class="n">dinput</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_order</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">dinput</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate_dkinput_dhyperk</span><span class="p">(</span><span class="n">dhyper</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="o">/</span> \
+                <span class="nb">float</span><span class="p">(</span><span class="n">factorial</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">add_offset</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">dinput</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input_val0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">dinput</span></div>
+
+<div class="viewcode-block" id="ParametricSensitivityTaylorExpansion.print_terms"><a class="viewcode-back" href="../../api/sensitivity_functions.html#paragami.sensitivity_lib.ParametricSensitivityTaylorExpansion.print_terms">[docs]</a>    <span class="k">def</span> <span class="nf">print_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Print the derivative terms in the Taylor series.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ---------------</span>
+<span class="sd">        k: integer</span>
+<span class="sd">            Optional.  Which term to print.  If unspecified, all terms are</span>
+<span class="sd">            printed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">k</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;k must be no greater than order=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_order</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">order</span> <span class="o">==</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Terms for order </span><span class="si">{}</span><span class="s1">:&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">order</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_taylor_terms_list</span><span class="p">[</span><span class="n">order</span><span class="p">]:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">term</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Giordano
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script>
+        <script type="text/javascript" src="../../_static/copybutton.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,455 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>paragami.base_patterns &mdash; paragami 0.2.post27.dev0+g089cd6c documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> paragami
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2.post27.dev0+g089cd6c
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example_notebooks/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release-history.html">Release History</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">paragami</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>paragami.base_patterns</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for paragami.base_patterns</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">autograd</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="k">import</span> <span class="n">coo_matrix</span>
+
+<div class="viewcode-block" id="Pattern"><a class="viewcode-back" href="../../api/parent_pattern.html#paragami.base_patterns.Pattern">[docs]</a><span class="k">class</span> <span class="nc">Pattern</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A pattern for folding and unfolding a parameter.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ------------</span>
+
+<span class="sd">    Methods</span>
+<span class="sd">    ---------</span>
+<span class="sd">    __str__(): A string description of the pattern.</span>
+<span class="sd">    __eq__(): Check two patterns for equality.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    ------------</span>
+<span class="sd">    Todo.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Pattern.__init__"><a class="viewcode-back" href="../../api/parent_pattern.html#paragami.base_patterns.Pattern.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flat_length</span><span class="p">,</span> <span class="n">free_flat_length</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------</span>
+<span class="sd">        flat_length : int</span>
+<span class="sd">            The length of a non-free flattened vector.</span>
+<span class="sd">        free_flat_length : int</span>
+<span class="sd">            The length of a free flattened vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flat_length</span> <span class="o">=</span> <span class="n">flat_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_free_flat_length</span> <span class="o">=</span> <span class="n">free_flat_length</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_freeing_jacobian</span> <span class="o">=</span> <span class="n">autograd</span><span class="o">.</span><span class="n">jacobian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_freeing_transform</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_unfreeing_jacobian</span> <span class="o">=</span> <span class="n">autograd</span><span class="o">.</span><span class="n">jacobian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_unfreeing_transform</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">json_typename</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__module__</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">])</span>
+
+<div class="viewcode-block" id="Pattern.as_dict"><a class="viewcode-back" href="../../api/parent_pattern.html#paragami.base_patterns.Pattern.as_dict">[docs]</a>    <span class="k">def</span> <span class="nf">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a dictionary of attributes that determine equality.</span>
+
+<span class="sd">        If the keys of the returned dictionary match the arguments to</span>
+<span class="sd">        ``__init__``, then the default methods for ``to_json`` and</span>
+<span class="sd">        ``from_json`` will work.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">_freeing_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flat_val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        From the flat to the free flat value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fold</span><span class="p">(</span><span class="n">flat_val</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">free</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_unfreeing_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">free_flat_val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        From the free flat to the flat value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fold</span><span class="p">(</span><span class="n">free_flat_val</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">free</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Pattern.fold"><a class="viewcode-back" href="../../api/parent_pattern.html#paragami.base_patterns.Pattern.fold">[docs]</a>    <span class="k">def</span> <span class="nf">fold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flat_val</span><span class="p">,</span> <span class="n">free</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fold a flat value into a parameter.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------</span>
+<span class="sd">        flat_val: 1-d float array</span>
+<span class="sd">            The flattened value.</span>
+<span class="sd">        free: Boolean</span>
+<span class="sd">            Whether or not the flattened value is a free parameterization.</span>
+<span class="sd">        validate: Boolean</span>
+<span class="sd">            Whether to validate that the folded value respects the constraints.</span>
+<span class="sd">            If None, default either to the pattern&#39;s default or, if that is</span>
+<span class="sd">            unspecified, to True.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ---------</span>
+<span class="sd">        The parameter value in its original &quot;folded&quot; shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Pattern.flatten"><a class="viewcode-back" href="../../api/parent_pattern.html#paragami.base_patterns.Pattern.flatten">[docs]</a>    <span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folded_val</span><span class="p">,</span> <span class="n">free</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Flatten a folded value into a flat vector.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------</span>
+<span class="sd">        folded_val</span>
+<span class="sd">            The parameter in its original &quot;folded&quot; shape.</span>
+<span class="sd">        free: Boolean</span>
+<span class="sd">            Whether or not the flattened value is to be in a free</span>
+<span class="sd">            parameterization.</span>
+<span class="sd">        validate: Boolean</span>
+<span class="sd">            Whether to validate that the folded value respects the constraints.</span>
+<span class="sd">            If None, default either to the pattern&#39;s default or, if that is</span>
+<span class="sd">            unspecified, to True.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ---------</span>
+<span class="sd">        1-d vector of floats</span>
+<span class="sd">            The flattened value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+    <span class="c1"># Get the size of the flattened version.</span>
+<div class="viewcode-block" id="Pattern.flat_length"><a class="viewcode-back" href="../../api/parent_pattern.html#paragami.base_patterns.Pattern.flat_length">[docs]</a>    <span class="k">def</span> <span class="nf">flat_length</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">free</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the length of the pattern&#39;s flattened value.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------</span>
+<span class="sd">        free: Boolean</span>
+<span class="sd">            Whether or not the flattened value is to be in a free</span>
+<span class="sd">            parameterization.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ---------</span>
+<span class="sd">        int</span>
+<span class="sd">            The length of the pattern&#39;s flattened value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">free</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_flat_length</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flat_length</span></div>
+
+    <span class="c1"># Methods to generate valid values.</span>
+<div class="viewcode-block" id="Pattern.empty"><a class="viewcode-back" href="../../api/parent_pattern.html#paragami.base_patterns.Pattern.empty">[docs]</a>    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">valid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return an empty parameter in its &quot;folded&quot; shape.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------</span>
+<span class="sd">        valid: Boolean</span>
+<span class="sd">            Whether or folded shape should be filled with valid values.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ---------</span>
+<span class="sd">        A parameter value in its original &quot;folded&quot; shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Pattern.random"><a class="viewcode-back" href="../../api/parent_pattern.html#paragami.base_patterns.Pattern.random">[docs]</a>    <span class="k">def</span> <span class="nf">random</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return an random, valid parameter in its &quot;folded&quot; shape.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ---------</span>
+<span class="sd">        A random parameter value in its original &quot;folded&quot; shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fold</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_free_flat_length</span><span class="p">),</span> <span class="n">free</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Pattern.freeing_jacobian"><a class="viewcode-back" href="../../api/parent_pattern.html#paragami.base_patterns.Pattern.freeing_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">freeing_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folded_val</span><span class="p">,</span> <span class="n">sparse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the Jacobian of the map from a flat free value to a flat value.</span>
+
+<span class="sd">        If the folded value of the parameter is ``val``, ``val_flat =</span>
+<span class="sd">        flatten(val, free=False)``, and ``val_freeflat = flatten(val,</span>
+<span class="sd">        free=True)``, then this calculates the Jacobian matrix ``d val_free / d</span>
+<span class="sd">        val_freeflat``.  For entries with no dependence between them, the</span>
+<span class="sd">        Jacobian is taken to be zero.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -------------</span>
+<span class="sd">        folded_val:</span>
+<span class="sd">            The folded value at which the Jacobian is to be evaluated.</span>
+<span class="sd">        sparse: boolean</span>
+<span class="sd">            Whether to return a sparse or a dense matrix.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------------</span>
+<span class="sd">        Numeric matrix:</span>
+<span class="sd">            The Jacobian matrix ``d val_free / d val_freeflat``. Consistent with</span>
+<span class="sd">            standard Jacobian notation, the elements of ``val_free`` correspond</span>
+<span class="sd">            to the rows of the Jacobian matrix and the elements of</span>
+<span class="sd">            ``val_freeflat`` correspond to the columns.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">flat_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">jac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freeing_jacobian</span><span class="p">(</span><span class="n">flat_val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sparse</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">coo_matrix</span><span class="p">(</span><span class="n">jac</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">jac</span></div>
+
+<div class="viewcode-block" id="Pattern.unfreeing_jacobian"><a class="viewcode-back" href="../../api/parent_pattern.html#paragami.base_patterns.Pattern.unfreeing_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">unfreeing_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folded_val</span><span class="p">,</span> <span class="n">sparse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the Jacobian of the map from a flat value to a flat free value.</span>
+
+<span class="sd">        If the folded value of the parameter is ``val``, ``val_flat =</span>
+<span class="sd">        flatten(val, free=False)``, and ``val_freeflat = flatten(val,</span>
+<span class="sd">        free=True)``, then this calculates the Jacobian matrix ``d val_freeflat /</span>
+<span class="sd">        d val_free``.  For entries with no dependence between them, the Jacobian</span>
+<span class="sd">        is taken to be zero.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -------------</span>
+<span class="sd">        folded_val:</span>
+<span class="sd">            The folded value at which the Jacobian is to be evaluated.</span>
+<span class="sd">        sparse: boolean</span>
+<span class="sd">            Whether to return a sparse or a dense matrix.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------------</span>
+<span class="sd">        Numeric matrix:</span>
+<span class="sd">            The Jacobian matrix ``d val_freeflat / d val_free``. Consistent with</span>
+<span class="sd">            standard Jacobian notation, the elements of ``val_freeflat``</span>
+<span class="sd">            correspond to the rows of the Jacobian matrix and the elements of</span>
+<span class="sd">            ``val_free`` correspond to the columns.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">freeflat_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">folded_val</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">jac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unfreeing_jacobian</span><span class="p">(</span><span class="n">freeflat_val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sparse</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">coo_matrix</span><span class="p">(</span><span class="n">jac</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">jac</span></div>
+
+<div class="viewcode-block" id="Pattern.to_json"><a class="viewcode-back" href="../../api/parent_pattern.html#paragami.base_patterns.Pattern.to_json">[docs]</a>    <span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a JSON representation of the pattern.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_dict</span><span class="p">())</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_validate_json_dict_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_dict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;pattern&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">json_typename</span><span class="p">():</span>
+            <span class="n">error_string</span> <span class="o">=</span> \
+                <span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.from_json must be called on a json_string made &#39;</span> <span class="o">+</span>
+                 <span class="s1">&#39;from a the same pattern type.  The json_string &#39;</span> <span class="o">+</span>
+                 <span class="s1">&#39;pattern type was </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="bp">cls</span><span class="o">.</span><span class="n">json_typename</span><span class="p">(),</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;pattern&#39;</span><span class="p">])</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_string</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Pattern.from_json"><a class="viewcode-back" href="../../api/parent_pattern.html#paragami.base_patterns.Pattern.from_json">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_string</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a pattern instance from ``json_string`` created by ``to_json``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_string</span><span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_validate_json_dict_type</span><span class="p">(</span><span class="n">json_dict</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;pattern&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">json_dict</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Giordano
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script>
+        <script type="text/javascript" src="../../_static/copybutton.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -299,6 +299,11 @@ class DerivativeTerm:
     A single term in a Taylor expansion of a two-parameter objective with
     methods for computing its derivatives.
 
+    .. note::
+        This class is intended for internal use.  Most users should not
+        use ``DerivativeTerm`` directly, and should rather use
+        ``ParametricSensitivityTaylorExpansion``.
+
     The nomenclature assumes that
     we are calculating derivatives of g(eta, eps) at (eta0, eps0).  This
     can be used to calculate
@@ -307,6 +312,22 @@ class DerivativeTerm:
         d^k\hat{\\eta} / d\\eps^k | (\\eta_0, \\eps_0)
 
     where :math:`\hat{\\eta}: g(\hat{\\eta}, \\eps) = 0`.
+
+    Every term in the Taylor expansion of :math:`g(\\eta, \\eps)` is a product
+    the following terms.
+
+    First, there are the partial derivatives of :math:`g` itself.
+
+    .. math::
+        \\frac{\\partial g(\hat{\\eta}, \\eps)}{\\partial \\eta^m \\epsilon^n}
+
+    In the preceding display, ``m``
+    is the total number of :math:`\\eta` derivatives implied by
+    ``eta_orders``, and ``n = eps_order``.
+
+    Each partial derivative of :math:`g` with respect to :math:`\\epsilon`
+    will multiply one :math:`\\Delta \\epsilon` term directly.  Each
+    partial derivative with respect to :math:`\\eta` will multiply
 
     Attributes
     -----------------
@@ -634,7 +655,7 @@ class ParametricSensitivityTaylorExpansion(object):
     eta(eps) = argmax_eta objective(eta, eps) using forward-mode automatic
     differentation.
 
-    .. note:: This is class is experimental and should be used with caution.
+    .. note:: This class is experimental and should be used with caution.
 
     Methods
     --------------
