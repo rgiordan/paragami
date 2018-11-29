@@ -142,7 +142,7 @@ class DerivativeTerm:
         # Derived quantities.
 
         # The order is the total number of epsilon derivatives.
-        self.order = int(
+        self._order = int(
             self.eps_order + \
             np.sum(self.eta_orders * np.arange(1, len(self.eta_orders) + 1)))
 
@@ -156,19 +156,19 @@ class DerivativeTerm:
         # method from other well-defined terms, these assertions should always
         # be sastisfied.
         assert isinstance(self.eps_order, int)
-        assert len(self.eta_orders) == self.order
+        assert len(self.eta_orders) == self._order
         assert self.eps_order >= 0 # Redundant
         for eta_order in self.eta_orders:
             assert eta_order >= 0
             assert isinstance(eta_order, int)
-        assert len(self.eval_eta_derivs) >= self.order - 1
+        assert len(self.eval_eta_derivs) >= self._order - 1
         assert len(eval_g_derivs) > len(self.eta_orders)
         for eta_deriv_list in eval_g_derivs:
             assert len(eta_deriv_list) > self.eps_order
 
     def __str__(self):
         return 'Order: {}\t{} * eta{} * eps[{}]'.format(
-            self.order, self.prefactor, self.eta_orders, self.eps_order)
+            self._order, self.prefactor, self.eta_orders, self.eps_order)
 
     def evaluate(self, eta0, eps0, deps):
         # First eta arguments, then epsilons.
@@ -496,7 +496,8 @@ class ParametricSensitivityTaylorExpansionForwardDiff(object):
 
         if hess0 is None:
             self._hess0 = \
-                self.objective._objective_function_hessian(self._input_val0)
+                self._objective_function_hessian(
+                    self._input_val0, self._hyper_val0)
         else:
             self._hess0 = hess0
         self._hess0_chol = sp.linalg.cho_factor(self._hess0)
@@ -506,8 +507,8 @@ class ParametricSensitivityTaylorExpansionForwardDiff(object):
         def dkinput_dhyperk(input_val, hyper_val, dhyper, tolerance=1e-8):
             if tolerance is not None:
                 # Make sure you're evaluating sensitivity at the base parameters.
-                assert np.max(np.abs(input_val - self.input_val0)) <= tolerance
-                assert np.max(np.abs(hyper_val - self.hyper_val0)) <= tolerance
+                assert np.max(np.abs(input_val - self._input_val0)) <= tolerance
+                assert np.max(np.abs(hyper_val - self._hyper_val0)) <= tolerance
             return evaluate_dketa_depsk(
                 self._hess0, dterms,
                 self._input_val0, self._hyper_val0, dhyper)
@@ -561,11 +562,11 @@ class ParametricSensitivityTaylorExpansionForwardDiff(object):
         """
         if k <= 0:
             raise ValueError('k must be at least one.')
-        if k > self.order:
+        if k > self._order:
             raise ValueError(
                 'k must be no greater than the declared order={}'.format(
-                    self.order))
-        deriv_fun = self.dkinput_dhyperk_list[k - 1]
+                    self._order))
+        deriv_fun = self._dkinput_dhyperk_list[k - 1]
         return deriv_fun(self._input_val0, self._hyper_val0, dhyper)
 
     def evaluate_taylor_series(self, dhyper, add_offset=True, max_order=None):
@@ -618,11 +619,11 @@ class ParametricSensitivityTaylorExpansionForwardDiff(object):
             Optional.  Which term to pring.  If unspecified, all terms are
             printed.
         """
-        if k is not None and k > self.order:
+        if k is not None and k > self._order:
             raise ValueError(
-                'k must be no greater than order={}'.format(self.order))
-        for order in range(self.order):
+                'k must be no greater than order={}'.format(self._order))
+        for order in range(self._order):
             if k is None or order == (k - 1):
                 print('\nTerms for order {}:'.format(order + 1))
-                for term in self.taylor_terms_list[order]:
+                for term in self._taylor_terms_list[order]:
                     print(term)

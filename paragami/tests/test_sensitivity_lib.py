@@ -271,7 +271,7 @@ class TestTaylorExpansion(unittest.TestCase):
 
         taylor_expansion = \
             sensitivity_lib.ParametricSensitivityTaylorExpansionForwardDiff(
-                objective_function=model.get_objective,
+                objective_function=objective,
                 input_val0=eta0,
                 hyper_val0=eps0,
                 order=3,
