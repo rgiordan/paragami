@@ -9,6 +9,7 @@ import autograd.numpy as np
 from autograd.test_util import check_grads
 
 import paragami
+from paragami import sensitivity_lib
 
 from test_utils import QuadraticModel
 
@@ -39,8 +40,14 @@ class TestTaylorExpansion(unittest.TestCase):
             free=[eta_is_free, eps_is_free],
             argnums=[0, 1])
 
-        obj_hessian = autograd.hessian(objective, argnum=0)
-        hess0 = obj_hessian(eta0, eps0)
+        obj_eta_grad = autograd.grad(objective, argnum=0)
+        obj_eps_grad = autograd.grad(objective, argnum=1)
+        obj_eta_hessian = autograd.hessian(objective, argnum=0)
+        obj_eps_hessian = autograd.hessian(objective, argnum=1)
+        get_dobj_deta_deps = autograd.jacobian(
+            autograd.jacobian(objective, argnum=0), argnum=1)
+
+        hess0 = obj_eta_hessian(eta0, eps0)
 
         eps1 = eps0 + 1e-1
         eta1 = model.get_true_optimal_theta(eps1)
@@ -61,26 +68,17 @@ class TestTaylorExpansion(unittest.TestCase):
         true_d4eta_deps4 = autograd.jacobian(true_d3eta_deps3)
 
         # Sanity check using standard first-order approximation.
-        get_cross_hessian = autograd.jacobian(
-            autograd.jacobian(objective, argnum=0), argnum=1)
-        d2f_deta_deps = get_cross_hessian(eta0, eps0)
+        d2f_deta_deps = get_dobj_deta_deps(eta0, eps0)
         assert_array_almost_equal(
             true_deta_deps(eps0),
             -1 * np.linalg.solve(hess0, d2f_deta_deps))
 
-        return True
-
         ########################
         # Test append_jvp.
-
-        def objective_2par(eta, eps):
-            return sensitivity_objective.eval_fun(
-                eta, eps, val1_is_free=True, val2_is_free=False)
-
-        dobj_deta = wrap_objective_2par(
-            append_jvp(objective_2par, num_base_args=2, argnum=0))
-        d2obj_deta_deta = wrap_objective_2par(
-            append_jvp(dobj_deta, num_base_args=2, argnum=0))
+        dobj_deta = sensitivity_lib._append_jvp(
+            objective, num_base_args=2, argnum=0)
+        d2obj_deta_deta = sensitivity_lib._append_jvp(
+            dobj_deta, num_base_args=2, argnum=0)
 
         v1 = np.random.random(len(eta0))
         v2 = np.random.random(len(eta0))
@@ -91,48 +89,43 @@ class TestTaylorExpansion(unittest.TestCase):
 
         # Check the first argument
         assert_array_almost_equal(
-            np.einsum('i,i', model.objective.fun_free_grad(eta0), v1),
+            np.einsum('i,i', obj_eta_grad(eta0, eps0), v1),
             dobj_deta(eta0, eps0, v1))
         assert_array_almost_equal(
-            np.einsum('ij,i,j', model.objective.fun_free_hessian(eta0), v1, v2),
+            np.einsum('ij,i,j', obj_eta_hessian(eta0, eps0), v1, v2),
             d2obj_deta_deta(eta0, eps0, v1, v2))
 
         # Check the second argument
-        hyperparam_obj = obj_lib.Objective(model.hyper_param, model.get_objective)
-
-        dobj_deps = wrap_objective_2par(append_jvp(objective_2par, num_base_args=2, argnum=1))
-        d2obj_deps_deps = wrap_objective_2par(append_jvp(dobj_deps, num_base_args=2, argnum=1))
+        dobj_deps = sensitivity_lib._append_jvp(
+            objective, num_base_args=2, argnum=1)
+        d2obj_deps_deps = sensitivity_lib._append_jvp(
+            dobj_deps, num_base_args=2, argnum=1)
 
         assert_array_almost_equal(
-            np.einsum('i,i', hyperparam_obj.fun_vector_grad(eps0), w1),
+            np.einsum('i,i', obj_eps_grad(eta0, eps0), w1),
             dobj_deps(eta0, eps0, w1))
 
         assert_array_almost_equal(
-            np.einsum('ij,i,j', hyperparam_obj.fun_vector_hessian(eps0), w1, w2),
+            np.einsum('ij,i,j', obj_eps_hessian(eta0, eps0), w1, w2),
             d2obj_deps_deps(eta0, eps0, w1, w2))
 
         # Check mixed arguments
-        d2obj_deps_deta = wrap_objective_2par(append_jvp(dobj_deps, num_base_args=2, argnum=0))
-        d2obj_deta_deps = wrap_objective_2par(append_jvp(dobj_deta, num_base_args=2, argnum=1))
+        d2obj_deps_deta = sensitivity_lib._append_jvp(
+            dobj_deps, num_base_args=2, argnum=0)
+        d2obj_deta_deps = sensitivity_lib._append_jvp(
+            dobj_deta, num_base_args=2, argnum=1)
 
         assert_array_almost_equal(
             d2obj_deps_deta(eta0, eps0, v1, w1),
             d2obj_deta_deps(eta0, eps0, w1, v1))
 
         assert_array_almost_equal(
-            np.einsum('ij,i,j',
-                      sensitivity_objective.fun_hessian_free1_vector2(eta0, eps0), v1, w1),
+            np.einsum('ij,i,j', get_dobj_deta_deps(eta0, eps0), v1, w1),
             d2obj_deps_deta(eta0, eps0, v1, w1))
 
         # Check derivatives of vectors.
-        @wrap_objective_2par
-        def grad_obj(eta, eps):
-            return sensitivity_objective.fun_grad1(
-                eta, eps, val1_is_free=True, val2_is_free=False)
-
-        grad_obj(eta0, eps0)
-
-        dg_deta = wrap_objective_2par(append_jvp(grad_obj, num_base_args=2, argnum=0))
+        dg_deta = sensitivity_lib._append_jvp(
+            obj_eta_grad, num_base_args=2, argnum=0)
 
         assert_array_almost_equal(
             hess0 @ v1, dg_deta(eta0, eps0, v1))
@@ -146,20 +139,27 @@ class TestTaylorExpansion(unittest.TestCase):
             assert np.max(np.sum(eta - eta0)) < 1e-8
             return -1 * np.linalg.solve(hess0, d2f_deta_deps @ v1)
 
-        dg_deta = wrap_objective_2par(append_jvp(grad_obj, num_base_args=2, argnum=0))
-        dg_deps = wrap_objective_2par(append_jvp(grad_obj, num_base_args=2, argnum=1))
+        dg_deta = sensitivity_lib._append_jvp(
+            obj_eta_grad, num_base_args=2, argnum=0)
+        dg_deps = sensitivity_lib._append_jvp(
+            obj_eta_grad, num_base_args=2, argnum=1)
 
-        d2g_deta_deta = wrap_objective_2par(append_jvp(dg_deta, num_base_args=2, argnum=0))
-        d2g_deta_deps = wrap_objective_2par(append_jvp(dg_deta, num_base_args=2, argnum=1))
-        d2g_deps_deta = wrap_objective_2par(append_jvp(dg_deps, num_base_args=2, argnum=0))
-        d2g_deps_deps = wrap_objective_2par(append_jvp(dg_deps, num_base_args=2, argnum=1))
+        d2g_deta_deta = sensitivity_lib._append_jvp(
+            dg_deta, num_base_args=2, argnum=0)
+        d2g_deta_deps = sensitivity_lib._append_jvp(
+            dg_deta, num_base_args=2, argnum=1)
+        d2g_deps_deta = sensitivity_lib._append_jvp(
+            dg_deps, num_base_args=2, argnum=0)
+        d2g_deps_deps = sensitivity_lib._append_jvp(
+            dg_deps, num_base_args=2, argnum=1)
 
         # This is a manual version of the second derivative.
         def eval_d2eta_deps2(eta, eps, delta_eps):
             assert np.max(np.sum(eps - eps0)) < 1e-8
             assert np.max(np.sum(eta - eta0)) < 1e-8
 
-            deta_deps = -1 * np.linalg.solve(hess0, dg_deps(eta, eps, delta_eps))
+            deta_deps = -1 * np.linalg.solve(
+                hess0, dg_deps(eta, eps, delta_eps))
 
             # Then the terms in the second derivative.
             d2_terms = \
@@ -170,8 +170,8 @@ class TestTaylorExpansion(unittest.TestCase):
             d2eta_deps2 = -1 * np.linalg.solve(hess0, d2_terms)
             return d2eta_deps2
 
-
-        eval_g_derivs = generate_two_term_derivative_array(grad_obj, order=5)
+        eval_g_derivs = sensitivity_lib._generate_two_term_derivative_array(
+            obj_eta_grad, order=5)
 
         assert_array_almost_equal(
             hess0 @ v1,
@@ -188,7 +188,9 @@ class TestTaylorExpansion(unittest.TestCase):
             d2g_deta_deps(eta0, eps0, v1, v2),
             eval_g_derivs[1][1](eta0, eps0, v1, v2))
 
-        dterm = DerivativeTerm(
+        # Test the DerivativeTerm.
+
+        dterm = sensitivity_lib.DerivativeTerm(
             eps_order=1,
             eta_orders=[1, 0],
             prefactor=1.5,
@@ -203,19 +205,19 @@ class TestTaylorExpansion(unittest.TestCase):
             dterm.evaluate(eta0, eps0, deps))
 
         dterms = [
-            DerivativeTerm(
+            sensitivity_lib.DerivativeTerm(
                 eps_order=2,
                 eta_orders=[0, 0],
                 prefactor=1.5,
                 eval_eta_derivs=[ eval_deta_deps ],
                 eval_g_derivs=eval_g_derivs),
-            DerivativeTerm(
+            sensitivity_lib.DerivativeTerm(
                 eps_order=1,
                 eta_orders=[1, 0],
                 prefactor=2,
                 eval_eta_derivs=[ eval_deta_deps ],
                 eval_g_derivs=eval_g_derivs),
-            DerivativeTerm(
+            sensitivity_lib.DerivativeTerm(
                 eps_order=1,
                 eta_orders=[1, 0],
                 prefactor=3,
@@ -223,15 +225,15 @@ class TestTaylorExpansion(unittest.TestCase):
                 eval_g_derivs=eval_g_derivs) ]
 
 
-        dterms_combined = consolidate_terms(dterms)
-        assert len(dterms) == 3
-        assert len(dterms_combined) == 2
+        dterms_combined = sensitivity_lib._consolidate_terms(dterms)
+        self.assertEqual(3, len(dterms))
+        self.assertEqual(2, len(dterms_combined))
 
         assert_array_almost_equal(
-            evaluate_terms(dterms, eta0, eps0, deps),
-            evaluate_terms(dterms_combined, eta0, eps0, deps))
+            sensitivity_lib.evaluate_terms(dterms, eta0, eps0, deps),
+            sensitivity_lib.evaluate_terms(dterms_combined, eta0, eps0, deps))
 
-        dterms1 = get_taylor_base_terms(eval_g_derivs)
+        dterms1 = sensitivity_lib._get_taylor_base_terms(eval_g_derivs)
 
         assert_array_almost_equal(
             dg_deps(eta0, eps0, deps),
@@ -239,25 +241,26 @@ class TestTaylorExpansion(unittest.TestCase):
 
         assert_array_almost_equal(
             np.einsum('ij,j', true_deta_deps(eps0), deps),
-            evaluate_dketa_depsk(hess0, dterms1, eta0, eps0, deps))
+            sensitivity_lib.evaluate_dketa_depsk(hess0, dterms1, eta0, eps0, deps))
 
         assert_array_almost_equal(
             eval_deta_deps(eta0, eps0, deps),
-            evaluate_dketa_depsk(hess0, dterms1, eta0, eps0, deps))
+            sensitivity_lib.evaluate_dketa_depsk(hess0, dterms1, eta0, eps0, deps))
 
-        dterms2 = differentiate_terms(hess0, dterms1)
-        assert np.linalg.norm(evaluate_dketa_depsk(hess0, dterms2, eta0, eps0, deps)) > 0
+        dterms2 = sensitivity_lib.differentiate_terms(hess0, dterms1)
+        assert np.linalg.norm(sensitivity_lib.evaluate_dketa_depsk(hess0, dterms2, eta0, eps0, deps)) > 0
         assert_array_almost_equal(
             np.einsum('ijk,j, k', true_d2eta_deps2(eps0), deps, deps),
-            evaluate_dketa_depsk(hess0, dterms2, eta0, eps0, deps))
+            sensitivity_lib.evaluate_dketa_depsk(hess0, dterms2, eta0, eps0, deps))
 
-        dterms3 = differentiate_terms(hess0, dterms2)
-        assert np.linalg.norm(evaluate_dketa_depsk(hess0, dterms3, eta0, eps0, deps)) > 0
+        dterms3 = sensitivity_lib.differentiate_terms(hess0, dterms2)
+        assert np.linalg.norm(sensitivity_lib.evaluate_dketa_depsk(hess0, dterms3, eta0, eps0, deps)) > 0
 
         assert_array_almost_equal(
             np.einsum('ijkl,j,k,l', true_d3eta_deps3(eps0), deps, deps, deps),
-            evaluate_dketa_depsk(hess0, dterms3, eta0, eps0, deps))
+            sensitivity_lib.evaluate_dketa_depsk(hess0, dterms3, eta0, eps0, deps))
 
+        return True
         ###################################
         # Test the Taylor series itself.
 
