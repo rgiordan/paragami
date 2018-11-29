@@ -430,10 +430,9 @@ class ParametricSensitivityTaylorExpansionForwardDiff(object):
               hyper_val0 + dhyper.
     """
     def __init__(
-        self, objective_functor,
+        self, objective_function,
         input_val0, hyper_val0, order,
-        input_is_free=True, hyper_is_free=False,
-        hess0=None, hyper_par_objective_functor=None):
+        hess0=None, hyper_par_objective_function=None):
         """
         Parameters
         ------------------

@@ -241,39 +241,40 @@ class TestTaylorExpansion(unittest.TestCase):
 
         assert_array_almost_equal(
             np.einsum('ij,j', true_deta_deps(eps0), deps),
-            sensitivity_lib.evaluate_dketa_depsk(hess0, dterms1, eta0, eps0, deps))
+            sensitivity_lib.evaluate_dketa_depsk(
+                hess0, dterms1, eta0, eps0, deps))
 
         assert_array_almost_equal(
             eval_deta_deps(eta0, eps0, deps),
-            sensitivity_lib.evaluate_dketa_depsk(hess0, dterms1, eta0, eps0, deps))
+            sensitivity_lib.evaluate_dketa_depsk(
+                hess0, dterms1, eta0, eps0, deps))
 
         dterms2 = sensitivity_lib.differentiate_terms(hess0, dterms1)
-        assert np.linalg.norm(sensitivity_lib.evaluate_dketa_depsk(hess0, dterms2, eta0, eps0, deps)) > 0
+        self.assertTrue(np.linalg.norm(sensitivity_lib.evaluate_dketa_depsk(
+            hess0, dterms2, eta0, eps0, deps)) > 0)
         assert_array_almost_equal(
             np.einsum('ijk,j, k', true_d2eta_deps2(eps0), deps, deps),
-            sensitivity_lib.evaluate_dketa_depsk(hess0, dterms2, eta0, eps0, deps))
+            sensitivity_lib.evaluate_dketa_depsk(
+                hess0, dterms2, eta0, eps0, deps))
 
         dterms3 = sensitivity_lib.differentiate_terms(hess0, dterms2)
-        assert np.linalg.norm(sensitivity_lib.evaluate_dketa_depsk(hess0, dterms3, eta0, eps0, deps)) > 0
+        self.assertTrue(np.linalg.norm(sensitivity_lib.evaluate_dketa_depsk(
+            hess0, dterms3, eta0, eps0, deps)) > 0)
 
         assert_array_almost_equal(
             np.einsum('ijkl,j,k,l', true_d3eta_deps3(eps0), deps, deps, deps),
-            sensitivity_lib.evaluate_dketa_depsk(hess0, dterms3, eta0, eps0, deps))
+            sensitivity_lib.evaluate_dketa_depsk(
+                hess0, dterms3, eta0, eps0, deps))
 
-        return True
         ###################################
         # Test the Taylor series itself.
 
         taylor_expansion = \
-            ParametricSensitivityTaylorExpansion(
-                objective_functor=model.get_objective,
-                input_par=model.param,
-                hyper_par=model.hyper_param,
+            sensitivity_lib.ParametricSensitivityTaylorExpansionForwardDiff(
+                objective_function=model.get_objective,
                 input_val0=eta0,
                 hyper_val0=eps0,
                 order=3,
-                input_is_free=True,
-                hyper_is_free=False,
                 hess0=hess0)
 
         taylor_expansion.print_terms(k=3)
@@ -292,7 +293,8 @@ class TestTaylorExpansion(unittest.TestCase):
             d3, taylor_expansion.evaluate_dkinput_dhyperk(deps, k=3))
 
         assert_array_almost_equal(
-            eta0 + d1, taylor_expansion.evaluate_taylor_series(deps, max_order=1))
+            eta0 + d1, taylor_expansion.evaluate_taylor_series(
+                deps, max_order=1))
 
         assert_array_almost_equal(
             eta0 + d1 + 0.5 * d2,
