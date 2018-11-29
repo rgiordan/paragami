@@ -634,7 +634,7 @@ class ParametricSensitivityTaylorExpansion(object):
     eta(eps) = argmax_eta objective(eta, eps) using forward-mode automatic
     differentation.
 
-    ..note:: This is an class is experimental and should be used with caution.
+    .. note:: This is class is experimental and should be used with caution.
 
     Methods
     --------------
