@@ -136,8 +136,8 @@ class DerivativeTerm:
         self.eps_order = eps_order
         self.eta_orders = eta_orders
         self.prefactor = prefactor
-        self.eval_eta_derivs = eval_eta_derivs
-        self.eval_g_derivs = eval_g_derivs
+        self._eval_eta_derivs = eval_eta_derivs
+        self._eval_g_derivs = eval_g_derivs
 
         # Derived quantities.
 
@@ -161,7 +161,7 @@ class DerivativeTerm:
         for eta_order in self.eta_orders:
             assert eta_order >= 0
             assert isinstance(eta_order, int)
-        assert len(self.eval_eta_derivs) >= self._order - 1
+        assert len(self._eval_eta_derivs) >= self._order - 1
         assert len(eval_g_derivs) > len(self.eta_orders)
         for eta_deriv_list in eval_g_derivs:
             assert len(eta_deriv_list) > self.eps_order
@@ -177,7 +177,7 @@ class DerivativeTerm:
         for i in range(len(self.eta_orders)):
             eta_order = self.eta_orders[i]
             if eta_order > 0:
-                vec = self.eval_eta_derivs[i](eta0, eps0, deps)
+                vec = self._eval_eta_derivs[i](eta0, eps0, deps)
                 for j in range(eta_order):
                     vec_args.append(vec)
 
@@ -188,24 +188,22 @@ class DerivativeTerm:
 
     def differentiate(self, eval_next_eta_deriv):
         derivative_terms = []
-        new_eval_eta_derivs = deepcopy(self.eval_eta_derivs)
+        new_eval_eta_derivs = deepcopy(self._eval_eta_derivs)
         new_eval_eta_derivs.append(eval_next_eta_deriv)
 
         old_eta_orders = deepcopy(self.eta_orders)
         old_eta_orders.append(0)
 
         # dG / deps.
-        #print('dg/deps')
         derivative_terms.append(
             DerivativeTerm(
                 eps_order=self.eps_order + 1,
                 eta_orders=deepcopy(old_eta_orders),
                 prefactor=self.prefactor,
                 eval_eta_derivs=new_eval_eta_derivs,
-                eval_g_derivs=self.eval_g_derivs))
+                eval_g_derivs=self._eval_g_derivs))
 
         # dG / deta.
-        #print('dg/deta')
         new_eta_orders = deepcopy(old_eta_orders)
         new_eta_orders[0] = new_eta_orders[0] + 1
         derivative_terms.append(
@@ -214,11 +212,10 @@ class DerivativeTerm:
                 eta_orders=new_eta_orders,
                 prefactor=self.prefactor,
                 eval_eta_derivs=new_eval_eta_derivs,
-                eval_g_derivs=self.eval_g_derivs))
+                eval_g_derivs=self._eval_g_derivs))
 
         # Derivatives of each d^{i}eta / deps^i term.
         for i in range(len(self.eta_orders)):
-            #print('i: ', i)
             eta_order = self.eta_orders[i]
             if eta_order > 0:
                 new_eta_orders = deepcopy(old_eta_orders)
@@ -230,12 +227,16 @@ class DerivativeTerm:
                         eta_orders=new_eta_orders,
                         prefactor=self.prefactor * eta_order,
                         eval_eta_derivs=new_eval_eta_derivs,
-                        eval_g_derivs=self.eval_g_derivs))
+                        eval_g_derivs=self._eval_g_derivs))
 
         return derivative_terms
 
     # Return whether another term matches this one in the pattern of derivatives.
     def check_similarity(self, term):
+        print('---------\n')
+        print(self)
+        print(term)
+        print('---------\n')
         return \
             (self.eps_order == term.eps_order) & \
             (self.eta_orders == term.eta_orders)
@@ -248,8 +249,8 @@ class DerivativeTerm:
             eps_order=self.eps_order,
             eta_orders=self.eta_orders,
             prefactor=self.prefactor + term.prefactor,
-            eval_eta_derivs=self.eval_eta_derivs,
-            eval_g_derivs=self.eval_g_derivs)
+            eval_eta_derivs=self._eval_eta_derivs,
+            eval_g_derivs=self._eval_g_derivs)
 
 
 def _generate_two_term_derivative_array(fun, order):
