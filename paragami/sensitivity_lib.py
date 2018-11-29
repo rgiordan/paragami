@@ -1,31 +1,243 @@
+##########################################################################
+# Functions for evaluating the sensitivity of optima to hyperparameters. #
+##########################################################################
+
 import autograd
 import autograd.numpy as np
-import copy
+from copy import deepcopy
+from math import factorial
+from scipy.linalg import cho_factor, cho_solve
+import warnings
+
 from .function_patterns import FlattenedFunction
 
 
-#######################################
-# Higher-order Taylor series         #
-######################################
+class HyperparameterSensitivityLinearApproximation:
+    """
+    Linearly approximate dependence of an optimum on a hyperparameter.
 
-import autograd
-import autograd.numpy as np
+    Suppose we have an optimization problem in which the objective
+    depends on a hyperparameter:
 
-import scipy as sp
+    .. math::
 
-import LinearResponseVariationalBayes as vb
-import LinearResponseVariationalBayes.SparseObjectives as obj_lib
+        \hat{\\theta} = \mathrm{argmin}_{\\theta} f(\\theta, \\lambda).
 
-from copy import deepcopy
+    The optimal parameter, :math:`\hat{\\theta}`, is a function of
+    :math:`\\lambda` through the optimization problem.  In general, this
+    dependence is complex and nonlinear.  To approximate this dependence,
+    this class uses the linear approximation:
 
-import math
+    .. math::
 
-def set_par(par, val, is_free):
-    if is_free:
-        par.set_free(val)
-    else:
-        par.set_vector(val)
+        \hat{\\theta}(\\lambda) \\approx \hat{\\theta}(\\lambda_0) +
+            \\frac{d\hat{\\theta}}{d\\lambda}|_{\\lambda_0}
+                (\\lambda - \\lambda_0).
 
+    In terms of the arguments to this function,
+    :math:`\\theta` corresponds to ``opt_par``,
+    :math:`\\lambda` corresponds to ``hyper_par``,
+    and :math:`f` corresponds to ``objective_fun``.
+
+    Because ``opt_par`` and ``hyper_par`` in general are structured,
+    constrained data, the linear approximation is evaluated in flattened
+    space using user-specified patterns.
+
+    Methods
+    ------------
+    set_base_values:
+        Set the base values, :math:`\\lambda_0` and
+        :math:`\\theta_0 := \hat\\theta(\\lambda_0)`, at which the linear
+        approximation is evaluated.
+    get_dopt_dhyper:
+        Return the Jacobian matrix
+        :math:`\\frac{d\hat{\\theta}}{d\\lambda}|_{\\lambda_0}` in flattened
+        space.
+    get_hessian_at_opt:
+        Return the Hessian of the objective function in the
+        flattened space.
+    predict_opt_par_from_hyper_par:
+        Use the linear approximation to predict
+        the folded value of ``opt_par`` from a folded value of ``hyper_par``.
+    """
+    def __init__(
+        self,
+        objective_fun,
+        opt_par_pattern, hyper_par_pattern,
+        opt_par_folded_value, hyper_par_folded_value,
+        opt_par_is_free, hyper_par_is_free,
+        validate_optimum=True,
+        hessian_at_opt=None,
+        factorize_hessian=True,
+        hyper_par_objective_fun=None,
+        grad_tol=1e-8):
+        """
+        Parameters
+        --------------
+        objective_fun: Callable function
+            A callable function, optimized by ``opt_par`` at a particular value
+            of ``hyper_par``.  The function must be of the form
+            ``f(folded opt_par, folded hyper_par)``.
+        opt_par_pattern:
+            A pattern for ``opt_par``, the optimal parameter.
+        opt_par_pattern:
+            A pattern for ``hyper_par``, the hyperparameter.
+        opt_par_folded_value:
+            The folded value of ``opt_par`` at which ``objective_fun`` is
+            optimized for the given value of ``hyper_par``.
+        hyper_par_folded_value:
+            The folded of ``hyper_par_folded_value`` at which ``opt_par``
+            optimizes ``objective_fun``.
+        opt_par_is_free: Boolean
+            Whether to use the free parameterization for ``opt_par``` when
+            linearzing.
+        hyper_par_is_free: Boolean
+            Whether to use the free parameterization for ``hyper_par``` when
+            linearzing.
+        validate_optimum: Boolean
+            When setting the values of ``opt_par`` and ``hyper_par``, check
+            that ``opt_par`` is, in fact, a critical point of
+            ``objective_fun``.
+        hessian_at_opt: Numeric matrix (optional)
+            The Hessian of ``objective_fun`` at the optimum.  If not specified,
+            it is calculated using automatic differentiation.
+        factorize_hessian: Boolean
+            If ``True``, solve the required linear system using a Cholesky
+            factorization.  If ``False``, use the conjugate gradient algorithm
+            to avoid forming or inverting the Hessian.
+        hyper_par_objective_fun: Callable function
+            A callable function of the form
+            ``f(folded opt_par, folded hyper_par)`` containing the part of
+            ``objective_fun`` that depends on both ``opt_par`` and
+            ``hyper_par``.  If not specified, ``objective_fun`` is used.
+        grad_tol: Float
+            The tolerance used to check that the gradient is approximately
+            zero at the optimum.
+        """
+
+        self._objective_fun = objective_fun
+        self._opt_par_pattern = opt_par_pattern
+        self._hyper_par_pattern = hyper_par_pattern
+        self._opt_par_is_free = opt_par_is_free
+        self._hyper_par_is_free = hyper_par_is_free
+        self._grad_tol = grad_tol
+
+        # Define flattened versions of the objective function and their
+        # autograd derivatives.
+        self._obj_fun = \
+            FlattenedFunction(
+                original_fun=self._objective_fun,
+                patterns=[self._opt_par_pattern, self._hyper_par_pattern],
+                free=[self._opt_par_is_free, self._hyper_par_is_free],
+                argnums=[0, 1])
+        self._obj_fun_grad = autograd.grad(self._obj_fun, argnum=0)
+        self._obj_fun_hessian = autograd.hessian(self._obj_fun, argnum=0)
+        self._obj_fun_hvp = autograd.hessian_vector_product(
+            self._obj_fun, argnum=0)
+
+        if hyper_par_objective_fun is None:
+            self._hyper_par_objective_fun = self._objective_fun
+            self._hyper_obj_fun = self._obj_fun
+        else:
+            self._hyper_par_objective_fun = hyper_par_objective_fun
+            self._hyper_obj_fun = \
+                FlattenedFunction(
+                    original_fun=self._hyper_par_objective_fun,
+                    patterns=[self._opt_par_pattern, self._hyper_par_pattern],
+                    free=[self._opt_par_is_free, self._hyper_par_is_free],
+                    argnums=[0, 1])
+
+        # TODO: is this the right default order?  Make this flexible.
+        self._hyper_obj_fun_grad = autograd.grad(self._hyper_obj_fun, argnum=0)
+        self._hyper_obj_cross_hess = autograd.jacobian(
+            self._hyper_obj_fun_grad, argnum=1)
+
+        self.set_base_values(
+            opt_par_folded_value, hyper_par_folded_value,
+            hessian_at_opt, factorize_hessian, validate=validate_optimum)
+
+    def set_base_values(self,
+                        opt_par_folded_value, hyper_par_folded_value,
+                        hessian_at_opt, factorize_hessian,
+                        validate=True, grad_tol=None):
+        if grad_tol is None:
+            grad_tol = self._grad_tol
+
+        # Set the values of the optimal parameters.
+        self._opt0 = self._opt_par_pattern.flatten(
+            opt_par_folded_value, free=self._opt_par_is_free)
+        self._hyper0 = self._hyper_par_pattern.flatten(
+            hyper_par_folded_value, free=self._hyper_par_is_free)
+
+        if validate:
+            # Check that the gradient of the objective is zero at the optimum.
+            grad0 = self._obj_fun_grad(self._opt0, self._hyper0)
+            grad0_norm = np.linalg.norm(grad0)
+            if np.linalg.norm(grad0) > grad_tol:
+                err_msg = \
+                    'The gradient is not zero at the putatively optimal ' + \
+                    'values.  ||grad|| = {} > {} = grad_tol'.format(
+                        grad0_norm, grad_tol)
+                raise ValueError(err_msg)
+
+        # Set the values of the Hessian at the optimum.
+        self._factorize_hessian = factorize_hessian
+        if self._factorize_hessian:
+            if hessian_at_opt is None:
+                self._hess0 = self._obj_fun_hessian(self._opt0, self._hyper0)
+            else:
+                self._hess0 = hessian_at_opt
+            self._hess0_chol = cho_factor(self._hess0)
+        else:
+            if hessian_at_opt is not None:
+                raise ValueError('If factorize_hessian is False, ' +
+                                 'hessian_at_opt must be None.')
+            self._hess0 = None
+            self._hess0_chol = None
+
+        self._cross_hess = self._hyper_obj_cross_hess(self._opt0, self._hyper0)
+        self._sens_mat = -1 * cho_solve(self._hess0_chol, self._cross_hess)
+
+    # Methods:
+    def get_dopt_dhyper(self):
+        return self._sens_mat
+
+    def get_hessian_at_opt(self):
+        return self._hess0
+
+    def predict_opt_par_from_hyper_par(self, new_hyper_par_folded_value,
+                                       fold_output=True):
+        """
+        Predict ``opt_par`` using the linear approximation.
+
+        Parameters
+        ------------
+        new_hyper_par_folded_value:
+            The folded value of ``hyper_par`` at which to approximate
+            ``opt_par``.
+        fold_output: Boolean
+            Whether to return ``opt_par`` as a folded value.  If ``False``,
+            returns the flattened value according to ``opt_par_pattern``
+            and ``opt_par_is_free``.
+        """
+
+        if not self._factorize_hessian:
+            raise NotImplementedError(
+                'CG is not yet implemented for predict_opt_par_from_hyper_par')
+
+        hyper1 = self._hyper_par_pattern.flatten(
+            new_hyper_par_folded_value, free=self._hyper_par_is_free)
+        opt_par1 = self._opt0 + self._sens_mat @ (hyper1 - self._hyper0)
+        if fold_output:
+            return self._opt_par_pattern.fold(
+                opt_par1, free=self._opt_par_is_free)
+        else:
+            return opt_par1
+
+
+################################
+# Higher-order approximations. #
+################################
 
 def _append_jvp(fun, num_base_args=1, argnum=0):
     """
@@ -403,7 +615,7 @@ def differentiate_terms(hess0, dterms):
 
 
 
-class ParametricSensitivityTaylorExpansionForwardDiff(object):
+class ParametricSensitivityTaylorExpansion(object):
     """
     This is a class for computing the Taylor series of
     eta(eps) = argmax_eta objective(eta, eps) using forward-mode automatic
@@ -459,6 +671,8 @@ class ParametricSensitivityTaylorExpansionForwardDiff(object):
             ```objective_function``` is used.
         """
 
+        warnings.warn(
+            'The ParametricSensitivityTaylorExpansion is experimental.')
         self._objective_function = objective_function
         self._objective_function_hessian = \
             autograd.hessian(self._objective_function, argnum=0)
@@ -501,7 +715,7 @@ class ParametricSensitivityTaylorExpansionForwardDiff(object):
                     self._input_val0, self._hyper_val0)
         else:
             self._hess0 = hess0
-        self._hess0_chol = sp.linalg.cho_factor(self._hess0)
+        self._hess0_chol = cho_factor(self._hess0)
 
     # Get a function returning the next derivative from the Taylor terms dterms.
     def _get_dkinput_dhyperk_from_terms(self, dterms):
@@ -603,7 +817,7 @@ class ParametricSensitivityTaylorExpansionForwardDiff(object):
         dinput = 0
         for k in range(1, max_order + 1):
             dinput += self.evaluate_dkinput_dhyperk(dhyper, k) / \
-                float(math.factorial(k))
+                float(factorial(k))
 
         if add_offset:
             return dinput + self._input_val0
