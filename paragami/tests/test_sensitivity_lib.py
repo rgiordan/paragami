@@ -265,8 +265,9 @@ class TestTaylorExpansion(unittest.TestCase):
             d2eta_deps2 = -1 * np.linalg.solve(hess0, d2_terms)
             return d2eta_deps2
 
-        eval_g_derivs = sensitivity_lib._generate_two_term_derivative_array(
-            obj_eta_grad, order=5)
+        eval_g_derivs = \
+            sensitivity_lib._generate_two_term_fwd_derivative_array(
+                obj_eta_grad, order=5)
 
         assert_array_almost_equal(
             hess0 @ v1,

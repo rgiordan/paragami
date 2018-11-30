@@ -537,7 +537,7 @@ class DerivativeTerm:
             eval_g_derivs=self._eval_g_derivs)
 
 
-def _generate_two_term_derivative_array(fun, order):
+def _generate_two_term_fwd_derivative_array(fun, order):
     """
     Generate an array of JVPs of the two arguments of the target function fun.
 
@@ -744,8 +744,6 @@ class ParametricSensitivityTaylorExpansion(object):
         # Taylor expanding the gradient of the objective with respect to eta.
         self._objective_function_eta_grad = \
             autograd.grad(self._objective_function, argnum=0)
-        self._objective_function_cross_hess = \
-            autograd.grad(self._objective_function_eta_grad, argnum=1)
 
         if hyper_par_objective_function is None:
             self._hyper_par_objective_function = self._objective_function
@@ -803,7 +801,7 @@ class ParametricSensitivityTaylorExpansion(object):
 
         # You need one more gradient derivative than the order of the Taylor
         # approximation.
-        self._eval_g_derivs = _generate_two_term_derivative_array(
+        self._eval_g_derivs = _generate_two_term_fwd_derivative_array(
             self._objective_function_eta_grad, order=self._order + 1)
 
         self._taylor_terms_list = \
