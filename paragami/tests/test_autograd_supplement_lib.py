@@ -2,15 +2,12 @@
 
 import autograd
 import autograd.numpy as np
-from autograd.test_util import check_grads
 import autograd.numpy.random as npr
-
+from autograd.test_util import check_grads
 from paragami import autograd_supplement_lib
-
 import unittest
 
 npr.seed(1)
-
 
 def rand_psd(D):
     mat = npr.randn(D, D)
@@ -50,12 +47,17 @@ class TestAutogradSupplement(unittest.TestCase):
         check_grads(fun)(-mat)
 
     def test_slogdet_3d(self):
+        fun = lambda x: np.sum(np.linalg.slogdet(x)[1])
+        mat = np.concatenate(
+            [(rand_psd(5) + 5 * np.eye(5))[None,...] for _ in range(3)])
         # At this time, this is not supported.
-        if False:
-            fun = lambda x: np.sum(np.linalg.slogdet(x)[1])
-            mat = np.concatenate(
-                [(rand_psd(5) + 5 * np.eye(5))[None,...] for _ in range(3)])
-            check_grads(fun)(mat)
+        #check_grads(fun)(mat)
+
+        # Check that it raises an error.
+        fwd_grad = autograd.make_jvp(fun, argnum=0)
+        def error_fun():
+            return fwd_grad(mat)(mat)
+        self.assertRaises(ValueError, error_fun)
 
     def test_solve_arg1(self):
         D = 8
@@ -65,7 +67,6 @@ class TestAutogradSupplement(unittest.TestCase):
         check_grads(fun)(A)
 
     def test_solve_arg1_1d(self):
-        print('test_solve_arg1_1d')
         D = 8
         A = npr.randn(D, D) + 10.0 * np.eye(D)
         B = npr.randn(D)
@@ -80,7 +81,6 @@ class TestAutogradSupplement(unittest.TestCase):
         check_grads(fun)(B)
 
     def test_solve_arg1_3d(self):
-        print('----------------\n\n\n')
         D = 4
         A = npr.randn(D + 1, D, D) + 5 * np.eye(D)
         B = npr.randn(D + 1, D)
@@ -93,6 +93,7 @@ class TestAutogradSupplement(unittest.TestCase):
         B = npr.randn(D+1, D, D + 2)
         fun = lambda A: np.linalg.solve(A, B)
         check_grads(fun)(A)
+
 
 if __name__ == '__main__':
     unittest.main()

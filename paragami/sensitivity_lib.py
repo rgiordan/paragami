@@ -517,10 +517,6 @@ class DerivativeTerm:
 
     # Return whether another term matches this one in the pattern of derivatives.
     def check_similarity(self, term):
-        print('---------\n')
-        print(self)
-        print(term)
-        print('---------\n')
         return \
             (self.eps_order == term.eps_order) & \
             (self.eta_orders == term.eta_orders)
