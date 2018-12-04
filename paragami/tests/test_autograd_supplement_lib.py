@@ -51,18 +51,18 @@ class TestAutogradSupplement(unittest.TestCase):
 
     def test_slogdet_3d(self):
         # At this time, this is not supported.
-        pass
-        # fun = lambda x: np.sum(np.linalg.slogdet(x)[1])
-        # mat = np.concatenate(
-        #     [(rand_psd(5) + 5 * np.eye(5))[None,...] for _ in range(3)])
-        # check_grads(fun)(mat)
+        if False:
+            fun = lambda x: np.sum(np.linalg.slogdet(x)[1])
+            mat = np.concatenate(
+                [(rand_psd(5) + 5 * np.eye(5))[None,...] for _ in range(3)])
+            check_grads(fun)(mat)
 
-    # def test_solve_arg1(self):
-    #     D = 8
-    #     A = npr.randn(D, D) + 10.0 * np.eye(D)
-    #     B = npr.randn(D, D - 1)
-    #     def fun(a): return np.linalg.solve(a, B)
-    #     check_grads(fun)(A)
+    def test_solve_arg1(self):
+        D = 8
+        A = npr.randn(D, D) + 10.0 * np.eye(D)
+        B = npr.randn(D, D - 1)
+        def fun(a): return np.linalg.solve(a, B)
+        check_grads(fun)(A)
 
     def test_solve_arg1_1d(self):
         print('test_solve_arg1_1d')
@@ -72,26 +72,27 @@ class TestAutogradSupplement(unittest.TestCase):
         def fun(a): return np.linalg.solve(a, B)
         check_grads(fun)(A)
 
-    # def test_solve_arg2(self):
-    #     D = 6
-    #     A = npr.randn(D, D) + 1.0 * np.eye(D)
-    #     B = npr.randn(D, D - 1)
-    #     def fun(b): return np.linalg.solve(A, b)
-    #     check_grads(fun)(B)
+    def test_solve_arg2(self):
+        D = 6
+        A = npr.randn(D, D) + 1.0 * np.eye(D)
+        B = npr.randn(D, D - 1)
+        def fun(b): return np.linalg.solve(A, b)
+        check_grads(fun)(B)
 
-    # def test_solve_arg1_3d(self):
-    #     D = 4
-    #     A = npr.randn(D + 1, D, D) + 5 * np.eye(D)
-    #     B = npr.randn(D + 1, D)
-    #     fun = lambda A: np.linalg.solve(A, B)
-    #     check_grads(fun)(A)
-    #
-    # def test_solve_arg1_3d_3d(self):
-    #     D = 4
-    #     A = npr.randn(D+1, D, D) + 5 * np.eye(D)
-    #     B = npr.randn(D+1, D, D + 2)
-    #     fun = lambda A: np.linalg.solve(A, B)
-    #     check_grads(fun)(A)
+    def test_solve_arg1_3d(self):
+        print('----------------\n\n\n')
+        D = 4
+        A = npr.randn(D + 1, D, D) + 5 * np.eye(D)
+        B = npr.randn(D + 1, D)
+        fun = lambda A: np.linalg.solve(A, B)
+        check_grads(fun)(A)
+
+    def test_solve_arg1_3d_3d(self):
+        D = 4
+        A = npr.randn(D+1, D, D) + 5 * np.eye(D)
+        B = npr.randn(D+1, D, D + 2)
+        fun = lambda A: np.linalg.solve(A, B)
+        check_grads(fun)(A)
 
 if __name__ == '__main__':
     unittest.main()

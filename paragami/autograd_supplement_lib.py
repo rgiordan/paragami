@@ -18,33 +18,28 @@ def inv_jvp(g, ans, x):
 
 defjvp(inv, inv_jvp)
 
-# The JVP is the Jacobian times the input.
-# The gradient g should be the same shape as the input.
-# The output should be the same shape as the output.
 def jvp_solve(argnum, g, ans, a, b):
     print('\njvp_solve:\n')
     print('a', a.shape)
     print('b', b.shape)
     print('g', g.shape)
     print('ans', ans.shape)
-    updim = lambda x: x if x.ndim == a.ndim else x[...,None]
-    dot = np.dot if a.ndim == 2 else partial(np.einsum, '...ij,...jk->...ik')
+    def broadcast_matmul(a, b):
+        return \
+            np.matmul(a, b) if b.ndim == a.ndim \
+            else np.matmul(a, b[..., None])[..., 0]
     if argnum == 0:
         print('an=0')
-        return -dot(np.linalg.solve(a, g), ans)
+        foo = np.linalg.solve(a, g)
+        print('np.linalg.solve(a, g)', foo.shape)
+        # return -dot(np.linalg.solve(a, g), updim(ans))
+        return -broadcast_matmul(np.linalg.solve(a, g), ans)
     else:
         print('an=1')
         return np.linalg.solve(a, g)
 
 defjvp(solve, partial(jvp_solve, 0), partial(jvp_solve, 1))
 
-# def solve_jvp_argnum0(g, ans, x, y):
-#     return -1 * np.linalg.solve(x, g) @ ans
-#
-# def solve_jvp_argnum1(g, ans, x, y):
-#     return np.linalg.solve(x, g)
-#
-# defjvp(solve, solve_jvp_argnum0, solve_jvp_argnum1)
 
 def slogdet_jvp(g, ans, x):
     # Due to https://github.com/HIPS/autograd/issues/115
