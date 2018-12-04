@@ -9,6 +9,7 @@ from paragami.optimization_lib import PreconditionedFunction
 from paragami.sensitivity_lib import \
     HyperparameterSensitivityLinearApproximation, \
     ParametricSensitivityTaylorExpansion
+import paragami.autograd_supplement_lib
 
 from ._version import get_versions
 __version__ = get_versions()['version']

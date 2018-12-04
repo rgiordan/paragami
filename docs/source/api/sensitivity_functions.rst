@@ -10,3 +10,6 @@ Sensitivity functions
 
 .. autoclass:: paragami.sensitivity_lib.ParametricSensitivityTaylorExpansion
   :members:
+
+.. autoclass:: paragami.sensitivity_lib.DerivativeTerm
+  :members:

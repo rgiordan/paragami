@@ -299,14 +299,76 @@ class DerivativeTerm:
     A single term in a Taylor expansion of a two-parameter objective with
     methods for computing its derivatives.
 
+    .. note::
+        This class is intended for internal use.  Most users should not
+        use ``DerivativeTerm`` directly, and should rather use
+        ``ParametricSensitivityTaylorExpansion``.
+
+    Let :math:`\hat{\\eta}(\\epsilon)` be such that
+    :math:`g(\hat{\\eta}(\\epsilon), \\epsilon) = 0`.
     The nomenclature assumes that
-    we are calculating derivatives of g(eta, eps) at (eta0, eps0).  This
-    can be used to calculate
+    the term arises from calculating total derivatives of
+    :math:`g(\hat{\\eta}(\\epsilon), \\epsilon)`,
+    with respect to :math:`\\epsilon`, so such a term arose from repeated
+    applications of the chain and product rule of differentiation with respect
+    to :math:`\\epsilon`.
+
+    In the ``ParametricSensitivityTaylorExpansion`` class, such terms are
+    then used to calculate
 
     .. math::
-        d^k\hat{\\eta} / d\\eps^k | (\\eta_0, \\eps_0)
+        \\frac{d^k\hat{\\eta}}{d\\epsilon^k} |_{\\eta_0, \\epsilon_0}.
 
-    where :math:`\hat{\\eta}: g(\hat{\\eta}, \\eps) = 0`.
+    We assume the term will only be calculated summed against a single value
+    of :math:`\\Delta\\epsilon`, so we do not need to keep track of the
+    order in which the derivatives are evaluated.
+
+    Every term arising from differentiation of :math:`g(\hat{\\eta}(\\epsilon),
+    \\epsilon)` with respect to :math:`\\epsilon` is a product the following
+    types of terms.
+
+    First, there are the partial derivatives of :math:`g` itself.
+
+    .. math::
+        \\frac{\\partial^{m+n} g(\\eta, \\epsilon)}
+              {\\partial \\eta^m \\epsilon^n}
+
+    In the preceding display, ``m``
+    is the total number of :math:`\\eta` derivatives, i.e.
+    ``m = np.sum(eta_orders)``, and ``n = eps_order``.
+
+    Each partial derivative of :math:`g` with respect to :math:`\\epsilon`
+    will multiply one :math:`\\Delta \\epsilon` term directly.  Each
+    partial derivative with respect to :math:`\\eta` will multiply a term
+    of the form
+
+    .. math::
+        \\frac{d^p \hat{\\eta}}{d \\epsilon^p}
+
+    which will in turn multiply :math:`p` different :math:`\\Delta \\epsilon`
+    terms. The number of such terms of order :math:`p` are given by the entry
+    ``eta_orders[p - 1]``.  Each such terms arises from a single partial
+    derivative of :math:`g` with respect to :math:`\\eta`, which is why
+    the above ``m = np.sum(eta_orders)``.
+
+    Finally, the term is multiplied by the constant ``prefactor``.
+
+    For example, suppose that ``eta_orders = [1, 0, 2]``, ``prefactor = 1.5``,
+    and ``epsilon_order = 2``.  Then the derivative term is
+
+    .. math::
+        1.5 \\cdot
+        \\frac{\\partial^{5} g(\hat{\\eta}, \\epsilon)}
+              {\\partial \\eta^3 \\epsilon^2} \\cdot
+        \\frac{d \hat{\\eta}}{d \\epsilon} \\cdot
+        \\frac{d^3 \hat{\\eta}}{d \\epsilon^3} \\cdot
+        \\frac{d^3 \hat{\\eta}}{d \\epsilon^3} \\cdot
+
+    ...which will multiply a total of
+    ``9 = epsilon_order + np.sum(eta_orders * [1, 2, 3])``
+    :math:`\\Delta \\epsilon` terms.  Such a term would arise in
+    the 9-th order Taylor expansion of :math:`g(\hat{\\eta}(\\epsilon),
+    \\epsilon)` in :math:`\\epsilon`.
 
     Attributes
     -----------------
@@ -455,10 +517,6 @@ class DerivativeTerm:
 
     # Return whether another term matches this one in the pattern of derivatives.
     def check_similarity(self, term):
-        print('---------\n')
-        print(self)
-        print(term)
-        print('---------\n')
         return \
             (self.eps_order == term.eps_order) & \
             (self.eta_orders == term.eta_orders)
@@ -475,7 +533,7 @@ class DerivativeTerm:
             eval_g_derivs=self._eval_g_derivs)
 
 
-def _generate_two_term_derivative_array(fun, order):
+def _generate_two_term_fwd_derivative_array(fun, order):
     """
     Generate an array of JVPs of the two arguments of the target function fun.
 
@@ -634,7 +692,7 @@ class ParametricSensitivityTaylorExpansion(object):
     eta(eps) = argmax_eta objective(eta, eps) using forward-mode automatic
     differentation.
 
-    .. note:: This is class is experimental and should be used with caution.
+    .. note:: This class is experimental and should be used with caution.
 
     Methods
     --------------
@@ -682,8 +740,6 @@ class ParametricSensitivityTaylorExpansion(object):
         # Taylor expanding the gradient of the objective with respect to eta.
         self._objective_function_eta_grad = \
             autograd.grad(self._objective_function, argnum=0)
-        self._objective_function_cross_hess = \
-            autograd.grad(self._objective_function_eta_grad, argnum=1)
 
         if hyper_par_objective_function is None:
             self._hyper_par_objective_function = self._objective_function
@@ -741,7 +797,7 @@ class ParametricSensitivityTaylorExpansion(object):
 
         # You need one more gradient derivative than the order of the Taylor
         # approximation.
-        self._eval_g_derivs = _generate_two_term_derivative_array(
+        self._eval_g_derivs = _generate_two_term_fwd_derivative_array(
             self._objective_function_eta_grad, order=self._order + 1)
 
         self._taylor_terms_list = \
