@@ -5,6 +5,7 @@ import autograd.numpy as np
 import autograd.numpy.random as npr
 from autograd.test_util import check_grads
 from paragami import autograd_supplement_lib
+import scipy as sp
 import unittest
 
 npr.seed(1)
@@ -93,6 +94,26 @@ class TestAutogradSupplement(unittest.TestCase):
         B = npr.randn(D+1, D, D + 2)
         fun = lambda A: np.linalg.solve(A, B)
         check_grads(fun)(A)
+
+
+class TestSparseMatrixMultiplication(unittest.TestCase):
+    def test_get_sparse_product(self):
+        z_dense = np.random.random((10, 2))
+        z_mat = sp.sparse.coo_matrix(z_dense)
+        self.assertTrue(sp.sparse.issparse(z_mat))
+
+        mu = np.random.random(z_mat.shape[1])
+
+        z_mult, zt_mult = \
+            autograd_supplement_lib.get_sparse_product(z_mat)
+        check_grads(z_mult, modes=['rev', 'fwd'], order=4)(mu)
+
+        z_mult2, zt_mult2 = \
+            autograd_supplement_lib.get_sparse_product(2 * z_mat)
+        check_grads(z_mult2, modes=['rev', 'fwd'], order=4)(mu)
+
+        assert np.linalg.norm(z_mult(mu) - z_mat @ mu) < 1e-12
+        assert np.linalg.norm(z_mult2(mu) - 2 * z_mat @ mu) < 1e-12
 
 
 if __name__ == '__main__':
