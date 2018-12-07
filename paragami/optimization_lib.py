@@ -314,7 +314,8 @@ class OptimizationObjective():
     def log_value(self, num_f_evals, x, f_val):
         """
         Log the optimization progress.  To create a custom log,
-        overload this function.
+        overload this function.  By default, the log is a list of tuples
+        ``(iteration, x, f(x))``.
 
         Parameters
         -------------

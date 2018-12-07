@@ -228,5 +228,6 @@ class TestOptimizationObjective(unittest.TestCase):
         obj.reset_log()
         test_print_and_log(num_evals=1, expected_prints=0, expected_logs=1)
 
+
 if __name__ == '__main__':
     unittest.main()
