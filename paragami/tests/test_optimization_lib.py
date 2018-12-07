@@ -3,11 +3,13 @@
 import autograd
 import autograd.numpy as np
 from autograd.test_util import check_grads
+import itertools
 from numpy.testing import assert_array_almost_equal
 import paragami
 import scipy as sp
-from test_utils import QuadraticModel
+from test_utils import QuadraticModel, captured_output
 import unittest
+
 
 class TestPreconditionedFunction(unittest.TestCase):
     def test_preconditioned_function(self):
@@ -138,6 +140,93 @@ class TestPreconditionedFunction(unittest.TestCase):
         self._test_matrix_sqrt(mat)
 
 
+class TestOptimizationObjective(unittest.TestCase):
+    def test_optimization_objective(self):
+        def objective_fun(x):
+            return np.sum(x ** 4)
+
+        x0 = np.random.random(5)
+        obj = paragami.OptimizationObjective(
+            objective_fun, print_every=0)
+        assert_array_almost_equal(objective_fun(x0), obj.f(x0))
+        assert_array_almost_equal(
+            autograd.grad(objective_fun)(x0), obj.grad(x0))
+        assert_array_almost_equal(
+            autograd.hessian(objective_fun)(x0), obj.hessian(x0))
+        assert_array_almost_equal(
+            autograd.hessian_vector_product(objective_fun)(
+                x0, x0),
+            obj.hessian_vector_product(x0, x0))
+
+        def test_print_and_log(num_evals, expected_prints, expected_logs):
+            with captured_output() as (out, err):
+                init_num_iterations = obj.num_iterations()
+                for iter in range(num_evals):
+                    # Funtion evaluations should be printed and logged.
+                    obj.f(x0)
+
+                    # Derivatives should not count towards printing or logging.
+                    obj.grad(x0)
+                    obj.hessian(x0)
+                    obj.hessian_vector_product(x0, x0)
+
+            lines = out.getvalue().splitlines()
+            self.assertEqual(init_num_iterations + num_evals,
+                             obj.num_iterations())
+            self.assertEqual(len(lines), expected_prints)
+            self.assertEqual(len(obj.optimization_log), expected_logs)
+
+        # Test reset.
+        obj.set_print_every(1)
+        obj.set_log_every(1)
+        obj.reset()
+        test_print_and_log(num_evals=1, expected_prints=1, expected_logs=1)
+        obj.reset()
+        test_print_and_log(num_evals=1, expected_prints=1, expected_logs=1)
+
+        # Test that the first iteration prints and logs no matter what.
+        obj.set_print_every(2)
+        obj.set_log_every(2)
+        obj.reset()
+        test_print_and_log(num_evals=1, expected_prints=1, expected_logs=1)
+        test_print_and_log(num_evals=1, expected_prints=0, expected_logs=1)
+
+        # Test combinations of print and log.
+        for print_every, log_every in itertools.product([0, 1], [0, 1]):
+            obj.set_print_every(print_every)
+            obj.set_log_every(log_every)
+            obj.reset()
+            test_print_and_log(
+                num_evals=3,
+                expected_prints=3 * print_every,
+                expected_logs=3 * log_every)
+
+        for print_every, log_every in itertools.product([0, 3], [0, 3]):
+            obj.set_print_every(print_every)
+            obj.set_log_every(log_every)
+            obj.reset()
+            test_print_and_log(
+                num_evals=6,
+                expected_prints=(print_every != 0) * 2,
+                expected_logs=(log_every != 0) * 2)
+
+        # Test reset only printing or logging.
+        obj.set_print_every(2)
+        obj.set_log_every(1)
+
+        obj.reset()
+        test_print_and_log(num_evals=1, expected_prints=1, expected_logs=1)
+        test_print_and_log(num_evals=1, expected_prints=0, expected_logs=2)
+
+        obj.reset()
+        test_print_and_log(num_evals=1, expected_prints=1, expected_logs=1)
+        obj.reset_iteration_count()
+        test_print_and_log(num_evals=1, expected_prints=1, expected_logs=2)
+
+        obj.reset()
+        test_print_and_log(num_evals=1, expected_prints=1, expected_logs=1)
+        obj.reset_log()
+        test_print_and_log(num_evals=1, expected_prints=0, expected_logs=1)
 
 if __name__ == '__main__':
     unittest.main()

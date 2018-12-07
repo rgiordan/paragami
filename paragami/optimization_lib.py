@@ -285,6 +285,13 @@ class OptimizationObjective():
     def reset_iteration_count(self):
         self._num_f_evals = 0
 
+    def num_iterations(self):
+        """
+        Return the number of times the optimization function has been called,
+        not counting any derivative evaluations.
+        """
+        return self._num_f_evals
+
     def print_value(self, num_f_evals, x, f_val):
         """
         Display the optimization progress.  To display a custom
@@ -302,7 +309,7 @@ class OptimizationObjective():
         print('Iter {}: f = {:0.8f}'.format(num_f_evals, f_val))
 
     def reset_log(self):
-        self.optimization_log = {}
+        self.optimization_log = []
 
     def log_value(self, num_f_evals, x, f_val):
         """
@@ -318,13 +325,13 @@ class OptimizationObjective():
         f_val:
             The value of the objective at ``x``.
         """
-        self.optimization_log[num_f_evals] = (x, f_val)
+        self.optimization_log.append((num_f_evals, x, f_val))
 
     def f(self, x):
         f_val = self._objective_fun(x)
-        self._num_f_evals += 1
         if self._print_every > 0 and self._num_f_evals % self._print_every == 0:
             self.print_value(self._num_f_evals, x, f_val)
         if self._log_every > 0 and self._num_f_evals % self._log_every == 0:
             self.log_value(self._num_f_evals, x, f_val)
+        self._num_f_evals += 1
         return f_val
