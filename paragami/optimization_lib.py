@@ -195,3 +195,144 @@ class PreconditionedFunction():
         domain.
         """
         return self._original_fun(self.unprecondition(x_c))
+
+
+
+class OptimizationObjective():
+    """
+    Derivatives and logging for an optimization objective function.
+
+    Attributes
+    -------------
+    optimization_log: Dictionary
+        A record of the optimization progress as recorded by ``log_value``.
+
+    Methods
+    ---------------
+    f:
+        The objective function with logging.
+    grad:
+        The gradient of the objective function.
+    hessian:
+        The Hessian of the objective function.
+    hessian_vector_product:
+        The Hessian vector product of the objective function.
+    set_print_every:
+        Set how often to display optimization progress.
+    set_log_every:
+        Set how often to log optimization progress.
+    reset_iteration_count:
+        Reset the number of iterations for the purpose of printing and logging.
+    reset_log:
+        Clear the log.
+    reset:
+        Run ``reset_iteration_count`` and ``reset_log``.
+    print_value:
+        Display a function evaluation.
+    log_value:
+        Log a function evaluation.
+    """
+    def __init__(self, objective_fun, print_every=1, log_every=0):
+        """
+        Parameters
+        -------------
+        obj_fun: Callable function of one argumnet
+            The function to be minimized.
+        print_every: integer
+            Print the optimization value every ``print_every`` iterations.
+        log_every: integer
+            Log the optimization value every ``log_every`` iterations.
+        """
+
+        self._objective_fun = objective_fun
+        self.grad = autograd.grad(self._objective_fun)
+        self.hessian = autograd.hessian(self._objective_fun)
+        self.hessian_vector_product = \
+            autograd.hessian_vector_product(self._objective_fun)
+
+        self.set_print_every(print_every)
+        self.set_log_every(log_every)
+
+        self.reset()
+
+    def set_print_every(self, n):
+        """
+        Parameters
+        -------------
+        n: integer
+            Print the objective function value every ``n`` iterations.
+            If 0, do not print any output.
+        """
+        self._print_every = n
+
+    def set_log_every(self, n):
+        """
+        Parameters
+        -------------
+        n: integer
+            Log the objective function value every ``n`` iterations.
+            If 0, do not log.
+        """
+        self._log_every = n
+
+    def reset(self):
+        """
+        Reset the itreation count and clear the log.
+        """
+        self.reset_iteration_count()
+        self.reset_log()
+
+    def reset_iteration_count(self):
+        self._num_f_evals = 0
+
+    def num_iterations(self):
+        """
+        Return the number of times the optimization function has been called,
+        not counting any derivative evaluations.
+        """
+        return self._num_f_evals
+
+    def print_value(self, num_f_evals, x, f_val):
+        """
+        Display the optimization progress.  To display a custom
+        update, overload this function.
+
+        Parameters
+        -------------
+        num_f_vals: Integer
+            The total number of function evaluations.
+        x:
+            The current argument to the objective function.
+        f_val:
+            The value of the objective at ``x``.
+        """
+        print('Iter {}: f = {:0.8f}'.format(num_f_evals, f_val))
+
+    def reset_log(self):
+        self.optimization_log = []
+
+    def log_value(self, num_f_evals, x, f_val):
+        """
+        Log the optimization progress.  To create a custom log,
+        overload this function.  By default, the log is a list of tuples
+        ``(iteration, x, f(x))``.
+
+        Parameters
+        -------------
+        num_f_vals: Integer
+            The total number of function evaluations.
+        x:
+            The current argument to the objective function.
+        f_val:
+            The value of the objective at ``x``.
+        """
+        self.optimization_log.append((num_f_evals, x, f_val))
+
+    def f(self, x):
+        f_val = self._objective_fun(x)
+        if self._print_every > 0 and self._num_f_evals % self._print_every == 0:
+            self.print_value(self._num_f_evals, x, f_val)
+        if self._log_every > 0 and self._num_f_evals % self._log_every == 0:
+            self.log_value(self._num_f_evals, x, f_val)
+        self._num_f_evals += 1
+        return f_val

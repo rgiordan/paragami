@@ -12,3 +12,6 @@ Function wrappers
 
 .. autoclass:: paragami.optimization_lib.PreconditionedFunction
   :members:
+
+.. autoclass:: paragami.optimization_lib.OptimizationObjective
+  :members:
