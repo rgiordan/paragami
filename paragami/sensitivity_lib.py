@@ -138,19 +138,31 @@ class LinearResponseCovariances:
     def get_hessian_cholesky_at_opt(self):
         return self._hess0_chol
 
-    def get_lr_covariance_from_jacobian(self,
-                                        moment_jacobian):
+    def get_lr_covariance_from_jacobians(self,
+                                         moment_jacobian1,
+                                         moment_jacobian2):
         """
-        Get the linear response covariance of a vector of moments.
+        Get the linear response covariance between two vectors of moments.
 
         Parameters
         ------------
-        moment_jacobian: 2d numeric array.
+        moment_jacobian1: 2d numeric array.
             The Jacobian matrix of a map from a value of
             ``opt_par`` to a vector of moments of interest.  Following
             standard notation for Jacobian matrices, the rows should
             correspond to moments and the columns to elements of
             a flattened ``opt_par``.
+        moment_jacobian2: 2d numeric array.
+            Like ``moment_jacobian1`` but for the second vector of moments.
+
+        Returns
+        ------------
+        Numeric matrix
+            If ``moment_jacobian1(opt_par)`` is the Jacobian
+            of :math:`\mathbb{E}_q[g_1(\\theta)]` and ``moment_jacobian2(opt_par)``
+            is the Jacobian of  :math:`\mathbb{E}_q[g_2(\\theta)]` then this returns
+            the linear response estimate of
+            :math:`\\mathrm{Cov}_p(g_1(\\theta), g_2(\\theta))`.
         """
 
         if not self._factorize_hessian:
@@ -170,14 +182,19 @@ class LinearResponseCovariances:
 
     def get_moment_jacobian(self, calculate_moments):
         """
-        The Jacobian matrix of a map from a flattened value of
-        ``opt_par`` to a vector of moments of interest.
+        The Jacobian matrix of a map from ``opt_par`` to a vector of
+        moments of interest.
 
         Parameters
         ------------
         calculate_moments: Callable function
             A function that takes the folded ``opt_par`` as a single argument
             and returns a numeric vector containing posterior moments of interest.
+
+        Returns
+        ----------
+        Numeric matrix
+            The Jacobian of the moments.
         """
         calculate_moments_jacobian = autograd.jacobian(calculate_moments)
         return calculate_moments_jacobian(self._opt0)
@@ -191,6 +208,14 @@ class LinearResponseCovariances:
         calculate_moments: Callable function
             A function that takes the folded ``opt_par`` as a single argument
             and returns a numeric vector containing posterior moments of interest.
+
+        Returns
+        ------------
+        Numeric matrix
+            If ``calculate_moments(opt_par)`` returns
+            :math:`\\mathbb{E}_q[g(\\theta)]`
+            then this returns the linear response estimate of
+            :math:`\\mathrm{Cov}_p(g(\\theta))`.
         """
 
         moment_jacobian = self.get_moment_jacobian(calculate_moments)
