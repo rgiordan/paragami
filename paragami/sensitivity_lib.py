@@ -169,16 +169,28 @@ class LinearResponseCovariances:
             raise NotImplementedError(
                 'CG is not yet implemented for get_lr_covariance_from_jacobian')
 
-        if moment_jacobian.ndim != 2:
-            raise ValueError('moment_jacobian must be a 2d array.')
+        if moment_jacobian1.ndim != 2:
+            raise ValueError('moment_jacobian1 must be a 2d array.')
 
-        if moment_jacobian.shape[1] != len(self._opt0):
-            raise ValueError(('moment_jacobian must have as many rows as ' +
-                              'the length of a flattened value of ``opt_par``.  ' +
-                              'The flat length of ``opt_par`` is {}, but the dimensions ' +
-                              'of ``moment_jacobian`` are {}.').format(
-                                len(self._opt0), moment_jacobian.shape))
-        return moment_jacobian @ cho_solve(self._hess0_chol, moment_jacobian.T)
+        if moment_jacobian2.ndim != 2:
+            raise ValueError('moment_jacobian2 must be a 2d array.')
+
+        if moment_jacobian1.shape[1] != len(self._opt0):
+            err_msg = ('The number of rows of moment_jacobian1 must match' +
+                       'the dimension of the optimization parameter. ' +
+                       'Expected {} rows, but got shape = {}').format(
+                         len(self._opt0), moment_jacobian1.shape)
+            raise ValueError(err_msg)
+
+        if moment_jacobian2.shape[1] != len(self._opt0):
+            err_msg = ('The number of rows of moment_jacobian2 must match' +
+                       'the dimension of the optimization parameter. ' +
+                       'Expected {} rows, but got shape = {}').format(
+                         len(self._opt0), moment_jacobian2.shape)
+            raise ValueError(err_msg)
+
+        return moment_jacobian1 @ cho_solve(
+            self._hess0_chol, moment_jacobian2.T)
 
     def get_moment_jacobian(self, calculate_moments):
         """

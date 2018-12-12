@@ -96,7 +96,8 @@ class TestLinearResponseCovariances(unittest.TestCase):
             moment_jac = lr_covs.get_moment_jacobian(get_mean_flat)
             assert_array_almost_equal(
                 theta_lr_cov,
-                lr_covs.get_lr_covariance_from_jacobian(moment_jac))
+                lr_covs.get_lr_covariance_from_jacobians(
+                    moment_jac, moment_jac))
 
 
 class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
