@@ -17,17 +17,34 @@ from .function_patterns import FlattenedFunction
 
 class LinearResponseCovariances:
     """
-    Calculate the linear response covariance of a variational objective.
+    Calculate linear response covariances of a variational distribution.
+
+    Let :math:`q(\\theta | \\eta)` be a class of probability distribtions on
+    :math:`\\theta` where the class is parameterized by the real-valued vector
+    :math:`\\eta`.  Suppose that we wish to approximate a distribution
+    :math:`q(\\theta | \\eta^*) \\approx p(\\theta)` by solving an optimization
+    problem :math:`\\eta^* = \\mathrm{argmin} f(\\eta)`.  For example,
+    :math:`f` might be a measure of distance between :math:`q(\\theta | \\eta)`
+    and :math:`p(\\theta)`.  This class uses the sensitivity of the optimal
+    :math:'\\eta^*' to estimate the covariance :math:`\\mathrm{Cov}_p(g(\\theta))`.
+    This covariance estimate is called the "linear response covariance".
+
+    In this notation, :math:`f` is ``objective_fun``, :math:`\\eta^*` is
+    ``opt_par_value``, and the function ``calculate_moments`` evaluates
+    :math:`\\mathbb{E}_{q(\\theta | \\eta)}[g(\\theta)]` as a function of
+    :math:`\\eta`.
 
     Methods
     ------------
     set_base_values:
-        Set the base values, :math:`\\lambda_0` and
-        :math:`\\theta_0 := \hat\\theta(\\lambda_0)`, at which the linear
-        approximation is evaluated.
+        Set the base values, :math:`\\eta^*` that optimizes the objective function.
     get_hessian_at_opt:
-        Return the Hessian of the objective function in the
-        flattened space.
+        Return the Hessian of the objective function evaluated at the optimum.
+    get_hessian_cholesky_at_opt:
+        Return the Cholesky decomposition of the Hessian of the objective function
+        evaluated at the optimum.
+    get_lr_covariance:
+        Return the linear response covariance of a given moment.
     """
     def __init__(
         self,
