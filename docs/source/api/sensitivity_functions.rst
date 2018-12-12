@@ -2,17 +2,26 @@
 Sensitivity Functions
 ==========================================
 
-Sensitivity functions
----------------------------
+Hyperparameter sensitivity linear approximation
+-------------------------------------------------
 
 .. autoclass:: paragami.sensitivity_lib.HyperparameterSensitivityLinearApproximation
   :members:
 
-.. autoclass:: paragami.sensitivity_lib.LinearResponseCovariances
-  :members:
+Hyperparameter sensitivity Taylor series approximation
+---------------------------------------------------------
 
 .. autoclass:: paragami.sensitivity_lib.ParametricSensitivityTaylorExpansion
   :members:
+
+Linear response covariances
+----------------------------
+
+.. autoclass:: paragami.sensitivity_lib.LinearResponseCovariances
+  :members:
+
+DerivativeTerm class
+---------------------------
 
 .. autoclass:: paragami.sensitivity_lib.DerivativeTerm
   :members:

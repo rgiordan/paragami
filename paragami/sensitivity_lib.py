@@ -26,13 +26,13 @@ class LinearResponseCovariances:
     problem :math:`\\eta^* = \\mathrm{argmin} f(\\eta)`.  For example,
     :math:`f` might be a measure of distance between :math:`q(\\theta | \\eta)`
     and :math:`p(\\theta)`.  This class uses the sensitivity of the optimal
-    :math:'\\eta^*' to estimate the covariance :math:`\\mathrm{Cov}_p(g(\\theta))`.
+    :math:`\\eta^*` to estimate the covariance :math:`\\mathrm{Cov}_p(g(\\theta))`.
     This covariance estimate is called the "linear response covariance".
 
-    In this notation, :math:`f` is ``objective_fun``, :math:`\\eta^*` is
-    ``opt_par_value``, and the function ``calculate_moments`` evaluates
-    :math:`\\mathbb{E}_{q(\\theta | \\eta)}[g(\\theta)]` as a function of
-    :math:`\\eta`.
+    In this notation, the arguments to the class mathods are as follows.
+    :math:`f` is ``objective_fun``, :math:`\\eta^*` is ``opt_par_value``, and
+    the function ``calculate_moments`` evaluates :math:`\\mathbb{E}_{q(\\theta |
+    \\eta)}[g(\\theta)]` as a function of :math:`\\eta`.
 
     Methods
     ------------
