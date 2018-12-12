@@ -219,7 +219,8 @@ class LinearResponseCovariances:
         """
 
         moment_jacobian = self.get_moment_jacobian(calculate_moments)
-        return self.get_lr_covariance_from_jacobian(moment_jacobian)
+        return self.get_lr_covariance_from_jacobians(
+            moment_jacobian, moment_jacobian)
 
 
 # TODO: Make this only into a function that operates on vectors.
