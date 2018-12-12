@@ -11,7 +11,177 @@ import warnings
 
 from .function_patterns import FlattenedFunction
 
+##############
+# LRVB class #
+##############
 
+class LinearResponseCovariances:
+    """
+    Calculate the linear response covariance of a variational objective.
+
+    Methods
+    ------------
+    set_base_values:
+        Set the base values, :math:`\\lambda_0` and
+        :math:`\\theta_0 := \hat\\theta(\\lambda_0)`, at which the linear
+        approximation is evaluated.
+    get_hessian_at_opt:
+        Return the Hessian of the objective function in the
+        flattened space.
+    """
+    def __init__(
+        self,
+        objective_fun,
+        opt_par_value,
+        validate_optimum=False,
+        hessian_at_opt=None,
+        factorize_hessian=True,
+        grad_tol=1e-8):
+        """
+        Parameters
+        --------------
+        objective_fun: Callable function
+            A callable function whose optimum parameterizes an approximate
+            Bayesian posterior.  The function must take as a single
+            argument a numeric vector, ``opt_par``.
+        opt_par_value:
+            The value of ``opt_par`` at which ``objective_fun`` is optimized.
+        validate_optimum: Boolean
+            When setting the values of ``opt_par``, check
+            that ``opt_par`` is, in fact, a critical point of
+            ``objective_fun``.
+        hessian_at_opt: Numeric matrix (optional)
+            The Hessian of ``objective_fun`` at the optimum.  If not specified,
+            it is calculated using automatic differentiation.
+        factorize_hessian: Boolean
+            If ``True``, solve the required linear system using a Cholesky
+            factorization.  If ``False``, use the conjugate gradient algorithm
+            to avoid forming or inverting the Hessian.
+        grad_tol: Float
+            The tolerance used to check that the gradient is approximately
+            zero at the optimum.
+        """
+
+        self._obj_fun = objective_fun
+        self._obj_fun_grad = autograd.grad(self._obj_fun, argnum=0)
+        self._obj_fun_hessian = autograd.hessian(self._obj_fun, argnum=0)
+        self._obj_fun_hvp = autograd.hessian_vector_product(
+            self._obj_fun, argnum=0)
+
+        self._grad_tol = grad_tol
+
+        self.set_base_values(
+            opt_par_value, hessian_at_opt,
+            factorize_hessian, validate=validate_optimum)
+
+    def set_base_values(self,
+                        opt_par_value,
+                        hessian_at_opt,
+                        factorize_hessian=True,
+                        validate=True,
+                        grad_tol=None):
+        if grad_tol is None:
+            grad_tol = self._grad_tol
+
+        # Set the values of the optimal parameters.
+        self._opt0 = deepcopy(opt_par_value)
+
+        # Set the values of the Hessian at the optimum.
+        self._factorize_hessian = factorize_hessian
+        if self._factorize_hessian:
+            if hessian_at_opt is None:
+                self._hess0 = self._obj_fun_hessian(self._opt0)
+            else:
+                self._hess0 = hessian_at_opt
+            self._hess0_chol = cho_factor(self._hess0)
+        else:
+            if hessian_at_opt is not None:
+                raise ValueError('If factorize_hessian is False, ' +
+                                 'hessian_at_opt must be None.')
+            self._hess0 = None
+            self._hess0_chol = None
+
+        if validate:
+            # Check that the gradient of the objective is zero at the optimum.
+            grad0 = self._obj_fun_grad(self._opt0)
+            newton_step = -1 * cho_solve(self._hess0_chol, grad0)
+
+            newton_step_norm = np.linalg.norm(newton_step)
+            if newton_step_norm > grad_tol:
+                err_msg = \
+                    'The gradient is not zero at the putatively optimal ' + \
+                    'values.  ||newton_step|| = {} > {} = grad_tol'.format(
+                        newton_step_norm, grad_tol)
+                raise ValueError(err_msg)
+
+    # Methods:
+    def get_hessian_at_opt(self):
+        return self._hess0
+
+    def get_hessian_cholesky_at_opt(self):
+        return self._hess0_chol
+
+    def get_lr_covariance_from_jacobian(self,
+                                        moment_jacobian):
+        """
+        Get the linear response covariance of a vector of moments.
+
+        Parameters
+        ------------
+        moment_jacobian: 2d numeric array.
+            The Jacobian matrix of a map from a value of
+            ``opt_par`` to a vector of moments of interest.  Following
+            standard notation for Jacobian matrices, the rows should
+            correspond to moments and the columns to elements of
+            a flattened ``opt_par``.
+        """
+
+        if not self._factorize_hessian:
+            raise NotImplementedError(
+                'CG is not yet implemented for get_lr_covariance_from_jacobian')
+
+        if moment_jacobian.ndim != 2:
+            raise ValueError('moment_jacobian must be a 2d array.')
+
+        if moment_jacobian.shape[1] != len(self._opt0):
+            raise ValueError(('moment_jacobian must have as many rows as ' +
+                              'the length of a flattened value of ``opt_par``.  ' +
+                              'The flat length of ``opt_par`` is {}, but the dimensions ' +
+                              'of ``moment_jacobian`` are {}.').format(
+                                len(self._opt0), moment_jacobian.shape))
+        return moment_jacobian @ cho_solve(self._hess0_chol, moment_jacobian.T)
+
+    def get_moment_jacobian(self, calculate_moments):
+        """
+        The Jacobian matrix of a map from a flattened value of
+        ``opt_par`` to a vector of moments of interest.
+
+        Parameters
+        ------------
+        calculate_moments: Callable function
+            A function that takes the folded ``opt_par`` as a single argument
+            and returns a numeric vector containing posterior moments of interest.
+        """
+        calculate_moments_jacobian = autograd.jacobian(calculate_moments)
+        return calculate_moments_jacobian(self._opt0)
+
+    def get_lr_covariance(self, calculate_moments):
+        """
+        Get the linear response covariance of a vector of moments.
+
+        Parameters
+        ------------
+        calculate_moments: Callable function
+            A function that takes the folded ``opt_par`` as a single argument
+            and returns a numeric vector containing posterior moments of interest.
+        """
+
+        moment_jacobian = self.get_moment_jacobian(calculate_moments)
+        return self.get_lr_covariance_from_jacobian(moment_jacobian)
+
+
+# TODO: Make this only into a function that operates on vectors.
+# https://github.com/rgiordan/paragami/issues/37
 class HyperparameterSensitivityLinearApproximation:
     """
     Linearly approximate dependence of an optimum on a hyperparameter.
@@ -80,7 +250,7 @@ class HyperparameterSensitivityLinearApproximation:
             ``f(folded opt_par, folded hyper_par)``.
         opt_par_pattern:
             A pattern for ``opt_par``, the optimal parameter.
-        opt_par_pattern:
+        hyper_par_pattern:
             A pattern for ``hyper_par``, the hyperparameter.
         opt_par_folded_value:
             The folded value of ``opt_par`` at which ``objective_fun`` is
@@ -90,10 +260,10 @@ class HyperparameterSensitivityLinearApproximation:
             optimizes ``objective_fun``.
         opt_par_is_free: Boolean
             Whether to use the free parameterization for ``opt_par`` when
-            linearzing.
+            linearizing.
         hyper_par_is_free: Boolean
             Whether to use the free parameterization for ``hyper_par`` when
-            linearzing.
+            linearizing.
         validate_optimum: Boolean
             When setting the values of ``opt_par`` and ``hyper_par``, check
             that ``opt_par`` is, in fact, a critical point of
