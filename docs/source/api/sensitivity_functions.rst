@@ -23,5 +23,7 @@ Linear response covariances
 DerivativeTerm class
 ---------------------------
 
+This class is used in the internals of ``ParametricSensitivityTaylorExpansion``.
+
 .. autoclass:: paragami.sensitivity_lib.DerivativeTerm
   :members:

@@ -16,7 +16,7 @@ class TestLinearResponseCovariances(unittest.TestCase):
     def test_lr(self):
         np.random.seed(42)
 
-        dim = 3
+        dim = 4
         mfvb_par_pattern = paragami.PatternDict()
         mfvb_par_pattern['mean'] = paragami.NumericArrayPattern((dim, ))
         mfvb_par_pattern['var'] = paragami.NumericArrayPattern((dim, ))
@@ -73,13 +73,13 @@ class TestLinearResponseCovariances(unittest.TestCase):
                     opt_par_value=mfvb_par_flat,
                     validate_optimum=True,
                     hessian_at_opt=hess0,
-                    grad_tol=1e-16)
+                    grad_tol=1e-15)
             else:
                 lr_covs = paragami.LinearResponseCovariances(
                     objective_fun=get_kl_flat,
                     opt_par_value=mfvb_par_flat,
                     validate_optimum=True,
-                    grad_tol=1e-16)
+                    grad_tol=1e-15)
 
             assert_array_almost_equal(hess0, lr_covs.get_hessian_at_opt())
             # Just check that you can get the cholesky decomposition.
@@ -98,6 +98,43 @@ class TestLinearResponseCovariances(unittest.TestCase):
                 theta_lr_cov,
                 lr_covs.get_lr_covariance_from_jacobians(
                     moment_jac, moment_jac))
+
+            # Check cross-covariances.
+            get_mean01_flat = paragami.FlattenedFunction(
+                lambda mfvb_par: mfvb_par['mean'][0:2],
+                patterns=mfvb_par_pattern,
+                free=par_free)
+            get_mean23_flat = paragami.FlattenedFunction(
+                lambda mfvb_par: mfvb_par['mean'][2:4],
+                patterns=mfvb_par_pattern,
+                free=par_free)
+            moment01_jac = lr_covs.get_moment_jacobian(get_mean01_flat)
+            moment23_jac = lr_covs.get_moment_jacobian(get_mean23_flat)
+            assert_array_almost_equal(
+                theta_lr_cov[0:2, 2:4],
+                lr_covs.get_lr_covariance_from_jacobians(
+                    moment01_jac, moment23_jac))
+
+            # Check that you get an error when passing in a Jacobian with the
+            # wrong dimension.
+            self.assertRaises(
+                ValueError,
+                lambda: lr_covs.get_lr_covariance_from_jacobians(
+                                    moment_jac.T, moment_jac))
+
+            self.assertRaises(
+                ValueError,
+                lambda: lr_covs.get_lr_covariance_from_jacobians(
+                                    moment_jac, moment_jac.T))
+
+            self.assertRaises(
+                ValueError,
+                lambda: lr_covs.get_lr_covariance_from_jacobians(
+                                    moment_jac[:, :, None], moment_jac))
+            self.assertRaises(
+                ValueError,
+                lambda: lr_covs.get_lr_covariance_from_jacobians(
+                                    moment_jac, moment_jac[:, :, None]))
 
 
 class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
