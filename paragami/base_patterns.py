@@ -102,10 +102,23 @@ class Pattern(ABC):
         ---------
         folded_val : Folded value
             A parameter value in its original folded shape.
+        """
+        pass
 
-        See also
+    @abstractmethod
+    def validate_folded(self, folded_val):
+        """Check whether a folded value is valid.
+
+        Parameters
+        ----------------
+        folded_val : Folded value
+            A parameter value in its original folded shape.
+
+        Returns
         ------------
-        Pattern.random
+        is_valid : `bool`
+            Whether ``folded_val`` is an allowable shape and value.
+        err_msg: `str`
         """
         pass
 
@@ -162,10 +175,6 @@ class Pattern(ABC):
         ---------
         folded_val : Folded value
             A random parameter value in its original folded shape.
-
-        See also
-        ------------
-        Pattern.empty
         """
         return self.fold(np.random.random(self._free_flat_length), free=True)
 

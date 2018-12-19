@@ -248,7 +248,19 @@ class PatternDict(Pattern):
             empty_val[pattern_name] = pattern.empty(valid)
         return empty_val
 
-    def fold(self, flat_val, free, validate=None):
+    def validate_folded(self, folded_val):
+        for pattern_name, pattern in self.__pattern_dict.items():
+            if not pattern_name in folded_val:
+                return \
+                    False, \
+                    '{} not in folded_val dictionary.'.format(pattern_name)
+            valid, err_msg = pattern.validate_folded(folded_val[pattern_name])
+            if not valid:
+                err_msg = '{} is not valid.'.format(err_msg)
+                return False, err_msg
+        return True, ''
+
+    def fold(self, flat_val, free):
         flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
@@ -269,17 +281,24 @@ class PatternDict(Pattern):
             offset += pattern_flat_length
             folded_val[pattern_name] = pattern.fold(
                 pattern_flat_val, free=free, validate=validate)
+        if not free:
+            valid, msg = self.validate_folded(folded_val)
+            if not valid:
+                raise ValueError(msg)
         return folded_val
 
-    def flatten(self, folded_val, free, validate=None):
+    def flatten(self, folded_val, free):
+        valid, msg = self.validate_folded(folded_val)
+        if not valid:
+            raise ValueError(msg)
+
         flat_length = self.flat_length(free)
         offset = 0
         flat_val = np.full(flat_length, float('nan'))
         for pattern_name, pattern in self.__pattern_dict.items():
             pattern_flat_length = pattern.flat_length(free)
             flat_val[offset:(offset + pattern_flat_length)] = \
-                pattern.flatten(
-                    folded_val[pattern_name], free=free, validate=validate)
+                pattern.flatten(folded_val[pattern_name], free=free)
             offset += pattern_flat_length
         return flat_val
 
@@ -370,8 +389,8 @@ class PatternArray(Pattern):
         """
         # TODO: change the name shape -> array_shape
         # and have shape be the whole array, including the pattern.
-        self.__shape = tuple(shape)
-        self.__array_ranges = [range(0, t) for t in self.__shape]
+        self.__array_shape = tuple(shape)
+        self.__array_ranges = [range(0, t) for t in self.__array_shape]
 
         num_elements = np.prod(self.__shape)
         self.__base_pattern = base_pattern
@@ -396,6 +415,8 @@ class PatternArray(Pattern):
                 'PatternArray does not support patterns whose folded ' +
                 'values are not numpy.ndarray types.')
 
+        self.__shape = tuple(shape) + empty_pattern.shape
+
         super().__init__(
             num_elements * base_pattern.flat_length(free=False),
             num_elements * base_pattern.flat_length(free=True))
@@ -410,20 +431,38 @@ class PatternArray(Pattern):
             'shape': self.__shape,
             'base_pattern': self.__base_pattern.to_json() }
 
+    def array_shape(self):
+        """The shape of the array of parameters.
+
+        This does not include the dimension of the folded parameters.
+        """
+        return self.__array_shape
+
     def shape(self):
+        """The shape of a folded value.
+        """
         return self.__shape
 
     def base_pattern(self):
         return self.__base_pattern
 
-    # def __eq__(self, other):
-    #     if type(other) != type(self):
-    #         return False
-    #     if self.__shape != other.shape():
-    #         return False
-    #     if self.__base_pattern != other.base_pattern():
-    #         return False
-    #     return True
+    def validate_folded(self, folded_val):
+        if folded_val.ndim != len(self.__shape):
+            return \
+                False, \
+                'Wrong number of dimensions.  Expected {}, got {}.'.format(
+                    folded_val.ndim, len(self.__shape))
+        if folded_val.shape != self.__shape:
+            return \
+                False, \
+                'Wrong shape.  Expected {}, got {}.'.format(
+                    folded_val.shape, self.__shape)
+        for item in itertools.product(*self.__array_ranges):
+            valid, msg = self.__base_pattern.validate_folded(folded_val[iterm])
+            if not valid:
+                err_msg = 'Bad value in location {}: {}'.format(item, msg)
+                return False, err_msg
+        return True, ''
 
     def empty(self, valid):
         empty_pattern = self.__base_pattern.empty(valid=valid)
@@ -441,7 +480,7 @@ class PatternArray(Pattern):
         -------------
         item: tuple
             A tuple of indices into the array of patterns (i.e.,
-            into the shape ``__shape``).
+            into the shape ``__array_shape``).
         flat_length: integer
             The length of a single flat pattern.
 
@@ -455,7 +494,7 @@ class PatternArray(Pattern):
         linear_item = np.ravel_multi_index(item, self.__shape) * flat_length
         return slice(linear_item, linear_item + flat_length)
 
-    def fold(self, flat_val, free, validate=None):
+    def fold(self, flat_val, free):
         flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
@@ -471,10 +510,21 @@ class PatternArray(Pattern):
                 flat_val[self._stacked_obs_slice(item, flat_length)],
                 free=free, validate=validate)
             for item in itertools.product(*self.__array_ranges)])
-        return np.reshape(
+
+        folded_val = np.reshape(
             folded_array, self.__shape + self.__folded_pattern_shape)
 
-    def flatten(self, folded_val, free, validate=None):
+        if not free:
+            valid, msg = self.validate_folded(folded_val)
+            if not valid:
+                raise ValueError(msg)
+        return folded_val
+
+    def flatten(self, folded_val, free):
+        valid, msg = self.validate_folded(folded_val)
+        if not valid:
+            raise ValueError(msg)
+
         return np.hstack(np.array([
             self.__base_pattern.flatten(
                 folded_val[item], free=free, validate=validate)

@@ -217,15 +217,6 @@ def setup(app):
 
 # Define descriptions of input and return data types
 # rst_prolog = """
-# .. |int| replace:: Integer
-# .. |num| replace:: Numeric value
-# .. |bool| replace:: Boolean
-# .. |matrix| replace:: Numeric matrix
-# .. |spmatrix| replace:: Sparse numeric matrix
-# .. |function| replace:: Callable function
-# .. |1dnumarray| replace:: 1d numeric array
-# .. |2dnumarray| replace:: 2d numeric array
-# .. |numarray| replace:: Arbitrarily-shaped numeric array
 # .. |folded| replace:: Folded parameter value
 # .. |flattened| replace:: Flat parameter value
 # """
