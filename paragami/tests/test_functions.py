@@ -12,13 +12,19 @@ import paragami
 
 
 def get_test_pattern():
+    # autograd will pass invalid values, so turn off value checking.
     pattern = paragami.PatternDict()
-    pattern['array'] = paragami.NumericArrayPattern((2, 3, 4), lb=-1, ub=2)
-    pattern['mat'] = paragami.PSDSymmetricMatrixPattern(3)
-    pattern['simplex'] = paragami.SimplexArrayPattern(2, (3, ))
+    pattern['array'] = paragami.NumericArrayPattern(
+        (2, 3, 4), lb=-1, ub=2, default_validate=False)
+    pattern['mat'] = paragami.PSDSymmetricMatrixPattern(
+        3, default_validate=False)
+    pattern['simplex'] = paragami.SimplexArrayPattern(
+        2, (3, ), default_validate=False)
     subdict = paragami.PatternDict()
-    subdict['array2'] = paragami.NumericArrayPattern((2, ), lb=-3, ub=5)
+    subdict['array2'] = paragami.NumericArrayPattern(
+        (2, ), lb=-3, ub=5, default_validate=False)
     pattern['dict'] = subdict
+
     return pattern
 
 

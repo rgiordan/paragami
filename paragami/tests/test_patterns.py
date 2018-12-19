@@ -315,10 +315,6 @@ class TestJSONFiles(unittest.TestCase):
         assert_array_almost_equal(extra, data['extra'])
 
 
-
-
-
-
 class TestHelperFunctions(unittest.TestCase):
     def _test_logsumexp(self, mat, axis):
         # Test the more numerically stable version with this simple
