@@ -23,9 +23,9 @@ class Pattern(object):
         """
         Parameters
         -----------
-        flat_length : int
+        flat_length : `int`
             The length of a non-free flattened vector.
-        free_flat_length : int
+        free_flat_length : `int`
             The length of a free flattened vector.
         """
         self._flat_length = flat_length
@@ -74,18 +74,19 @@ class Pattern(object):
 
         Parameters
         -----------
-        flat_val: 1-d float array
+        flat_val : `numpy.ndarray`, (N, )
             The flattened value.
-        free: Boolean
+        free : `bool`
             Whether or not the flattened value is a free parameterization.
-        validate: Boolean
+        validate : `bool`, optional
             Whether to validate that the folded value respects the constraints.
             If None, default either to the pattern's default or, if that is
             unspecified, to True.
 
         Returns
         ---------
-        The parameter value in its original "folded" shape.
+        folded_val : Folded value
+            The parameter value in its original folded shape.
         """
         raise NotImplementedError()
 
@@ -95,19 +96,19 @@ class Pattern(object):
 
         Parameters
         -----------
-        folded_val
-            The parameter in its original "folded" shape.
-        free: Boolean
+        folded_val : Folded value
+            The parameter in its original folded shape.
+        free : `bool`
             Whether or not the flattened value is to be in a free
             parameterization.
-        validate: Boolean
+        validate : `bool`, optional
             Whether to validate that the folded value respects the constraints.
             If None, default either to the pattern's default or, if that is
             unspecified, to True.
 
         Returns
         ---------
-        1-d vector of floats
+        flat_val : ``numpy.ndarray``, (N, )
             The flattened value.
         """
         raise NotImplementedError()
@@ -119,13 +120,13 @@ class Pattern(object):
 
         Parameters
         -----------
-        free: Boolean
+        free : `bool`
             Whether or not the flattened value is to be in a free
             parameterization.
 
         Returns
         ---------
-        int
+        length : `int`
             The length of the pattern's flattened value.
         """
         if free:
@@ -136,26 +137,33 @@ class Pattern(object):
     # Methods to generate valid values.
     def empty(self, valid):
         """
-        Return an empty parameter in its "folded" shape.
+        Return an empty parameter in its folded shape.
 
         Parameters
-        -----------
-        valid: Boolean
+        -------------
+        valid : `bool`
             Whether or folded shape should be filled with valid values.
 
         Returns
         ---------
-        A parameter value in its original "folded" shape.
+        folded_val : Folded value
+            A parameter value in its original folded shape.
         """
         raise NotImplementedError()
 
     def random(self):
         """
-        Return an random, valid parameter in its "folded" shape.
+        Return an random, valid parameter in its folded shape.
+
+        .. note::
+            There is no reason this provides a meaningful distribution over
+            folded values.  This function is intended to be used as
+            a convenience for testing.
 
         Returns
         ---------
-        A random parameter value in its original "folded" shape.
+        folded_val : Folded value
+            A random parameter value in its original folded shape.
         """
         return self.fold(np.random.random(self._free_flat_length), free=True)
 
@@ -171,14 +179,14 @@ class Pattern(object):
 
         Parameters
         -------------
-        folded_val:
+        folded_val : Folded value
             The folded value at which the Jacobian is to be evaluated.
-        sparse: boolean
+        sparse : `bool`, optional
             Whether to return a sparse or a dense matrix.
 
         Returns
         -------------
-        Numeric matrix:
+        ``numpy.ndarray``, (N, M)
             The Jacobian matrix ``d val_free / d val_freeflat``. Consistent with
             standard Jacobian notation, the elements of ``val_free`` correspond
             to the rows of the Jacobian matrix and the elements of
@@ -203,14 +211,15 @@ class Pattern(object):
 
         Parameters
         -------------
-        folded_val:
+        folded_val : Folded value
             The folded value at which the Jacobian is to be evaluated.
-        sparse: boolean
-            Whether to return a sparse or a dense matrix.
+        sparse : `bool`, optional
+            If ``True``, return a sparse matrix.  Otherwise, return a dense
+            ``numpy`` 2d array.
 
         Returns
         -------------
-        Numeric matrix:
+        ``numpy.ndarray``, (N, N)
             The Jacobian matrix ``d val_freeflat / d val_free``. Consistent with
             standard Jacobian notation, the elements of ``val_freeflat``
             correspond to the rows of the Jacobian matrix and the elements of
