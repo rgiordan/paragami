@@ -1,9 +1,10 @@
+from abc import ABC, abstractmethod
 import autograd
 import json
 import numpy as np
 from scipy.sparse import coo_matrix
 
-class Pattern(object):
+class Pattern(ABC):
     """A abstract class for a parameter pattern.
 
     See derived classes for examples.
@@ -23,18 +24,13 @@ class Pattern(object):
         self._freeing_jacobian = autograd.jacobian(self._freeing_transform)
         self._unfreeing_jacobian = autograd.jacobian(self._unfreeing_transform)
 
+    # Abstract methods that must be implemented by subclasses.
+
+    @abstractmethod
     def __str__(self):
-        raise NotImplementedError()
+        pass
 
-    def __eq__(self, other):
-        if type(other) != type(self):
-            return False
-        return self.as_dict() == other.as_dict()
-
-    @classmethod
-    def json_typename(cls):
-        return '.'.join([ cls.__module__, cls.__name__])
-
+    @abstractmethod
     def as_dict(self):
         """Return a dictionary of attributes describing the pattern.
 
@@ -46,18 +42,9 @@ class Pattern(object):
         ``__init__``, then the default methods for ``to_json`` and
         ``from_json`` will work with no additional modification.
         """
-        raise NotImplementedError()
+        pass
 
-    def _freeing_transform(self, flat_val):
-        """From the flat to the free flat value.
-        """
-        return self.flatten(self.fold(flat_val, free=False), free=True)
-
-    def _unfreeing_transform(self, free_flat_val):
-        """From the free flat to the flat value.
-        """
-        return self.flatten(self.fold(free_flat_val, free=True), free=False)
-
+    @abstractmethod
     def fold(self, flat_val, free, validate=None):
         """Fold a flat value into a parameter.
 
@@ -77,8 +64,9 @@ class Pattern(object):
         folded_val : Folded value
             The parameter value in its original folded shape.
         """
-        raise NotImplementedError()
+        pass
 
+    @abstractmethod
     def flatten(self, folded_val, free, validate=None):
         """Flatten a folded value into a flat vector.
 
@@ -99,9 +87,46 @@ class Pattern(object):
         flat_val : ``numpy.ndarray``, (N, )
             The flattened value.
         """
-        raise NotImplementedError()
+        pass
 
-    # Get the size of the flattened version.
+    @abstractmethod
+    def empty(self, valid):
+        """Return an empty parameter in its folded shape.
+
+        Parameters
+        -------------
+        valid : `bool`
+            Whether or folded shape should be filled with valid values.
+
+        Returns
+        ---------
+        folded_val : Folded value
+            A parameter value in its original folded shape.
+        """
+        pass
+
+    ##################################################
+    # Methods that are standard for all patterns.
+
+    def __eq__(self, other):
+        if type(other) != type(self):
+            return False
+        return self.as_dict() == other.as_dict()
+
+    @classmethod
+    def json_typename(cls):
+        return '.'.join([ cls.__module__, cls.__name__])
+
+    def _freeing_transform(self, flat_val):
+        """From the flat to the free flat value.
+        """
+        return self.flatten(self.fold(flat_val, free=False), free=True)
+
+    def _unfreeing_transform(self, free_flat_val):
+        """From the free flat to the flat value.
+        """
+        return self.flatten(self.fold(free_flat_val, free=True), free=False)
+
     def flat_length(self, free):
         """Return the length of the pattern's flattened value.
 
@@ -120,22 +145,6 @@ class Pattern(object):
             return self._free_flat_length
         else:
             return self._flat_length
-
-    # Methods to generate valid values.
-    def empty(self, valid):
-        """Return an empty parameter in its folded shape.
-
-        Parameters
-        -------------
-        valid : `bool`
-            Whether or folded shape should be filled with valid values.
-
-        Returns
-        ---------
-        folded_val : Folded value
-            A parameter value in its original folded shape.
-        """
-        raise NotImplementedError()
 
     def random(self):
         """Return an random, valid parameter in its folded shape.
