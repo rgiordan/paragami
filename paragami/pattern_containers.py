@@ -279,8 +279,8 @@ class PatternDict(Pattern):
             pattern_flat_length = pattern.flat_length(free)
             pattern_flat_val = flat_val[offset:(offset + pattern_flat_length)]
             offset += pattern_flat_length
-            folded_val[pattern_name] = pattern.fold(
-                pattern_flat_val, free=free, validate=validate)
+            folded_val[pattern_name] = \
+                pattern.fold(pattern_flat_val, free=free)
         if not free:
             valid, msg = self.validate_folded(folded_val)
             if not valid:
@@ -368,36 +368,27 @@ class PatternArray(Pattern):
     Currently this can only contain patterns whose folded values are
     numeric arrays (i.e., `NumericArrayPattern`, `SimplexArrayPattern`, and
     `PSDSymmetricMatrixPattern`).
-
-    Methods
-    -------------
-    shape
-        Returns the shape of the entire folded array not including the shape
-        of the base pattern.
-
-    base_pattern
-        Returns the pattern contained in each element of the array.
     """
-    def __init__(self, shape, base_pattern):
+    def __init__(self, array_shape, base_pattern):
         """
         Parameters
         ------------
-        shape: tuple of int
+        array_shape: tuple of int
             The shape of the array (not including the base parameter)
         base_pattern:
             The base pattern.
         """
         # TODO: change the name shape -> array_shape
         # and have shape be the whole array, including the pattern.
-        self.__array_shape = tuple(shape)
+        self.__array_shape = tuple(array_shape)
         self.__array_ranges = [range(0, t) for t in self.__array_shape]
 
-        num_elements = np.prod(self.__shape)
+        num_elements = np.prod(self.__array_shape)
         self.__base_pattern = base_pattern
 
         # Check whether the base_pattern takes values that are numpy arrays.
         # If they are, then the unfolded value will be a single numpy array
-        # of shape __shape + base_pattern.empty().shape.
+        # of shape __array_shape + base_pattern.empty().shape.
         empty_pattern = self.__base_pattern.empty(valid=False)
         if type(empty_pattern) is np.ndarray:
             self.__folded_pattern_shape = empty_pattern.shape
@@ -415,7 +406,7 @@ class PatternArray(Pattern):
                 'PatternArray does not support patterns whose folded ' +
                 'values are not numpy.ndarray types.')
 
-        self.__shape = tuple(shape) + empty_pattern.shape
+        self.__shape = tuple(self.__array_shape) + empty_pattern.shape
 
         super().__init__(
             num_elements * base_pattern.flat_length(free=False),
@@ -423,12 +414,13 @@ class PatternArray(Pattern):
 
     def __str__(self):
         return('PatternArray {} of {}'.format(
-            self.__shape, self.__base_pattern))
+            self.__array_shape, self.__base_pattern))
 
     def as_dict(self):
         return {
             'pattern': self.json_typename(),
             'shape': self.__shape,
+            'array_shape': self.__array_shape,
             'base_pattern': self.__base_pattern.to_json() }
 
     def array_shape(self):
@@ -458,7 +450,7 @@ class PatternArray(Pattern):
                 'Wrong shape.  Expected {}, got {}.'.format(
                     folded_val.shape, self.__shape)
         for item in itertools.product(*self.__array_ranges):
-            valid, msg = self.__base_pattern.validate_folded(folded_val[iterm])
+            valid, msg = self.__base_pattern.validate_folded(folded_val[item])
             if not valid:
                 err_msg = 'Bad value in location {}: {}'.format(item, msg)
                 return False, err_msg
@@ -469,8 +461,7 @@ class PatternArray(Pattern):
         repeated_array = np.array(
             [empty_pattern
              for item in itertools.product(*self.__array_ranges)])
-        return np.reshape(
-            repeated_array, self.__shape + self.__folded_pattern_shape)
+        return np.reshape(repeated_array, self.__shape)
 
     def _stacked_obs_slice(self, item, flat_length):
         """
@@ -488,10 +479,10 @@ class PatternArray(Pattern):
         ---------------
         A slice for the elements in a vector of length ``flat_length``
         corresponding to element item of the array, where ``item`` is a tuple
-        indexing into the array of shape ``__shape``.
+        indexing into the array of shape ``__array_shape``.
         """
-        assert len(item) == len(self.__shape)
-        linear_item = np.ravel_multi_index(item, self.__shape) * flat_length
+        assert len(item) == len(self.__array_shape)
+        linear_item = np.ravel_multi_index(item, self.__array_shape) * flat_length
         return slice(linear_item, linear_item + flat_length)
 
     def fold(self, flat_val, free):
@@ -508,11 +499,10 @@ class PatternArray(Pattern):
         folded_array = np.array([
             self.__base_pattern.fold(
                 flat_val[self._stacked_obs_slice(item, flat_length)],
-                free=free, validate=validate)
+                free=free)
             for item in itertools.product(*self.__array_ranges)])
 
-        folded_val = np.reshape(
-            folded_array, self.__shape + self.__folded_pattern_shape)
+        folded_val = np.reshape(folded_array, self.__shape)
 
         if not free:
             valid, msg = self.validate_folded(folded_val)
@@ -526,8 +516,7 @@ class PatternArray(Pattern):
             raise ValueError(msg)
 
         return np.hstack(np.array([
-            self.__base_pattern.flatten(
-                folded_val[item], free=free, validate=validate)
+            self.__base_pattern.flatten(folded_val[item], free=free)
             for item in itertools.product(*self.__array_ranges)]))
 
     def flat_length(self, free):
@@ -576,7 +565,8 @@ class PatternArray(Pattern):
                     cls.json_typename(), json_dict['pattern'])
             raise ValueError(error_string)
         base_pattern = get_pattern_from_json(json_dict['base_pattern'])
-        return cls(shape=json_dict['shape'], base_pattern=base_pattern)
+        return cls(
+            array_shape=json_dict['array_shape'], base_pattern=base_pattern)
 
 
 register_pattern_json(PatternDict)
