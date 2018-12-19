@@ -102,6 +102,10 @@ class Pattern(ABC):
         ---------
         folded_val : Folded value
             A parameter value in its original folded shape.
+
+        See also
+        ------------
+        Pattern.random
         """
         pass
 
@@ -158,6 +162,10 @@ class Pattern(ABC):
         ---------
         folded_val : Folded value
             A random parameter value in its original folded shape.
+
+        See also
+        ------------
+        Pattern.empty
         """
         return self.fold(np.random.random(self._free_flat_length), free=True)
 
@@ -184,6 +192,10 @@ class Pattern(ABC):
             standard Jacobian notation, the elements of ``val_free`` correspond
             to the rows of the Jacobian matrix and the elements of
             ``val_freeflat`` correspond to the columns.
+
+        See also
+        ------------
+        Pattern.unfreeing_jacobian
         """
         flat_val = self.flatten(folded_val, free=False)
         jac = self._freeing_jacobian(flat_val)
@@ -216,6 +228,10 @@ class Pattern(ABC):
             standard Jacobian notation, the elements of ``val_freeflat``
             correspond to the rows of the Jacobian matrix and the elements of
             ``val_free`` correspond to the columns.
+
+        See also
+        ------------
+        Pattern.freeing_jacobian
         """
         freeflat_val = self.flatten(folded_val, free=True)
         jac = self._unfreeing_jacobian(freeflat_val)
@@ -226,6 +242,10 @@ class Pattern(ABC):
 
     def to_json(self):
         """Return a JSON representation of the pattern.
+
+        See also
+        ------------
+        Pattern.from_json
         """
         return json.dumps(self.as_dict())
 
@@ -242,6 +262,10 @@ class Pattern(ABC):
     @classmethod
     def from_json(cls, json_string):
         """Return a pattern from ``json_string`` created by ``to_json``.
+
+        See also
+        ------------
+        Pattern.to_json
         """
         json_dict = json.loads(json_string)
         cls._validate_json_dict_type(json_dict)
