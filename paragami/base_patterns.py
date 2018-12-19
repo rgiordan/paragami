@@ -4,20 +4,9 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 class Pattern(object):
-    """
-    A pattern for folding and unfolding a parameter.
+    """A abstract class for a parameter pattern.
 
-    Attributes
-    ------------
-
-    Methods
-    ---------
-    __str__(): A string description of the pattern.
-    __eq__(): Check two patterns for equality.
-
-    Examples
-    ------------
-    Todo.
+    See derived classes for examples.
     """
     def __init__(self, flat_length, free_flat_length):
         """
@@ -47,30 +36,30 @@ class Pattern(object):
         return '.'.join([ cls.__module__, cls.__name__])
 
     def as_dict(self):
-        """
-        Return a dictionary of attributes that determine equality.
+        """Return a dictionary of attributes describing the pattern.
+
+        The dictionary should completely describe the pattern in the sense
+        that if the contents of two patterns' dictionaries are identical
+        the patterns should be considered identical.
 
         If the keys of the returned dictionary match the arguments to
         ``__init__``, then the default methods for ``to_json`` and
-        ``from_json`` will work.
+        ``from_json`` will work with no additional modification.
         """
         raise NotImplementedError()
 
     def _freeing_transform(self, flat_val):
-        """
-        From the flat to the free flat value.
+        """From the flat to the free flat value.
         """
         return self.flatten(self.fold(flat_val, free=False), free=True)
 
     def _unfreeing_transform(self, free_flat_val):
-        """
-        From the free flat to the flat value.
+        """From the free flat to the flat value.
         """
         return self.flatten(self.fold(free_flat_val, free=True), free=False)
 
     def fold(self, flat_val, free, validate=None):
-        """
-        Fold a flat value into a parameter.
+        """Fold a flat value into a parameter.
 
         Parameters
         -----------
@@ -91,8 +80,7 @@ class Pattern(object):
         raise NotImplementedError()
 
     def flatten(self, folded_val, free, validate=None):
-        """
-        Flatten a folded value into a flat vector.
+        """Flatten a folded value into a flat vector.
 
         Parameters
         -----------
@@ -115,8 +103,7 @@ class Pattern(object):
 
     # Get the size of the flattened version.
     def flat_length(self, free):
-        """
-        Return the length of the pattern's flattened value.
+        """Return the length of the pattern's flattened value.
 
         Parameters
         -----------
@@ -136,8 +123,7 @@ class Pattern(object):
 
     # Methods to generate valid values.
     def empty(self, valid):
-        """
-        Return an empty parameter in its folded shape.
+        """Return an empty parameter in its folded shape.
 
         Parameters
         -------------
@@ -152,8 +138,7 @@ class Pattern(object):
         raise NotImplementedError()
 
     def random(self):
-        """
-        Return an random, valid parameter in its folded shape.
+        """Return an random, valid parameter in its folded shape.
 
         .. note::
             There is no reason this provides a meaningful distribution over
@@ -168,8 +153,7 @@ class Pattern(object):
         return self.fold(np.random.random(self._free_flat_length), free=True)
 
     def freeing_jacobian(self, folded_val, sparse=True):
-        """
-        Return the Jacobian of the map from a flat free value to a flat value.
+        """The Jacobian of the map from a flat free value to a flat value.
 
         If the folded value of the parameter is ``val``, ``val_flat =
         flatten(val, free=False)``, and ``val_freeflat = flatten(val,
@@ -200,8 +184,7 @@ class Pattern(object):
             return jac
 
     def unfreeing_jacobian(self, folded_val, sparse=True):
-        """
-        Return the Jacobian of the map from a flat value to a flat free value.
+        """The Jacobian of the map from a flat value to a flat free value.
 
         If the folded value of the parameter is ``val``, ``val_flat =
         flatten(val, free=False)``, and ``val_freeflat = flatten(val,
@@ -233,8 +216,7 @@ class Pattern(object):
             return jac
 
     def to_json(self):
-        """
-        Return a JSON representation of the pattern.
+        """Return a JSON representation of the pattern.
         """
         return json.dumps(self.as_dict())
 
@@ -250,8 +232,7 @@ class Pattern(object):
 
     @classmethod
     def from_json(cls, json_string):
-        """
-        Return a pattern instance from ``json_string`` created by ``to_json``.
+        """Return a pattern from ``json_string`` created by ``to_json``.
         """
         json_dict = json.loads(json_string)
         cls._validate_json_dict_type(json_dict)
