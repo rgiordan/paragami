@@ -143,14 +143,17 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
                                    use_hessian_at_opt,
                                    use_hyper_par_objective_fun):
         model = QuadraticModel(dim=dim)
+        lam0 = model.lambda_pattern.flatten(model.lam, free=lambda_free)
 
         # Sanity check that the optimum is correct.
         get_objective_flat = paragami.FlattenFunctionInput(
-            model.get_objective, free=theta_free, argnums=0,
-            patterns=model.theta_pattern)
+            model.get_objective,
+            free=[theta_free, lambda_free],
+            argnums=[0, 1],
+            patterns=[model.theta_pattern, model.lambda_pattern])
         get_objective_for_opt = paragami.Functor(
             get_objective_flat, argnums=0)
-        get_objective_for_opt.cache_args(None, model.lam)
+        get_objective_for_opt.cache_args(None, lam0)
         get_objective_for_opt_grad = autograd.grad(get_objective_for_opt)
         get_objective_for_opt_hessian = autograd.hessian(get_objective_for_opt)
 
@@ -160,40 +163,43 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
             x0=np.zeros(model.dim),
             method='BFGS')
 
-        theta0 = model.get_true_optimal_theta(model.lam)
-        theta_flat = model.theta_pattern.flatten(theta0, free=theta_free)
-        assert_array_almost_equal(theta_flat, opt_output.x)
+        #theta0 = model.get_true_optimal_theta(model.lam)
+        theta0 = model.theta_pattern.flatten(
+            model.get_true_optimal_theta(model.lam), free=theta_free)
+        assert_array_almost_equal(theta0, opt_output.x)
 
         # Instantiate the sensitivity object.
         if use_hessian_at_opt:
-            hess0 = get_objective_for_opt_hessian(theta_flat)
+            hess0 = get_objective_for_opt_hessian(theta0)
         else:
             hess0 = None
 
         if use_hyper_par_objective_fun:
-            hyper_par_objective_fun = model.get_hyper_par_objective
+            hyper_par_objective_fun = \
+                paragami.FlattenFunctionInput(
+                    model.model.get_hyper_par_objective,
+                    free=[theta_free, lambda_free],
+                    argnums=[0, 1],
+                    patterns=[model.theta_pattern, model.lambda_pattern])
         else:
             hyper_par_objective_fun = None
 
         parametric_sens = \
             paragami.HyperparameterSensitivityLinearApproximation(
-                objective_fun=model.get_objective,
-                opt_par_pattern=model.theta_pattern,
-                hyper_par_pattern=model.lambda_pattern,
-                opt_par_folded_value=theta0,
-                hyper_par_folded_value=model.lam,
-                opt_par_is_free=theta_free,
-                hyper_par_is_free=lambda_free,
+                objective_fun=get_objective_flat,
+                opt_par_value=theta0,
+                hyper_par_value=lam0,
                 hessian_at_opt=hess0,
                 hyper_par_objective_fun=hyper_par_objective_fun)
 
         epsilon = 0.01
-        lambda1 = model.lam + epsilon
+        lambda1 = lam0 + epsilon
 
         # Check the optimal parameters
         pred_diff = \
             parametric_sens.predict_opt_par_from_hyper_par(lambda1) - theta0
-        true_diff = model.get_true_optimal_theta(lambda1) - theta0
+        true_diff = model.get_true_optimal_theta(
+            model.lambda_pattern.fold(lambda1, lambda_free)) - theta0
 
         if (not theta_free) and (not lambda_free):
             # The model is linear in lambda, so the prediction should be exact.
@@ -207,9 +213,11 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
             self.assertTrue(np.all(error < tol))
 
         # Test the Jacobian.
-        get_true_optimal_theta_lamflat = paragami.FlattenFunctionInput(
-            model.get_true_optimal_theta, patterns=model.lambda_pattern,
-            free=lambda_free, argnums=0)
+        get_true_optimal_theta_lamflat = \
+            paragami.FlattenFunctionInput(
+                model.get_true_optimal_theta,
+                patterns=model.lambda_pattern,
+                free=lambda_free, argnums=0)
         def get_true_optimal_theta_flat(lam_flat):
             theta0 = get_true_optimal_theta_lamflat(lam_flat)
             return model.theta_pattern.flatten(theta0, free=theta_free)

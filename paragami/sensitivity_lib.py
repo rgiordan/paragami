@@ -344,7 +344,7 @@ class HyperparameterSensitivityLinearApproximation:
 
         if hyper_par_objective_fun is None:
             self._hyper_par_objective_fun = self._objective_fun
-            self._hyper_obj_fun = self._obj_fun
+            self._hyper_obj_fun = self._objective_fun
         else:
             self._hyper_par_objective_fun = hyper_par_objective_fun
 
@@ -427,9 +427,9 @@ class HyperparameterSensitivityLinearApproximation:
             raise NotImplementedError(
                 'CG is not yet implemented for predict_opt_par_from_hyper_par')
 
-        hyper1 = self._hyper_par_pattern.flatten(
-            new_hyper_par_folded_value, free=self._hyper_par_is_free)
-        return self._opt0 + self._sens_mat @ (hyper1 - self._hyper0)
+        return \
+            self._opt0 + \
+            self._sens_mat @ (new_hyper_par_value - self._hyper0)
 
 
 ################################
