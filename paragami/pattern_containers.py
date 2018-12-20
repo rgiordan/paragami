@@ -64,14 +64,15 @@ def get_pattern_from_json(pattern_json):
     pattern_json_dict = json.loads(pattern_json)
     try:
         json_pattern_name = pattern_json_dict['pattern']
-    except KeyError as err_string:
-        print('A pattern JSON string must have an entry called \'pattern\' ' +
-              'which is registered using ``register_pattern_json``.')
+    except KeyError as orig_err_string:
+        err_string = \
+            'A pattern JSON string must have an entry called pattern ' + \
+            'which is registered using ``register_pattern_json``.'
         raise KeyError(err_string)
 
     if not json_pattern_name in __json_patterns.keys():
         err_string = (
-            'Before converting from JSON, the pattern {} must be' +
+            'Before converting from JSON, the pattern {} must be ' +
             'registered with ``register_pattern_json``.'.format(
                 json_pattern_name))
         raise KeyError(err_string)

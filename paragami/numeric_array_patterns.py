@@ -120,6 +120,7 @@ class NumericArrayPattern(Pattern):
             return np.empty(self.__shape)
 
     def validate_folded(self, folded_val, validate_values=None):
+        folded_val = np.atleast_1d(folded_val)
         if folded_val.shape != self.shape():
             err_msg = ('Wrong size for array.' +
                        ' Expected shape: ' + str(self.shape()) +

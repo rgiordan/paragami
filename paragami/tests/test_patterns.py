@@ -304,20 +304,32 @@ class TestContainerPatterns(unittest.TestCase):
         # Check locking
         dict_pattern.lock()
 
-        def delete():
+        with self.assertRaises(ValueError):
             del dict_pattern['b']
 
-        def add():
+        with self.assertRaises(ValueError):
             dict_pattern['new'] = \
                 paragami.NumericArrayPattern((4, ))
 
-        def modify():
+        with self.assertRaises(ValueError):
             dict_pattern['a'] = \
                 paragami.NumericArrayPattern((4, ))
 
-        self.assertRaises(ValueError, delete)
-        self.assertRaises(ValueError, add)
-        self.assertRaises(ValueError, modify)
+        # Check invalid values.
+        bad_dict = dict_pattern.random()
+        del bad_dict['a']
+        with self.assertRaisesRegex(ValueError, 'not in folded_val dictionary'):
+            dict_pattern.flatten(bad_dict, free=True)
+
+        bad_dict = dict_pattern.random()
+        bad_dict['a'] = np.array(-10)
+        with self.assertRaisesRegex(ValueError, 'is not valid'):
+            dict_pattern.flatten(bad_dict, free=True)
+
+        free_val = np.random.random(dict_pattern.flat_length(True))
+        with self.assertRaisesRegex(ValueError,
+                                    'argument to fold must be a 1d vector'):
+            dict_pattern.fold(np.atleast_2d(free_val), free=True)
 
     def test_pattern_array(self):
         array_pattern = paragami.NumericArrayPattern(
@@ -367,6 +379,19 @@ class TestJSONFiles(unittest.TestCase):
             assert_array_almost_equal(
                 val_folded[keyname], val_folded_loaded[keyname])
         assert_array_almost_equal(extra, data['extra'])
+
+    def test_register_json_pattern(self):
+        with self.assertRaisesRegex(ValueError, 'already registered'):
+            paragami.pattern_containers.register_pattern_json(
+                paragami.NumericArrayPattern)
+        with self.assertRaisesRegex(
+                KeyError, 'A pattern JSON string must have an entry called'):
+            bad_pattern_json = json.dumps({'hedgehog': 'yes'})
+            paragami.pattern_containers.get_pattern_from_json(bad_pattern_json)
+        with self.assertRaisesRegex(
+                KeyError, 'must be registered'):
+            bad_pattern_json = json.dumps({'pattern': 'nope'})
+            paragami.pattern_containers.get_pattern_from_json(bad_pattern_json)
 
 
 class TestHelperFunctions(unittest.TestCase):
