@@ -287,9 +287,7 @@ class HyperparameterSensitivityLinearApproximation:
     def __init__(
         self,
         objective_fun,
-        #opt_par_pattern, hyper_par_pattern,
         opt_par_value, hyper_par_value,
-        #opt_par_is_free, hyper_par_is_free,
         validate_optimum=False,
         hessian_at_opt=None,
         factorize_hessian=True,
@@ -335,8 +333,6 @@ class HyperparameterSensitivityLinearApproximation:
         """
 
         self._objective_fun = objective_fun
-        self._grad_tol = grad_tol
-
         self._obj_fun_grad = autograd.grad(self._objective_fun, argnum=0)
         self._obj_fun_hessian = autograd.hessian(self._objective_fun, argnum=0)
         self._obj_fun_hvp = autograd.hessian_vector_product(
@@ -352,12 +348,15 @@ class HyperparameterSensitivityLinearApproximation:
         self._hyper_obj_fun_grad = \
             autograd.grad(self._hyper_par_objective_fun, argnum=0)
         self._hyper_obj_cross_hess = autograd.jacobian(
-            self._hyper_par_objective_fun, argnum=1)
+            self._hyper_obj_fun_grad, argnum=1)
+
+        self._grad_tol = grad_tol
 
         self.set_base_values(
             opt_par_value, hyper_par_value,
             hessian_at_opt, factorize_hessian,
-            validate_optimum=validate_optimum)
+            validate_optimum=validate_optimum,
+            grad_tol=self._grad_tol)
 
     def set_base_values(self,
                         opt_par_value, hyper_par_value,
@@ -388,7 +387,7 @@ class HyperparameterSensitivityLinearApproximation:
                 grad_tol = self._grad_tol
 
             # Check that the gradient of the objective is zero at the optimum.
-            grad0 = self._obj_fun_grad(self._opt0)
+            grad0 = self._obj_fun_grad(self._opt0, self._hyper0)
             newton_step = -1 * cho_solve(self._hess0_chol, grad0)
 
             newton_step_norm = np.linalg.norm(newton_step)
@@ -417,10 +416,6 @@ class HyperparameterSensitivityLinearApproximation:
         ------------
         new_hyper_par_value: `numpy.ndarray` (M,)
             The value of ``hyper_par`` at which to approximate ``opt_par``.
-        fold_output: Boolean
-            Whether to return ``opt_par`` as a folded value.  If ``False``,
-            returns the flattened value according to ``opt_par_pattern``
-            and ``opt_par_is_free``.
         """
 
         if not self._factorize_hessian:

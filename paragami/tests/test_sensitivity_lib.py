@@ -2,6 +2,7 @@
 
 import autograd
 import autograd.numpy as np
+from copy import deepcopy
 import itertools
 from numpy.testing import assert_array_almost_equal
 import paragami
@@ -137,13 +138,14 @@ class TestLinearResponseCovariances(unittest.TestCase):
                                     moment_jac, moment_jac[:, :, None]))
 
 
-class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
+class TestHyperparameterSensitivityLinearApproximation(unittest.TestCase):
     def _test_linear_approximation(self, dim,
                                    theta_free, lambda_free,
                                    use_hessian_at_opt,
                                    use_hyper_par_objective_fun):
         model = QuadraticModel(dim=dim)
-        lam0 = model.lambda_pattern.flatten(model.lam, free=lambda_free)
+        lam_folded0 = deepcopy(model.lam)
+        lam0 = model.lambda_pattern.flatten(lam_folded0, free=lambda_free)
 
         # Sanity check that the optimum is correct.
         get_objective_flat = paragami.FlattenFunctionInput(
@@ -163,9 +165,8 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
             x0=np.zeros(model.dim),
             method='BFGS')
 
-        #theta0 = model.get_true_optimal_theta(model.lam)
-        theta0 = model.theta_pattern.flatten(
-            model.get_true_optimal_theta(model.lam), free=theta_free)
+        theta_folded_0 = model.get_true_optimal_theta(model.lam)
+        theta0 = model.theta_pattern.flatten(theta_folded_0, free=theta_free)
         assert_array_almost_equal(theta0, opt_output.x)
 
         # Instantiate the sensitivity object.
@@ -177,7 +178,7 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
         if use_hyper_par_objective_fun:
             hyper_par_objective_fun = \
                 paragami.FlattenFunctionInput(
-                    model.model.get_hyper_par_objective,
+                    model.get_hyper_par_objective,
                     free=[theta_free, lambda_free],
                     argnums=[0, 1],
                     patterns=[model.theta_pattern, model.lambda_pattern])
@@ -190,26 +191,32 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
                 opt_par_value=theta0,
                 hyper_par_value=lam0,
                 hessian_at_opt=hess0,
-                hyper_par_objective_fun=hyper_par_objective_fun)
+                hyper_par_objective_fun=hyper_par_objective_fun,
+                validate_optimum=True)
 
-        epsilon = 0.01
-        lambda1 = lam0 + epsilon
+        epsilon = 0.001
+        lam1 = lam0 + epsilon
+        lam_folded1 = model.lambda_pattern.fold(lam1, free=lambda_free)
 
         # Check the optimal parameters
         pred_diff = \
-            parametric_sens.predict_opt_par_from_hyper_par(lambda1) - theta0
-        true_diff = model.get_true_optimal_theta(
-            model.lambda_pattern.fold(lambda1, lambda_free)) - theta0
+            parametric_sens.predict_opt_par_from_hyper_par(lam1) - theta0
+        true_theta_folded1 = model.get_true_optimal_theta(lam_folded1)
+        true_theta1 = \
+            model.theta_pattern.flatten(true_theta_folded1, free=theta_free)
+        true_diff = true_theta1 - theta0
 
         if (not theta_free) and (not lambda_free):
-            # The model is linear in lambda, so the prediction should be exact.
+            # The optimum is linear in lambda, so the prediction
+            # should be exact.
             assert_array_almost_equal(pred_diff, true_diff)
         else:
             # Check the relative error.
             error = np.abs(pred_diff - true_diff)
-            tol = epsilon * np.mean(np.abs(true_diff))
+            tol = 0.01 * np.max(np.abs(true_diff))
             if not np.all(error < tol):
-                print('Error in linear approximation: ', error, tol)
+                print('Error in linear approximation: ',
+                      error, tol, pred_diff, true_diff)
             self.assertTrue(np.all(error < tol))
 
         # Test the Jacobian.
@@ -219,13 +226,12 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
                 patterns=model.lambda_pattern,
                 free=lambda_free, argnums=0)
         def get_true_optimal_theta_flat(lam_flat):
-            theta0 = get_true_optimal_theta_lamflat(lam_flat)
-            return model.theta_pattern.flatten(theta0, free=theta_free)
+            theta_folded = get_true_optimal_theta_lamflat(lam_flat)
+            return model.theta_pattern.flatten(theta_folded, free=theta_free)
 
         get_dopt_dhyper = autograd.jacobian(get_true_optimal_theta_flat)
-        lambda_flat = model.lambda_pattern.flatten(model.lam, free=lambda_free)
         assert_array_almost_equal(
-            get_dopt_dhyper(lambda_flat),
+            get_dopt_dhyper(lam0),
             parametric_sens.get_dopt_dhyper())
 
     def test_quadratic_model(self):
