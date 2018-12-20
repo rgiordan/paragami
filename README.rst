@@ -11,7 +11,7 @@
 Description.
 ==========================
 
-Parameter folding and flattening, parameter origami [#]_: ``paragami``!
+Parameter folding and flattening, parameter origami [1]_: ``paragami``!
 
 This is a library (very much still in development) intended to make sensitivity
 analysis easier for optimization problems. The core functionality consists of
@@ -68,4 +68,4 @@ For examples and API documentation, see readthedocs_.
 Alternatively, check out the repo and run ``make html`` in ``docs/``.
 
 
-.. [#] Thanks to Stéfan van der Walt for the suggesting the package name.
+.. [1] Thanks to Stéfan van der Walt for the suggesting the package name.
