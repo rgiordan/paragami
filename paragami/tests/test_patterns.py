@@ -236,6 +236,42 @@ class TestBasicPatterns(unittest.TestCase):
             paragami.PSDSymmetricMatrixPattern(3, diag_lb=2) !=
             paragami.PSDSymmetricMatrixPattern(3))
 
+        pattern = paragami.PSDSymmetricMatrixPattern(dim, diag_lb=0.5)
+        self.assertEqual(dim, pattern.size())
+        self.assertEqual((dim, dim), pattern.shape())
+        self.assertEqual(0.5, pattern.diag_lb())
+
+        # Test bad inputs.
+        with self.assertRaisesRegex(ValueError, 'diagonal lower bound'):
+            paragami.PSDSymmetricMatrixPattern(3, diag_lb=-1)
+
+        pattern = paragami.PSDSymmetricMatrixPattern(3, diag_lb=0.5)
+        with self.assertRaisesRegex(ValueError, 'The matrix is not of shape'):
+            pattern.flatten(np.eye(4), free=False)
+
+        with self.assertRaisesRegex(ValueError,
+                                    'Diagonal is less than the lower bound'):
+            pattern.flatten(0.25 * np.eye(3), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'not symmetric'):
+            bad_mat = np.eye(3)
+            bad_mat[0, 1] = 0.1
+            pattern.flatten(bad_mat, free=False)
+
+        flat_val = pattern.flatten(pattern.random(), free=False)
+        with self.assertRaisesRegex(
+                ValueError, 'The argument to fold must be a 1d vector'):
+            pattern.fold(np.atleast_2d(flat_val), free=False)
+
+        flat_val = pattern.flatten(np.eye(3), free=False)
+        with self.assertRaisesRegex(ValueError, 'Wrong length'):
+            pattern.fold(flat_val[-1], free=False)
+
+        flat_val = 0.25 * flat_val
+        with self.assertRaisesRegex(ValueError,
+                                    'Diagonal is less than the lower bound'):
+            pattern.fold(flat_val, free=False)
+
 
 class TestContainerPatterns(unittest.TestCase):
     def test_dictionary_patterns(self):

@@ -156,6 +156,8 @@ def _unpack_posdef_matrix(free_vec, diag_lb=0.0):
 
 # Convert a vector containing the lower diagonal portion of a symmetric
 # matrix into the full symmetric matrix.
+#
+# This is not currently used but could be useful for a symmetric matrix type.
 def _unvectorize_symmetric_matrix(vec_val):
     ld_mat = _unvectorize_ld_matrix(vec_val)
     mat_val = ld_mat + ld_mat.transpose()
@@ -276,7 +278,9 @@ class PSDSymmetricMatrixPattern(Pattern):
         return True, ''
 
     def flatten(self, folded_val, free, validate_value=None):
-        self.validate_folded(folded_val, validate_value)
+        valid, msg = self.validate_folded(folded_val, validate_value)
+        if not valid:
+            raise ValueError(msg)
         if free:
             return _pack_posdef_matrix(folded_val, diag_lb=self.__diag_lb)
         else:
