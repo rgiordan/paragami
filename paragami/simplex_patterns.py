@@ -113,22 +113,20 @@ class SimplexArrayPattern(Pattern):
         else:
             return np.empty(self.__shape)
 
-    def check_folded(self, folded_val, validate=None):
-        # TODO: be consistent about whether validate raises an error or
-        # returns a boolean.
+    def validate_folded(self, folded_val, validate_values=None):
         if folded_val.shape != self.__shape:
-            return False
-        if validate is None:
-            validate = self.default_validate
-        if validate:
+            return False, 'The folded value has the wrong shape.'
+        if validate_values is None:
+            validate_values = self.default_validate
+        if validate_values:
             if np.any(folded_val < 0):
-                return False
+                return False, 'Some values are negative.'
             simplex_sums = np.sum(folded_val, axis=-1)
             if np.any(np.abs(simplex_sums - 1) > 1e-12):
-                return False
-        return True
+                return False, 'The simplexes do not sum to one.'
+        return True, ''
 
-    def fold(self, flat_val, free, validate=None):
+    def fold(self, flat_val, free, validate_values=None):
         flat_size = self.flat_length(free)
         if len(flat_val) != flat_size:
             raise ValueError('flat_val is the wrong length.')
@@ -137,11 +135,15 @@ class SimplexArrayPattern(Pattern):
             return _constrain_simplex_matrix(free_mat)
         else:
             folded_val = np.reshape(flat_val, self.__shape)
-            self.check_folded(folded_val, validate)
+            valid, msg = self.validate_folded(folded_val, validate_values)
+            if not valid:
+                raise ValueError(msg)
             return folded_val
 
-    def flatten(self, folded_val, free, validate=None):
-        self.check_folded(folded_val, validate)
+    def flatten(self, folded_val, free, validate_values=None):
+        valid, msg = self.validate_folded(folded_val, validate_values)
+        if not valid:
+            raise ValueError(msg)
         if free:
             return _unconstrain_simplex_matrix(folded_val).flatten()
         else:

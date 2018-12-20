@@ -905,8 +905,6 @@ def differentiate_terms(hess0, dterms):
     for term in dterms:
         dterms_derivs += term.differentiate(eval_next_eta_deriv)
     return _consolidate_terms(dterms_derivs)
-    return dterms_derivs
-
 
 
 class ParametricSensitivityTaylorExpansion(object):

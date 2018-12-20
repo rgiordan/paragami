@@ -12,13 +12,19 @@ import paragami
 
 
 def get_test_pattern():
+    # autograd will pass invalid values, so turn off value checking.
     pattern = paragami.PatternDict()
-    pattern['array'] = paragami.NumericArrayPattern((2, 3, 4), lb=-1, ub=2)
-    pattern['mat'] = paragami.PSDSymmetricMatrixPattern(3)
-    pattern['simplex'] = paragami.SimplexArrayPattern(2, (3, ))
+    pattern['array'] = paragami.NumericArrayPattern(
+        (2, 3, 4), lb=-1, ub=2, default_validate=False)
+    pattern['mat'] = paragami.PSDSymmetricMatrixPattern(
+        3, default_validate=False)
+    pattern['simplex'] = paragami.SimplexArrayPattern(
+        2, (3, ), default_validate=False)
     subdict = paragami.PatternDict()
-    subdict['array2'] = paragami.NumericArrayPattern((2, ), lb=-3, ub=5)
+    subdict['array2'] = paragami.NumericArrayPattern(
+        (2, ), lb=-3, ub=5, default_validate=False)
     pattern['dict'] = subdict
+
     return pattern
 
 
@@ -26,6 +32,8 @@ class TestPatterns(unittest.TestCase):
     def _test_functor(self, original_fun, argnums, args, kwargs):
         argnums_array = np.atleast_1d(argnums)
         functor = paragami.Functor(original_fun, argnums)
+        self.assertEqual(list(argnums_array), list(functor.argnums()))
+
         functor_args = ()
         for i in argnums_array:
             functor_args += (args[i], )
@@ -34,10 +42,15 @@ class TestPatterns(unittest.TestCase):
         with self.assertRaises(ValueError):
             functor(*functor_args)
 
+        # Check the the value is the same as the original function.
         functor.cache_args(*args, **kwargs)
         assert_array_almost_equal(
             original_fun(*args, **kwargs),
             functor(*functor_args))
+
+        # Check accessing the cached args.
+        self.assertEqual(args, functor.cached_args())
+        self.assertEqual(kwargs, functor.cached_kwargs())
 
         # Check you can clear the cache.
         functor.clear_cached_args()
@@ -50,6 +63,8 @@ class TestPatterns(unittest.TestCase):
         with self.assertRaises(ValueError):
             functor(*bad_functor_args)
 
+        with self.assertRaises(ValueError):
+            functor.cache_args()
 
     def test_functors(self):
         x = 1
@@ -76,6 +91,15 @@ class TestPatterns(unittest.TestCase):
         for argnums in [0, 1, [0, 1]]:
             self._test_functor(testfun, argnums, (x, y), {'z': 3, 'zz': 4})
 
+        # Check bad initializations.
+        self.assertRaises(
+            ValueError,
+            lambda: paragami.Functor(testfun, argnums=[]))
+
+        self.assertRaises(
+            ValueError,
+            lambda: paragami.Functor(testfun, argnums=[0, 0]))
+
 
     def _test_flatten_function(self, original_fun, patterns, free, argnums,
                                args, flat_args, kwargs):
@@ -99,6 +123,8 @@ class TestPatterns(unittest.TestCase):
             original_fun(*args, **kwargs),
             fun_flat(*flat_args, **kwargs))
 
+        # Check that the string method works.
+        str(fun_flat)
 
     def test_flatten_function(self):
         pattern = get_test_pattern()
@@ -187,6 +213,23 @@ class TestPatterns(unittest.TestCase):
                 testfun3, [pattern['mat'], pattern['array']],
                 [b_free, a_free], [2, 0],
                 (a, z, b, x, ), (a_flat, z, b_flat, x, ), {'y': 5})
+
+        # Test bad inits
+        with self.assertRaises(ValueError):
+            fun_flat = paragami.FlattenedFunction(
+                testfun1, [[ pattern['mat'] ]], True, 0)
+
+        with self.assertRaises(ValueError):
+            fun_flat = paragami.FlattenedFunction(
+                testfun1, pattern['mat'], True, [[0]])
+
+        with self.assertRaises(ValueError):
+            fun_flat = paragami.FlattenedFunction(
+                testfun1, pattern['mat'], True, [0, 0])
+
+        with self.assertRaises(ValueError):
+            fun_flat = paragami.FlattenedFunction(
+                testfun1, pattern['mat'], True, [0, 1])
 
 
     def test_autograd(self):

@@ -115,6 +115,17 @@ class TestSparseMatrixMultiplication(unittest.TestCase):
         assert np.linalg.norm(z_mult(mu) - z_mat @ mu) < 1e-12
         assert np.linalg.norm(z_mult2(mu) - 2 * z_mat @ mu) < 1e-12
 
+        # Check that an error is raised with a non-2d array.
+        z_dense_3d = np.random.random((2, 2, 2))
+        self.assertRaises(
+            ValueError,
+            lambda: autograd_supplement_lib.get_sparse_product(z_dense_3d))
+
+        z_dense_1d = np.random.random((2, ))
+        self.assertRaises(
+            ValueError,
+            lambda: autograd_supplement_lib.get_sparse_product(z_dense_1d))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -214,3 +214,9 @@ def setup(app):
 
 # You should do this!
 # https://nbsphinx.readthedocs.io/en/0.3.5/
+
+# Define descriptions of input and return data types
+# rst_prolog = """
+# .. |folded| replace:: Folded parameter value
+# .. |flattened| replace:: Flat parameter value
+# """

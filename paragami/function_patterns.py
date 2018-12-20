@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 class FlattenedFunction:
     """
@@ -56,8 +57,6 @@ class FlattenedFunction:
         self._patterns = np.atleast_1d(patterns)
         if argnums is None:
             argnums = np.arange(0, len(self._patterns))
-        if len(self._patterns.shape) != 1:
-            raise ValueError('patterns must be a 1d vector.')
         self._argnums = np.atleast_1d(argnums)
         self._argnum_sort = np.argsort(self._argnums)
         self.free = np.broadcast_to(free, self._patterns.shape)
@@ -69,13 +68,18 @@ class FlattenedFunction:
         self._cached_kwargs = None
 
     def _validate_args(self):
-        if len(self._argnums.shape) != 1:
+        if self._patterns.ndim != 1:
+            raise ValueError('patterns must be a 1d vector.')
+        if self._argnums.ndim != 1:
             raise ValueError('argnums must be a 1d vector.')
         if len(self._argnums) != len(np.unique(self._argnums)):
             raise ValueError('argnums must not contain duplicated values.')
         if len(self._argnums) != len(self._patterns):
             raise ValueError('argnums must be the same length as patterns.')
-        if len(self.free.shape) != 1:
+        # These two actually cannot be violated because the broadcast_to
+        # would fail first.  In case something changes later, leave them in
+        # as checks.
+        if self.free.ndim != 1:
             raise ValueError(
                 'free must be a single boolean or a 1d vector of booleans.')
         if len(self.free) != len(self._patterns):
@@ -201,7 +205,7 @@ class Functor():
         will evalute ``original_fun`` with ``*args`` and ``**kwargs`` except
         for the arguments specified in ``argnums``.
         """
-        if len(args) < self._max_argnum:
+        if len(args) <= self._max_argnum:
             raise ValueError(
                 'You must cache at least as many arguments as there are'
                 'arguments in argnums.')

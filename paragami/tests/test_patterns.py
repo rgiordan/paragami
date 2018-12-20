@@ -13,6 +13,30 @@ import paragami
 
 from autograd.test_util import check_grads
 
+# A pattern that matches no actual types for causing errors to test.
+class BadTestPattern(paragami.base_patterns.Pattern):
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return 'BadTestPattern'
+
+    def as_dict(self):
+        return { 'pattern': 'bad_test_pattern' }
+
+    def fold(self, flat_val):
+        return 0
+
+    def flatten(self, flat_val):
+        return 0
+
+    def empty(self):
+        return 0
+
+    def validate_folded(self, folded_val):
+        return True, ''
+
+
 def _test_pattern(testcase, pattern, valid_value,
                   check_equal=assert_array_almost_equal,
                   jacobian_ad_test=True):
@@ -53,6 +77,14 @@ def _test_pattern(testcase, pattern, valid_value,
     testcase.assertTrue(json_dict['pattern'] == json_typename)
     new_pattern = paragami.get_pattern_from_json(json_string)
     testcase.assertTrue(new_pattern == pattern)
+
+    # Test that you cannot covert from a different patter.
+    bad_test_pattern = BadTestPattern()
+    bad_json_string = bad_test_pattern.to_json()
+    testcase.assertFalse(pattern == bad_test_pattern)
+    testcase.assertRaises(
+        ValueError,
+        lambda: pattern.__class__.from_json(bad_json_string))
 
     ############################################
     # Test the freeing and unfreeing Jacobians.
@@ -129,6 +161,37 @@ class TestBasicPatterns(unittest.TestCase):
             paragami.SimplexArrayPattern(4, (2, 3)) !=
             paragami.SimplexArrayPattern(3, (2, 3)))
 
+        pattern = paragami.SimplexArrayPattern(5, (2, 3))
+        self.assertEqual((2, 3), pattern.array_shape())
+        self.assertEqual(5, pattern.simplex_size())
+        self.assertEqual((2, 3, 5), pattern.shape())
+
+        # Test bad values.
+        with self.assertRaisesRegex(ValueError, 'simplex_size'):
+            paragami.SimplexArrayPattern(1, (2, 3))
+
+        pattern = paragami.SimplexArrayPattern(5, (2, 3))
+        with self.assertRaisesRegex(ValueError, 'wrong shape'):
+            pattern.flatten(np.full((2, 3, 4), 0.2), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'Some values are negative'):
+            bad_folded = np.full((2, 3, 5), 0.2)
+            bad_folded[0, 0, 0] = -0.1
+            bad_folded[0, 0, 1] = 0.5
+            pattern.flatten(bad_folded, free=False)
+
+        with self.assertRaisesRegex(ValueError, 'sum to one'):
+            pattern.flatten(np.full((2, 3, 5), 0.1), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'wrong length'):
+            pattern.fold(np.full(5, 0.2), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'wrong length'):
+            pattern.fold(np.full(5, 0.2), free=True)
+
+        with self.assertRaisesRegex(ValueError, 'sum to one'):
+            pattern.fold(np.full(2 * 3 * 5, 0.1), free=False)
+
     def test_numeric_array_patterns(self):
         for test_shape in [(1, ), (2, ), (2, 3), (2, 3, 4)]:
             valid_value = np.random.random(test_shape)
@@ -165,6 +228,28 @@ class TestBasicPatterns(unittest.TestCase):
             pattern = paragami.NumericArrayPattern(shape=(1, ))
             _test_pattern(self, pattern, 1.0)
 
+        # Test invalid values.
+        with self.assertRaisesRegex(
+            ValueError, 'ub must strictly exceed lower bound lb'):
+            pattern = paragami.NumericArrayPattern((1, ), lb=1, ub=-1)
+
+        pattern = paragami.NumericArrayPattern((1, ), lb=-1, ub=1)
+        with self.assertRaisesRegex(ValueError, 'beneath lower bound'):
+            pattern.flatten(-2, free=True)
+        with self.assertRaisesRegex(ValueError, 'above upper bound'):
+            pattern.flatten(2, free=True)
+        with self.assertRaisesRegex(ValueError, 'Wrong size'):
+            pattern.flatten([0, 0], free=True)
+        with self.assertRaisesRegex(ValueError,
+                                    'argument to fold must be a 1d vector'):
+            pattern.fold([[0]], free=True)
+        with self.assertRaisesRegex(ValueError, 'Wrong size for array'):
+            pattern.fold([0, 0], free=True)
+        with self.assertRaisesRegex(ValueError, 'beneath lower bound'):
+            pattern.fold([-2], free=False)
+
+        self.assertEqual((-1, 1), pattern.bounds())
+
     def test_psdsymmetric_matrix_patterns(self):
         dim = 3
         valid_value = np.eye(dim) * 3 + np.full((dim, dim), 0.1)
@@ -181,6 +266,42 @@ class TestBasicPatterns(unittest.TestCase):
         self.assertTrue(
             paragami.PSDSymmetricMatrixPattern(3, diag_lb=2) !=
             paragami.PSDSymmetricMatrixPattern(3))
+
+        pattern = paragami.PSDSymmetricMatrixPattern(dim, diag_lb=0.5)
+        self.assertEqual(dim, pattern.size())
+        self.assertEqual((dim, dim), pattern.shape())
+        self.assertEqual(0.5, pattern.diag_lb())
+
+        # Test bad inputs.
+        with self.assertRaisesRegex(ValueError, 'diagonal lower bound'):
+            paragami.PSDSymmetricMatrixPattern(3, diag_lb=-1)
+
+        pattern = paragami.PSDSymmetricMatrixPattern(3, diag_lb=0.5)
+        with self.assertRaisesRegex(ValueError, 'The matrix is not of shape'):
+            pattern.flatten(np.eye(4), free=False)
+
+        with self.assertRaisesRegex(ValueError,
+                                    'Diagonal is less than the lower bound'):
+            pattern.flatten(0.25 * np.eye(3), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'not symmetric'):
+            bad_mat = np.eye(3)
+            bad_mat[0, 1] = 0.1
+            pattern.flatten(bad_mat, free=False)
+
+        flat_val = pattern.flatten(pattern.random(), free=False)
+        with self.assertRaisesRegex(
+                ValueError, 'The argument to fold must be a 1d vector'):
+            pattern.fold(np.atleast_2d(flat_val), free=False)
+
+        flat_val = pattern.flatten(np.eye(3), free=False)
+        with self.assertRaisesRegex(ValueError, 'Wrong length'):
+            pattern.fold(flat_val[-1], free=False)
+
+        flat_val = 0.25 * flat_val
+        with self.assertRaisesRegex(ValueError,
+                                    'Diagonal is less than the lower bound'):
+            pattern.fold(flat_val, free=False)
 
 
 class TestContainerPatterns(unittest.TestCase):
@@ -250,24 +371,40 @@ class TestContainerPatterns(unittest.TestCase):
         # Check locking
         dict_pattern.lock()
 
-        def delete():
+        with self.assertRaises(ValueError):
             del dict_pattern['b']
 
-        def add():
+        with self.assertRaises(ValueError):
             dict_pattern['new'] = \
                 paragami.NumericArrayPattern((4, ))
 
-        def modify():
+        with self.assertRaises(ValueError):
             dict_pattern['a'] = \
                 paragami.NumericArrayPattern((4, ))
 
-        self.assertRaises(ValueError, delete)
-        self.assertRaises(ValueError, add)
-        self.assertRaises(ValueError, modify)
+        # Check invalid values.
+        bad_dict = dict_pattern.random()
+        del bad_dict['a']
+        with self.assertRaisesRegex(ValueError, 'not in folded_val dictionary'):
+            dict_pattern.flatten(bad_dict, free=True)
+
+        bad_dict = dict_pattern.random()
+        bad_dict['a'] = np.array(-10)
+        with self.assertRaisesRegex(ValueError, 'is not valid'):
+            dict_pattern.flatten(bad_dict, free=True)
+
+        free_val = np.random.random(dict_pattern.flat_length(True))
+        with self.assertRaisesRegex(ValueError,
+                                    'argument to fold must be a 1d vector'):
+            dict_pattern.fold(np.atleast_2d(free_val), free=True)
+
+        with self.assertRaisesRegex(ValueError,
+                                    'Wrong size for pattern dictionary'):
+            dict_pattern.fold(free_val[-1], free=True)
 
     def test_pattern_array(self):
         array_pattern = paragami.NumericArrayPattern(
-            shape=(2, ), lb=-1, ub=10.0)
+            shape=(4, ), lb=-1, ub=10.0)
         pattern_array = paragami.PatternArray((2, 3), array_pattern)
         valid_value = pattern_array.random()
         _test_pattern(self, pattern_array, valid_value)
@@ -289,6 +426,35 @@ class TestContainerPatterns(unittest.TestCase):
         self.assertTrue(
             paragami.PatternArray((2, 3), array_pattern) !=
             paragami.PatternArray((2, 3), matrix_pattern))
+
+        pattern_array = paragami.PatternArray((2, 3), array_pattern)
+        self.assertEqual((2, 3), pattern_array.array_shape())
+        self.assertEqual((2, 3, 4), pattern_array.shape())
+        self.assertTrue(array_pattern == pattern_array.base_pattern())
+
+        # Test bad arguments.
+        with self.assertRaisesRegex(NotImplementedError,
+                                    'not numpy.ndarray types'):
+            paragami.PatternArray((2, 3), paragami.PatternDict())
+
+        pattern_array = paragami.PatternArray((2, 3), array_pattern)
+        with self.assertRaisesRegex(ValueError, 'Wrong number of dimensions'):
+            pattern_array.flatten(np.full((2, 3), 0), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'Wrong number of dimensions'):
+            pattern_array.flatten(np.full((2, 3, 4, 5), 0), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'Wrong shape'):
+            pattern_array.flatten(np.full((2, 3, 5), 0), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'Bad value'):
+            pattern_array.flatten(np.full((2, 3, 4), -10), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'must be a 1d vector'):
+            pattern_array.fold(np.full((24, 1), -10), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'Wrong size'):
+            pattern_array.fold(np.full((25, ), -10), free=False)
 
 
 class TestJSONFiles(unittest.TestCase):
@@ -314,9 +480,18 @@ class TestJSONFiles(unittest.TestCase):
                 val_folded[keyname], val_folded_loaded[keyname])
         assert_array_almost_equal(extra, data['extra'])
 
-
-
-
+    def test_register_json_pattern(self):
+        with self.assertRaisesRegex(ValueError, 'already registered'):
+            paragami.pattern_containers.register_pattern_json(
+                paragami.NumericArrayPattern)
+        with self.assertRaisesRegex(
+                KeyError, 'A pattern JSON string must have an entry called'):
+            bad_pattern_json = json.dumps({'hedgehog': 'yes'})
+            paragami.pattern_containers.get_pattern_from_json(bad_pattern_json)
+        with self.assertRaisesRegex(
+                KeyError, 'must be registered'):
+            bad_pattern_json = json.dumps({'pattern': 'nope'})
+            paragami.pattern_containers.get_pattern_from_json(bad_pattern_json)
 
 
 class TestHelperFunctions(unittest.TestCase):
