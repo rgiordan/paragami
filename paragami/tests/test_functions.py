@@ -28,7 +28,15 @@ def get_test_pattern():
     return pattern
 
 
-class TestPatterns(unittest.TestCase):
+def assert_test_dict_equal(d1, d2):
+    """Assert that dictionaries corresponding to test pattern are equal.
+    """
+    for k in ['array', 'mat', 'simplex']:
+        assert_array_almost_equal(d1[k], d2[k])
+    assert_array_almost_equal(d1['dict']['array2'], d2['dict']['array2'])
+
+
+class TestFunctor(unittest.TestCase):
     def _test_functor(self, original_fun, argnums, args, kwargs):
         argnums_array = np.atleast_1d(argnums)
         functor = paragami.Functor(original_fun, argnums)
@@ -101,6 +109,7 @@ class TestPatterns(unittest.TestCase):
             lambda: paragami.Functor(testfun, argnums=[0, 0]))
 
 
+class TestFlatteningAndFolding(unittest.TestCase):
     def _test_flatten_function(self, original_fun, patterns, free, argnums,
                                args, flat_args, kwargs):
 
@@ -230,6 +239,35 @@ class TestPatterns(unittest.TestCase):
         with self.assertRaises(ValueError):
             fun_flat = paragami.FlattenFunctionInput(
                 testfun1, pattern['mat'], True, [0, 1])
+
+
+    def test_fold_function(self):
+        pattern = get_test_pattern()
+        param_val = pattern.random()
+        param_flat = pattern.flatten(param_val, free=False)
+        param_free = pattern.flatten(param_val, free=True)
+
+        def get_param(a, b=0.1):
+            param_val = pattern.empty(valid=False)
+            param_val['array'][:] = a + b
+            param_val['mat'] = \
+                a * np.eye(param_val['mat'].shape[0]) + b
+            param_val['simplex'] = np.full(param_val['simplex'].shape, 0.5)
+            param_val['dict']['array2'][:] = a + b
+
+            return param_val
+
+        for free in [False, True]:
+            def get_flat_param(a, b=0.1):
+                return pattern.flatten(get_param(a, b=b), free=free)
+
+            get_folded_param = paragami.FoldFunctionOutput(
+                get_flat_param, pattern=pattern, free=free)
+            a = 0.1
+            b = 0.2
+            assert_test_dict_equal(
+                get_param(a, b=b), get_folded_param(a, b=b))
+
 
 
     def test_autograd(self):
