@@ -6,16 +6,12 @@ import json
 
 
 def _unconstrain_array(array, lb, ub):
-    if not (array <= ub).all():
-        raise ValueError('Elements larger than the upper bound')
-    if not (array >= lb).all():
-        raise ValueError('Elements smaller than the lower bound')
-    if ub <= lb:
-        raise ValueError('Upper bound must be greater than lower bound')
+    # Assume that the inputs obey the constraints, lb < ub and
+    # lb <= array <= ub, which are checked in the pattern.
     if ub == float("inf"):
         if lb == -float("inf"):
             # For consistent behavior, never return a reference.
-            #return copy.deepcopy(array)
+            # Note that deepcopy will cause autograd to fail.
             return copy.copy(array)
         else:
             return np.log(array - lb)
@@ -27,8 +23,7 @@ def _unconstrain_array(array, lb, ub):
 
 
 def _constrain_array(free_array, lb, ub):
-    if ub <= lb:
-        raise ValueError('Upper bound must be greater than lower bound')
+    # Assume that lb < ub, which is checked in the pattern.
     if ub == float("inf"):
         if lb == -float("inf"):
             # For consistency, never return a reference.
@@ -126,7 +121,7 @@ class NumericArrayPattern(Pattern):
 
     def validate_folded(self, folded_val, validate_values=None):
         if folded_val.shape != self.shape():
-            err_msg = ('Wrong size for Array.' +
+            err_msg = ('Wrong size for array.' +
                        ' Expected shape: ' + str(self.shape()) +
                        ' Got shape: ' + str(folded_val.shape))
             return False, err_msg
@@ -139,39 +134,6 @@ class NumericArrayPattern(Pattern):
                 return False, 'Value above upper bound.'
         return True, ''
 
-    # def _free_fold(self, free_flat_val):
-    #     if free_flat_val.size != self._free_flat_length:
-    #         error_string = \
-    #             'Wrong size for Array.  Expected {}, got {}'.format(
-    #                 str(self._free_flat_length),
-    #                 str(free_flat_val.size))
-    #         raise ValueError(error_string)
-    #     constrained_array = \
-    #         _constrain_array(free_flat_val, self.__lb, self.__ub)
-    #     return constrained_array.reshape(self.__shape)
-
-    # def _free_flatten(self, folded_val, validate_values=None):
-    #     valid, msg = self.validate_folded(folded_val, validate_values)
-    #     if not valid:
-    #         raise ValueError(msg)
-    #     return _unconstrain_array(folded_val, self.__lb, self.__ub).flatten()
-
-    # def _notfree_fold(self, flat_val, validate_values=None):
-    #     if flat_val.size != self._flat_length:
-    #         error_string = \
-    #             'Wrong size for Array.  Expected {}, got {}'.format(
-    #                 str(self._flat_length), str(flat_val.size))
-    #         raise ValueError(error_string)
-    #     folded_val = flat_val.reshape(self.__shape)
-    #     valid, msg = self.validate_folded(folded_val, validate_values)
-    #     if not valid:
-    #         raise ValueError(msg)
-    #     return folded_val
-
-    # def _notfree_flatten(self, folded_val, validate_values=None):
-    #     self.validate_folded(folded_val, validate_values)
-    #     return folded_val.flatten()
-
     def fold(self, flat_val, free, validate_values=None):
         flat_val = np.atleast_1d(flat_val)
 
@@ -181,7 +143,7 @@ class NumericArrayPattern(Pattern):
         expected_length = self.flat_length(free=free)
         if flat_val.size != expected_length:
             error_string = \
-                'Wrong size for Array.  Expected {}, got {}'.format(
+                'Wrong size for array.  Expected {}, got {}'.format(
                     str(expected_length),
                     str(flat_val.size))
             raise ValueError(error_string)

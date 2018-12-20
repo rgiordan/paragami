@@ -197,6 +197,28 @@ class TestBasicPatterns(unittest.TestCase):
             pattern = paragami.NumericArrayPattern(shape=(1, ))
             _test_pattern(self, pattern, 1.0)
 
+        # Test invalid values.
+        with self.assertRaisesRegex(
+            ValueError, 'ub must strictly exceed lower bound lb'):
+            pattern = paragami.NumericArrayPattern((1, ), lb=1, ub=-1)
+
+        pattern = paragami.NumericArrayPattern((1, ), lb=-1, ub=1)
+        with self.assertRaisesRegex(ValueError, 'beneath lower bound'):
+            pattern.flatten(-2, free=True)
+        with self.assertRaisesRegex(ValueError, 'above upper bound'):
+            pattern.flatten(2, free=True)
+        with self.assertRaisesRegex(ValueError, 'Wrong size'):
+            pattern.flatten([0, 0], free=True)
+        with self.assertRaisesRegex(ValueError,
+                                    'argument to fold must be a 1d vector'):
+            pattern.fold([[0]], free=True)
+        with self.assertRaisesRegex(ValueError, 'Wrong size for array'):
+            pattern.fold([0, 0], free=True)
+        with self.assertRaisesRegex(ValueError, 'beneath lower bound'):
+            pattern.fold([-2], free=False)
+
+        self.assertEqual((-1, 1), pattern.bounds())
+
     def test_psdsymmetric_matrix_patterns(self):
         dim = 3
         valid_value = np.eye(dim) * 3 + np.full((dim, dim), 0.1)
