@@ -17,7 +17,7 @@ To run the tests, in the root of the repository, run::
 
 To see code coverage, in the root of the repository, run::
 
-    $ coverage run --source paragami -m pytest
+    $ coverage run --include='paragami/[A-Za-z]*.py' -m pytest
     $ coverage html
 
 Then view the ``htmlcov/index.html`` in your web browser.
