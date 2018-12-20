@@ -62,17 +62,12 @@ class NumericArrayPattern(Pattern):
 
     Attributes
     -------------
-    default_validate: Bool
+    default_validate: `bool`, optional
         Whether or not the array is checked by default to lie within the
         specified bounds.
-
-    Methods
-    ----------------
-    validate_folded: Check whether the folded array lies within the bounds.
     """
     def __init__(self, shape,
                  lb=-float("inf"), ub=float("inf"), default_validate=True):
-
         """
         Parameters
         -------------
