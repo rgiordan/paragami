@@ -7,6 +7,11 @@ Flattening the arguments to a function
 .. autoclass:: paragami.function_patterns.FlattenFunctionInput
   :members:
 
+Folding the return value of a function
+------------------------------------------
+.. autoclass:: paragami.function_patterns.FoldFunctionOutput
+  :members:
+
 Reducing the number of arguments to a function
 -----------------------------------------------
 

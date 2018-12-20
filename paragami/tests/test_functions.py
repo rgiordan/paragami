@@ -269,7 +269,6 @@ class TestFlatteningAndFolding(unittest.TestCase):
                 get_param(a, b=b), get_folded_param(a, b=b))
 
 
-
     def test_autograd(self):
         pattern = get_test_pattern()
 
