@@ -51,7 +51,7 @@ class TestLinearResponseCovariances(unittest.TestCase):
         for par_free, init_hessian in \
             itertools.product([False, True], [False, True]):
 
-            get_kl_flat = paragami.FlattenedFunction(
+            get_kl_flat = paragami.FlattenFunctionInput(
                 original_fun=get_kl, patterns=mfvb_par_pattern, free=par_free)
             get_kl_flat_grad = autograd.grad(get_kl_flat, argnum=0)
             get_kl_flat_hessian = autograd.hessian(get_kl_flat, argnum=0)
@@ -85,7 +85,7 @@ class TestLinearResponseCovariances(unittest.TestCase):
             # Just check that you can get the cholesky decomposition.
             lr_covs.get_hessian_cholesky_at_opt()
 
-            get_mean_flat = paragami.FlattenedFunction(
+            get_mean_flat = paragami.FlattenFunctionInput(
                 lambda mfvb_par: mfvb_par['mean'],
                 patterns=mfvb_par_pattern,
                 free=par_free)
@@ -100,11 +100,11 @@ class TestLinearResponseCovariances(unittest.TestCase):
                     moment_jac, moment_jac))
 
             # Check cross-covariances.
-            get_mean01_flat = paragami.FlattenedFunction(
+            get_mean01_flat = paragami.FlattenFunctionInput(
                 lambda mfvb_par: mfvb_par['mean'][0:2],
                 patterns=mfvb_par_pattern,
                 free=par_free)
-            get_mean23_flat = paragami.FlattenedFunction(
+            get_mean23_flat = paragami.FlattenFunctionInput(
                 lambda mfvb_par: mfvb_par['mean'][2:4],
                 patterns=mfvb_par_pattern,
                 free=par_free)
@@ -145,7 +145,7 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
         model = QuadraticModel(dim=dim)
 
         # Sanity check that the optimum is correct.
-        get_objective_flat = paragami.FlattenedFunction(
+        get_objective_flat = paragami.FlattenFunctionInput(
             model.get_objective, free=theta_free, argnums=0,
             patterns=model.theta_pattern)
         get_objective_for_opt = paragami.Functor(
@@ -207,7 +207,7 @@ class HyperparameterSensitivityLinearApproximation(unittest.TestCase):
             self.assertTrue(np.all(error < tol))
 
         # Test the Jacobian.
-        get_true_optimal_theta_lamflat = paragami.FlattenedFunction(
+        get_true_optimal_theta_lamflat = paragami.FlattenFunctionInput(
             model.get_true_optimal_theta, patterns=model.lambda_pattern,
             free=lambda_free, argnums=0)
         def get_true_optimal_theta_flat(lam_flat):
@@ -254,7 +254,7 @@ class TestTaylorExpansion(unittest.TestCase):
             model.get_true_optimal_theta(model.lam), free=eta_is_free)
         eps0 = model.lambda_pattern.flatten(model.lam, free=eps_is_free)
 
-        objective = paragami.FlattenedFunction(
+        objective = paragami.FlattenFunctionInput(
             original_fun=model.get_objective,
             patterns=[model.theta_pattern, model.lambda_pattern],
             free=[eta_is_free, eps_is_free],
@@ -277,7 +277,7 @@ class TestTaylorExpansion(unittest.TestCase):
             theta = model.get_true_optimal_theta(lam)
             return model.theta_pattern.flatten(theta, free=eta_is_free)
 
-        get_true_optimal_flat_theta = paragami.FlattenedFunction(
+        get_true_optimal_flat_theta = paragami.FlattenFunctionInput(
             original_fun=get_true_optimal_flat_theta,
             patterns=model.lambda_pattern,
             free=eps_is_free,

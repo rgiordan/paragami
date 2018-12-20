@@ -4,7 +4,7 @@ Function Wrappers
 
 Flattening the arguments to a function
 ------------------------------------------
-.. autoclass:: paragami.function_patterns.FlattenedFunction
+.. autoclass:: paragami.function_patterns.FlattenFunctionInput
   :members:
 
 Reducing the number of arguments to a function

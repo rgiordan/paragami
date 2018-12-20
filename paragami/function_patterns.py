@@ -1,14 +1,11 @@
-import numpy as np
 import copy
+import numpy as np
+import warnings
 
-class FlattenedFunction:
+
+class FlattenFunctionInput:
     """
     Convert a function of folded values into one that takes flat values.
-
-    Methods
-    ---------
-    __str__(): Print the details of this flattened function.
-    __call__(): Execute the original function at the flattened arguments.
 
     Examples
     ----------
@@ -19,7 +16,7 @@ class FlattenedFunction:
         def fun(offset, mat, kwoffset=3):
             return np.linalg.slogdet(mat + offset + kwoffset)[1]
 
-        flattened_fun = paragami.FlattenedFunction(
+        flattened_fun = paragami.FlattenFunctionInput(
             original_fun=fun, patterns=mat_pattern, free=True, argnums=1)
 
         # pd_mat is a matrix:
@@ -30,29 +27,30 @@ class FlattenedFunction:
 
         # These two functions return the same value:
         print('Original: {}'.format(
-            fun(2, pd_mat, kwoffset=3)))
+              fun(2, pd_mat, kwoffset=3)))
         print('Flat: {}'.format(
-            flattened_fun(2, pd_mat_flat, kwoffset=3)))
+              flattened_fun(2, pd_mat_flat, kwoffset=3)))
     """
     def __init__(self, original_fun, patterns, free, argnums=None):
         """
         Parameters
         ------------
-        original_fun: callable function
+        original_fun: callable
             A function that takes one or more folded values as input.
 
-        patterns: `Pattern` or array of `Pattern`
+        patterns: `paragami.Pattern` or list of `paragami.PatternPattern`
             A single pattern or array of patterns describing the input to
             `original_fun`.
 
-        free: bool or array of bool
+        free: `bool` or list of `bool`
             Whether or not the corresponding elements of `patterns` should
             use free or non-free flattened values.
 
-        argnums: int or array of int
+        argnums: `int` or list of `int`
             The 0-indexed locations of the corresponding pattern in `patterns`
             in the order of the arguments fo `original_fun`.
         """
+
         self._fun = original_fun
         self._patterns = np.atleast_1d(patterns)
         if argnums is None:
@@ -62,10 +60,6 @@ class FlattenedFunction:
         self.free = np.broadcast_to(free, self._patterns.shape)
 
         self._validate_args()
-
-        self._cached_args_set = False
-        self._cached_args = None
-        self._cached_kwargs = None
 
     def _validate_args(self):
         if self._patterns.ndim != 1:
@@ -106,6 +100,59 @@ class FlattenedFunction:
         return self._fun(*new_args, **kwargs)
 
 
+class FoldFunctionOutput:
+    """
+    Convert a function returning a flat value to one returning a folded value.
+
+    Examples
+    ----------
+    .. code-block:: python
+
+        mat_pattern = paragami.PSDSymmetricMatrixPattern(3)
+
+        def fun(scale, kwoffset=3):
+            mat = np.eye(3) * scale + kwoffset
+            return mat_pattern.fold(mat, free=True)
+
+        folded_fun = paragami.FoldFunctionOutput(
+            original_fun=fun, pattern=mat_pattern, free=True)
+
+        flat_mat = fun(3, kwoffset=1)
+        # These two are the same:
+        mat_pattern.fold(flat_mat, free=True)
+        folded_fun(3, kwoffset=1)
+    """
+    def __init__(self, original_fun, pattern, free):
+        """
+        Parameters
+        ------------
+        original_fun: callable
+            A function that returns a flattened value.
+
+        pattern: `paragami.Pattern`
+            A pattern describing how to fold the output.
+
+        free: `bool`
+            Whether the returned value is free.
+        """
+
+        self._fun = original_fun
+        self._pattern = pattern
+        self._free = free
+
+    def __str__(self):
+        return('Function: {}\nfree: {}\npattern: {}'.format(
+            self._fun, self._free, self._pattern))
+
+    def __call__(self, *args, **kwargs):
+        flat_val = self._fun(*args, **kwargs)
+        return self._pattern.fold(flat_val, free=self._free)
+
+
+###############################
+# A class to cache arguments. #
+###############################
+
 class Functor():
     """
     Cache the values of certain arguments to a function.
@@ -134,7 +181,7 @@ class Functor():
         def fun(offset, mat, kwoffset=3):
             return np.linalg.slogdet(mat + offset + kwoffset)[1]
 
-        flattened_fun = paragami.FlattenedFunction(
+        flattened_fun = paragami.FlattenFunctionInput(
             original_fun=fun, patterns=mat_pattern, free=True, argnums=1)
 
         pd_mat = np.eye(3) + np.full((3, 3), 0.1)

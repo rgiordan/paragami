@@ -9,7 +9,7 @@ from math import factorial
 from scipy.linalg import cho_factor, cho_solve
 import warnings
 
-from .function_patterns import FlattenedFunction
+from .function_patterns import FlattenFunctionInput
 
 ##############
 # LRVB class #
@@ -350,7 +350,7 @@ class HyperparameterSensitivityLinearApproximation:
         # Define flattened versions of the objective function and their
         # autograd derivatives.
         self._obj_fun = \
-            FlattenedFunction(
+            FlattenFunctionInput(
                 original_fun=self._objective_fun,
                 patterns=[self._opt_par_pattern, self._hyper_par_pattern],
                 free=[self._opt_par_is_free, self._hyper_par_is_free],
@@ -366,7 +366,7 @@ class HyperparameterSensitivityLinearApproximation:
         else:
             self._hyper_par_objective_fun = hyper_par_objective_fun
             self._hyper_obj_fun = \
-                FlattenedFunction(
+                FlattenFunctionInput(
                     original_fun=self._hyper_par_objective_fun,
                     patterns=[self._opt_par_pattern, self._hyper_par_pattern],
                     free=[self._opt_par_is_free, self._hyper_par_is_free],

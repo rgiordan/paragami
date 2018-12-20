@@ -104,7 +104,7 @@ class TestPatterns(unittest.TestCase):
     def _test_flatten_function(self, original_fun, patterns, free, argnums,
                                args, flat_args, kwargs):
 
-        fun_flat = paragami.FlattenedFunction(
+        fun_flat = paragami.FlattenFunctionInput(
             original_fun, patterns, free, argnums)
 
         # Sanity check that the flat_args were set correctly.
@@ -216,19 +216,19 @@ class TestPatterns(unittest.TestCase):
 
         # Test bad inits
         with self.assertRaises(ValueError):
-            fun_flat = paragami.FlattenedFunction(
+            fun_flat = paragami.FlattenFunctionInput(
                 testfun1, [[ pattern['mat'] ]], True, 0)
 
         with self.assertRaises(ValueError):
-            fun_flat = paragami.FlattenedFunction(
+            fun_flat = paragami.FlattenFunctionInput(
                 testfun1, pattern['mat'], True, [[0]])
 
         with self.assertRaises(ValueError):
-            fun_flat = paragami.FlattenedFunction(
+            fun_flat = paragami.FlattenFunctionInput(
                 testfun1, pattern['mat'], True, [0, 0])
 
         with self.assertRaises(ValueError):
-            fun_flat = paragami.FlattenedFunction(
+            fun_flat = paragami.FlattenFunctionInput(
                 testfun1, pattern['mat'], True, [0, 1])
 
 
@@ -245,7 +245,7 @@ class TestPatterns(unittest.TestCase):
                 np.mean(param_val['mat'] ** 2)
 
         for free in [True, False]:
-            tf1_flat = paragami.FlattenedFunction(tf1, pattern, free)
+            tf1_flat = paragami.FlattenFunctionInput(tf1, pattern, free)
             param_val_flat = pattern.flatten(param_val, free=free)
             check_grads(
                 tf1_flat, modes=['rev', 'fwd'], order=2)(param_val_flat)
