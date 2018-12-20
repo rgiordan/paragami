@@ -161,6 +161,37 @@ class TestBasicPatterns(unittest.TestCase):
             paragami.SimplexArrayPattern(4, (2, 3)) !=
             paragami.SimplexArrayPattern(3, (2, 3)))
 
+        pattern = paragami.SimplexArrayPattern(5, (2, 3))
+        self.assertEqual((2, 3), pattern.array_shape())
+        self.assertEqual(5, pattern.simplex_size())
+        self.assertEqual((2, 3, 5), pattern.shape())
+
+        # Test bad values.
+        with self.assertRaisesRegex(ValueError, 'simplex_size'):
+            paragami.SimplexArrayPattern(1, (2, 3))
+
+        pattern = paragami.SimplexArrayPattern(5, (2, 3))
+        with self.assertRaisesRegex(ValueError, 'wrong shape'):
+            pattern.flatten(np.full((2, 3, 4), 0.2), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'Some values are negative'):
+            bad_folded = np.full((2, 3, 5), 0.2)
+            bad_folded[0, 0, 0] = -0.1
+            bad_folded[0, 0, 1] = 0.5
+            pattern.flatten(bad_folded, free=False)
+
+        with self.assertRaisesRegex(ValueError, 'sum to one'):
+            pattern.flatten(np.full((2, 3, 5), 0.1), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'wrong length'):
+            pattern.fold(np.full(5, 0.2), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'wrong length'):
+            pattern.fold(np.full(5, 0.2), free=True)
+
+        with self.assertRaisesRegex(ValueError, 'sum to one'):
+            pattern.fold(np.full(2 * 3 * 5, 0.1), free=False)
+
     def test_numeric_array_patterns(self):
         for test_shape in [(1, ), (2, ), (2, 3), (2, 3, 4)]:
             valid_value = np.random.random(test_shape)
