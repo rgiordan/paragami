@@ -331,9 +331,13 @@ class TestContainerPatterns(unittest.TestCase):
                                     'argument to fold must be a 1d vector'):
             dict_pattern.fold(np.atleast_2d(free_val), free=True)
 
+        with self.assertRaisesRegex(ValueError,
+                                    'Wrong size for pattern dictionary'):
+            dict_pattern.fold(free_val[-1], free=True)
+
     def test_pattern_array(self):
         array_pattern = paragami.NumericArrayPattern(
-            shape=(2, ), lb=-1, ub=10.0)
+            shape=(4, ), lb=-1, ub=10.0)
         pattern_array = paragami.PatternArray((2, 3), array_pattern)
         valid_value = pattern_array.random()
         _test_pattern(self, pattern_array, valid_value)
@@ -355,6 +359,35 @@ class TestContainerPatterns(unittest.TestCase):
         self.assertTrue(
             paragami.PatternArray((2, 3), array_pattern) !=
             paragami.PatternArray((2, 3), matrix_pattern))
+
+        pattern_array = paragami.PatternArray((2, 3), array_pattern)
+        self.assertEqual((2, 3), pattern_array.array_shape())
+        self.assertEqual((2, 3, 4), pattern_array.shape())
+        self.assertTrue(array_pattern == pattern_array.base_pattern())
+
+        # Test bad arguments.
+        with self.assertRaisesRegex(NotImplementedError,
+                                    'not numpy.ndarray types'):
+            paragami.PatternArray((2, 3), paragami.PatternDict())
+
+        pattern_array = paragami.PatternArray((2, 3), array_pattern)
+        with self.assertRaisesRegex(ValueError, 'Wrong number of dimensions'):
+            pattern_array.flatten(np.full((2, 3), 0), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'Wrong number of dimensions'):
+            pattern_array.flatten(np.full((2, 3, 4, 5), 0), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'Wrong shape'):
+            pattern_array.flatten(np.full((2, 3, 5), 0), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'Bad value'):
+            pattern_array.flatten(np.full((2, 3, 4), -10), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'must be a 1d vector'):
+            pattern_array.fold(np.full((24, 1), -10), free=False)
+
+        with self.assertRaisesRegex(ValueError, 'Wrong size'):
+            pattern_array.fold(np.full((25, ), -10), free=False)
 
 
 class TestJSONFiles(unittest.TestCase):

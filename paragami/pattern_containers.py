@@ -492,8 +492,8 @@ class PatternArray(Pattern):
             raise ValueError('The argument to fold must be a 1d vector.')
         if flat_val.size != self.flat_length(free):
             error_string = \
-                'Wrong size for parameter {}.  Expected {}, got {}'.format(
-                    self.name, str(self.flat_length(free)), str(flat_val.size))
+                'Wrong size for parameter.  Expected {}, got {}'.format(
+                    str(self.flat_length(free)), str(flat_val.size))
             raise ValueError(error_string)
 
         flat_length = self.__base_pattern.flat_length(free)
