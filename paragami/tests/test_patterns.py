@@ -13,6 +13,30 @@ import paragami
 
 from autograd.test_util import check_grads
 
+# A pattern that matches no actual types for causing errors to test.
+class BadTestPattern(paragami.base_patterns.Pattern):
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return 'BadTestPattern'
+
+    def as_dict(self):
+        return { 'pattern': 'bad_test_pattern' }
+
+    def fold(self, flat_val):
+        return 0
+
+    def flatten(self, flat_val):
+        return 0
+
+    def empty(self):
+        return 0
+
+    def validate_folded(self, folded_val):
+        return True, ''
+
+
 def _test_pattern(testcase, pattern, valid_value,
                   check_equal=assert_array_almost_equal,
                   jacobian_ad_test=True):
@@ -53,6 +77,14 @@ def _test_pattern(testcase, pattern, valid_value,
     testcase.assertTrue(json_dict['pattern'] == json_typename)
     new_pattern = paragami.get_pattern_from_json(json_string)
     testcase.assertTrue(new_pattern == pattern)
+
+    # Test that you cannot covert from a different patter.
+    bad_test_pattern = BadTestPattern()
+    bad_json_string = bad_test_pattern.to_json()
+    testcase.assertFalse(pattern == bad_test_pattern)
+    testcase.assertRaises(
+        ValueError,
+        lambda: pattern.__class__.from_json(bad_json_string))
 
     ############################################
     # Test the freeing and unfreeing Jacobians.

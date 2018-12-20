@@ -45,7 +45,7 @@ class Pattern(ABC):
         pass
 
     @abstractmethod
-    def fold(self, flat_val, free, validate=None):
+    def fold(self, flat_val, free):
         """Fold a flat value into a parameter.
 
         Parameters
@@ -54,10 +54,6 @@ class Pattern(ABC):
             The flattened value.
         free : `bool`
             Whether or not the flattened value is a free parameterization.
-        validate : `bool`, optional
-            Whether to validate that the folded value respects the constraints.
-            If None, default either to the pattern's default or, if that is
-            unspecified, to True.
 
         Returns
         ---------
@@ -67,7 +63,7 @@ class Pattern(ABC):
         pass
 
     @abstractmethod
-    def flatten(self, folded_val, free, validate=None):
+    def flatten(self, folded_val, free):
         """Flatten a folded value into a flat vector.
 
         Parameters
@@ -77,10 +73,6 @@ class Pattern(ABC):
         free : `bool`
             Whether or not the flattened value is to be in a free
             parameterization.
-        validate : `bool`, optional
-            Whether to validate that the folded value respects the constraints.
-            If None, default either to the pattern's default or, if that is
-            unspecified, to True.
 
         Returns
         ---------
