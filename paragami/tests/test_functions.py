@@ -241,7 +241,7 @@ class TestFlatteningAndFolding(unittest.TestCase):
                 testfun1, pattern['mat'], True, [0, 1])
 
 
-    def test_fold_function(self):
+    def test_fold_function_output(self):
         pattern = get_test_pattern()
         param_val = pattern.random()
         param_flat = pattern.flatten(param_val, free=False)
@@ -268,6 +268,29 @@ class TestFlatteningAndFolding(unittest.TestCase):
             assert_test_dict_equal(
                 get_param(a, b=b), get_folded_param(a, b=b))
 
+    def test_flatten_and_fold(self):
+        pattern = get_test_pattern()
+        pattern_val = pattern.random()
+        free_val = pattern.flatten(pattern_val, free=True)
+
+        def operate_on_free(free_val, a, b=2):
+            return free_val * a + b
+
+        a = 2
+        b = 3
+
+        folded_fun = paragami.FoldFunctionInputAndOutput(
+            original_fun=operate_on_free,
+            input_patterns=pattern,
+            input_free=True,
+            input_argnums=0,
+            output_pattern=pattern,
+            output_free=True)
+
+        pattern_out = folded_fun(pattern_val, a, b=b)
+        pattern_out_test = pattern.fold(
+            operate_on_free(free_val, a, b=b), free=True)
+        assert_test_dict_equal(pattern_out_test, pattern_out)
 
     def test_autograd(self):
         pattern = get_test_pattern()

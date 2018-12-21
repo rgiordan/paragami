@@ -116,6 +116,12 @@ class TransformFunctionInput:
 
 
 class FoldFunctionInput(TransformFunctionInput):
+    """A convenience wrapper of `paragami.TransformFunctionInput`.
+
+    See also
+    -----------
+    paragami.TransformFunctionInput
+    """
     def __init__(self, original_fun, patterns, free, argnums=None):
         super().__init__(
             original_fun=original_fun,
@@ -126,6 +132,12 @@ class FoldFunctionInput(TransformFunctionInput):
 
 
 class FlattenFunctionInput(TransformFunctionInput):
+    """A convenience wrapper of `paragami.TransformFunctionInput`.
+
+    See also
+    -----------
+    paragami.TransformFunctionInput
+    """
     def __init__(self, original_fun, patterns, free, argnums=None):
         super().__init__(
             original_fun=original_fun,
@@ -182,6 +194,33 @@ class FoldFunctionOutput:
     def __call__(self, *args, **kwargs):
         flat_val = self._fun(*args, **kwargs)
         return self._pattern.fold(flat_val, free=self._free)
+
+
+class FoldFunctionInputAndOutput():
+    """A convenience wrapper of `paragami.FoldFunctionInput` and
+    `paragami.FoldFunctionOutput`.
+
+    See also
+    -----------
+    paragami.FoldFunctionInput
+    paragami.FoldFunctionOutput
+    """
+    def __init__(self, original_fun,
+                 input_patterns, input_free, input_argnums,
+                 output_pattern, output_free):
+        self._folded_output = \
+            FoldFunctionOutput(
+                original_fun=original_fun,
+                pattern=output_pattern,
+                free=output_free)
+        self._folded_fun = FoldFunctionInput(
+            original_fun=self._folded_output,
+            patterns=input_patterns,
+            free=input_free,
+            argnums=input_argnums)
+
+    def __call__(self, *args, **kwargs):
+        return self._folded_fun(*args, **kwargs)
 
 
 ###############################

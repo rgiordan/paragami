@@ -2,14 +2,21 @@
 Function Wrappers
 ==========================================
 
-Flattening the arguments to a function
-------------------------------------------
+Flattening and folding the input and outputs of a function
+---------------------------------------------------------------
+.. autoclass:: paragami.function_patterns.TransformFunctionInput
+  :members:
+
 .. autoclass:: paragami.function_patterns.FlattenFunctionInput
   :members:
 
-Folding the return value of a function
-------------------------------------------
+.. autoclass:: paragami.function_patterns.FoldFunctionInput
+  :members:
+
 .. autoclass:: paragami.function_patterns.FoldFunctionOutput
+  :members:
+
+.. autoclass:: paragami.function_patterns.FoldFunctionInputAndOutput
   :members:
 
 Reducing the number of arguments to a function
