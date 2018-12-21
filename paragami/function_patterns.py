@@ -3,9 +3,10 @@ import numpy as np
 import warnings
 
 
-class FlattenFunctionInput:
+class TransformFunctionInput:
     """
-    Convert a function of folded values into one that takes flat values.
+    Convert a function of folded (or flattened) values into one that takes
+    flattened (or folded) values.
 
     Examples
     ----------
@@ -16,8 +17,9 @@ class FlattenFunctionInput:
         def fun(offset, mat, kwoffset=3):
             return np.linalg.slogdet(mat + offset + kwoffset)[1]
 
-        flattened_fun = paragami.FlattenFunctionInput(
-            original_fun=fun, patterns=mat_pattern, free=True, argnums=1)
+        flattened_fun = paragami.TransformFunctionInput(
+            original_fun=fun, patterns=mat_pattern,
+            free=True, argnums=1, original_is_flat=False)
 
         # pd_mat is a matrix:
         pd_mat = np.eye(3) + np.full((3, 3), 0.1)
@@ -31,7 +33,8 @@ class FlattenFunctionInput:
         print('Flat: {}'.format(
               flattened_fun(2, pd_mat_flat, kwoffset=3)))
     """
-    def __init__(self, original_fun, patterns, free, argnums=None):
+    def __init__(self, original_fun, patterns, free,
+                 original_is_flat, argnums=None, ):
         """
         Parameters
         ------------
@@ -46,6 +49,11 @@ class FlattenFunctionInput:
             Whether or not the corresponding elements of `patterns` should
             use free or non-free flattened values.
 
+        original_is_flat: `bool`
+            If `True`, convert `original_fun` from taking flat arguments to
+            one taking folded arguments.  If `False`, convert `original_fun`
+            from taking folded arguments to one taking flat arguments.
+
         argnums: `int` or list of `int`
             The 0-indexed locations of the corresponding pattern in `patterns`
             in the order of the arguments fo `original_fun`.
@@ -58,6 +66,7 @@ class FlattenFunctionInput:
         self._argnums = np.atleast_1d(argnums)
         self._argnum_sort = np.argsort(self._argnums)
         self.free = np.broadcast_to(free, self._patterns.shape)
+        self._original_is_flat = original_is_flat
 
         self._validate_args()
 
@@ -81,8 +90,10 @@ class FlattenFunctionInput:
                 'free must broadcast to the same shape as patterns.')
 
     def __str__(self):
-        return('Function: {}\nargnums: {}\nfree: {}\npatterns: {}'.format(
-            self._fun, self._argnums, self.free, self._patterns))
+        return(('Function: {}\nargnums: {}\n' +
+                'free: {}\npatterns: {}, orignal_is_flat: {}').format(
+                self._fun, self._argnums,
+                self.free, self._patterns, self._original_is_flat))
 
     def __call__(self, *args, **kwargs):
         # Loop through the arguments from beginning to end, replacing
@@ -91,13 +102,37 @@ class FlattenFunctionInput:
         last_argnum = 0
         for i in self._argnum_sort:
             argnum = self._argnums[i]
-            folded_val = \
-                self._patterns[i].fold(args[argnum], free=self.free[i])
-            new_args += args[last_argnum:argnum] + (folded_val, )
+            if self._original_is_flat:
+                val_for_orig = \
+                    self._patterns[i].flatten(args[argnum], free=self.free[i])
+            else:
+                val_for_orig = \
+                    self._patterns[i].fold(args[argnum], free=self.free[i])
+            new_args += args[last_argnum:argnum] + (val_for_orig, )
             last_argnum = argnum + 1
         new_args += args[last_argnum:len(args)]
 
         return self._fun(*new_args, **kwargs)
+
+
+class FoldFunctionInput(TransformFunctionInput):
+    def __init__(self, original_fun, patterns, free, argnums=None):
+        super().__init__(
+            original_fun=original_fun,
+            patterns=patterns,
+            free=free,
+            original_is_flat=True,
+            argnums=argnums)
+
+
+class FlattenFunctionInput(TransformFunctionInput):
+    def __init__(self, original_fun, patterns, free, argnums=None):
+        super().__init__(
+            original_fun=original_fun,
+            patterns=patterns,
+            free=free,
+            original_is_flat=False,
+            argnums=argnums)
 
 
 class FoldFunctionOutput:
