@@ -1,7 +1,10 @@
 from paragami.pattern_containers import \
     PatternDict, PatternArray, \
     register_pattern_json, get_pattern_from_json, save_folded, load_folded
-from paragami.numeric_array_patterns import NumericArrayPattern
+from paragami.numeric_array_patterns import \
+    NumericArrayPattern, \
+    NumericVectorPattern, \
+    NumericScalarPattern
 from paragami.psdmatrix_patterns import PSDSymmetricMatrixPattern
 from paragami.function_patterns import \
     FlattenFunctionInput, \

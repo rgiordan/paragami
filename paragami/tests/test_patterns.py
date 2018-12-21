@@ -207,26 +207,54 @@ class TestBasicPatterns(unittest.TestCase):
             pattern = paragami.NumericArrayPattern(test_shape, lb=-1, ub=2)
             _test_pattern(self, pattern, valid_value)
 
-            # Test equality comparisons.
-            self.assertTrue(
-                paragami.NumericArrayPattern((1, 2)) !=
-                paragami.NumericArrayPattern((1, )))
+        # Test scalar subclass.
+        pattern = paragami.NumericScalarPattern()
+        _test_pattern(self, pattern, 2)
+        _test_pattern(self, pattern, [2])
 
-            self.assertTrue(
-                paragami.NumericArrayPattern((1, 2)) !=
-                paragami.NumericArrayPattern((1, 3)))
+        pattern = paragami.NumericScalarPattern(lb=-1)
+        _test_pattern(self, pattern, 2)
 
-            self.assertTrue(
-                paragami.NumericArrayPattern((1, 2), lb=2) !=
-                paragami.NumericArrayPattern((1, 2)))
+        pattern = paragami.NumericScalarPattern(ub=3)
+        _test_pattern(self, pattern, 2)
 
-            self.assertTrue(
-                paragami.NumericArrayPattern((1, 2), lb=2, ub=4) !=
-                paragami.NumericArrayPattern((1, 2), lb=2))
+        pattern = paragami.NumericScalarPattern(lb=-1, ub=3)
+        _test_pattern(self, pattern, 2)
 
-            # Check that singletons work.
-            pattern = paragami.NumericArrayPattern(shape=(1, ))
-            _test_pattern(self, pattern, 1.0)
+        # Test vector subclass.
+        valid_vec = np.random.random(3)
+        pattern = paragami.NumericVectorPattern(length=3)
+        _test_pattern(self, pattern, valid_vec)
+
+        pattern = paragami.NumericVectorPattern(length=3, lb=-1)
+        _test_pattern(self, pattern, valid_vec)
+
+        pattern = paragami.NumericVectorPattern(length=3, ub=3)
+        _test_pattern(self, pattern, valid_vec)
+
+        pattern = paragami.NumericVectorPattern(length=3, lb=-1, ub=3)
+        _test_pattern(self, pattern, valid_vec)
+
+        # Test equality comparisons.
+        self.assertTrue(
+            paragami.NumericArrayPattern((1, 2)) !=
+            paragami.NumericArrayPattern((1, )))
+
+        self.assertTrue(
+            paragami.NumericArrayPattern((1, 2)) !=
+            paragami.NumericArrayPattern((1, 3)))
+
+        self.assertTrue(
+            paragami.NumericArrayPattern((1, 2), lb=2) !=
+            paragami.NumericArrayPattern((1, 2)))
+
+        self.assertTrue(
+            paragami.NumericArrayPattern((1, 2), lb=2, ub=4) !=
+            paragami.NumericArrayPattern((1, 2), lb=2))
+
+        # Check that singletons work.
+        pattern = paragami.NumericArrayPattern(shape=(1, ))
+        _test_pattern(self, pattern, 1.0)
 
         # Test invalid values.
         with self.assertRaisesRegex(
@@ -234,6 +262,7 @@ class TestBasicPatterns(unittest.TestCase):
             pattern = paragami.NumericArrayPattern((1, ), lb=1, ub=-1)
 
         pattern = paragami.NumericArrayPattern((1, ), lb=-1, ub=1)
+        self.assertEqual((-1, 1), pattern.bounds())
         with self.assertRaisesRegex(ValueError, 'beneath lower bound'):
             pattern.flatten(-2, free=True)
         with self.assertRaisesRegex(ValueError, 'above upper bound'):
@@ -248,7 +277,6 @@ class TestBasicPatterns(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'beneath lower bound'):
             pattern.fold([-2], free=False)
 
-        self.assertEqual((-1, 1), pattern.bounds())
 
     def test_psdsymmetric_matrix_patterns(self):
         dim = 3
