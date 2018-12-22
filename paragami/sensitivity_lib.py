@@ -1043,7 +1043,8 @@ class ParametricSensitivityTaylorExpansion(object):
         return deriv_fun(self._input_val0, self._hyper_val0, dhyper)
 
     def evaluate_taylor_series(self, new_hyper_val,
-                               add_offset=True, max_order=None):
+                               add_offset=True, max_order=None,
+                               sum_terms=True):
         """
         Evaluate the derivative ``d^k input / d hyper^k`` in the direction dhyper.
 
@@ -1052,18 +1053,25 @@ class ParametricSensitivityTaylorExpansion(object):
         new_hyper_val: `numpy.ndarray` (N, )
             The new hyperparameter value at which to evaluate the
             Taylor series.
-        add_offset: boolean
+        add_offset: `bool`
             Optional.  Whether to add the initial constant input_val0 to the
             Taylor series.
-        max_order: integer
+        max_order: `int`
             Optional.  The order of the Taylor series.  Defaults to the
             ``order`` argument to ``__init__``.
+        sum_terms: `bool`
+            If ``True``, add the terms in the Taylor series.  If ``False``,
+            return the terms as a list.
 
         Returns
         ------------
             The Taylor series approximation to ``input_val(new_hyper_val)`` if
             ``add_offset`` is ``True``, or to
-            ``input_val(new_hyper_val) - input_val0`` if ``False``.
+            ``input_val(new_hyper_val) - input_val0`` if ``False``.  If
+            ``sum_terms`` is ``True``, then a vector of the same length as
+            ``input_val`` is returned.  Otherwise, an array of
+            shape ``max_order + 1, len(input_val)`` is returned containing
+            the terms of the Taylor series approximation.
         """
         if max_order is None:
             max_order = self._order
@@ -1074,14 +1082,18 @@ class ParametricSensitivityTaylorExpansion(object):
                 'max_order must be no greater than the declared order={}'.format(
                     self._order))
 
-        dinput = 0
+        if add_offset:
+            dinput = [self._input_val0]
+        else:
+            dinput = [0]
         dhyper = new_hyper_val - self._hyper_val0
         for k in range(1, max_order + 1):
-            dinput += self.evaluate_dkinput_dhyperk(dhyper, k) / \
-                float(factorial(k))
+            dinput.append(
+                self.evaluate_dkinput_dhyperk(dhyper, k) / float(factorial(k)))
 
-        if add_offset:
-            return dinput + self._input_val0
+        dinput = np.array(dinput)
+        if sum_terms:
+            return np.sum(dinput, axis=0)
         else:
             return dinput
 

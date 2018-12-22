@@ -545,6 +545,11 @@ class TestTaylorExpansion(unittest.TestCase):
             eta0 + d1 + d2 / 2 + d3 / 6,
             taylor_expansion.evaluate_taylor_series(eps1))
 
+        terms = taylor_expansion.evaluate_taylor_series(
+            eps1, max_order=3, sum_terms=False)
+        assert_array_almost_equal(
+            taylor_expansion.evaluate_taylor_series(eps1, max_order=3),
+            np.sum(terms, axis=0))
 
 if __name__ == '__main__':
     unittest.main()
