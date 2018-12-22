@@ -3,7 +3,7 @@ import autograd.numpy as np
 import autograd.scipy as sp
 
 def regularizer(par_dict, lam):
-    return lam * np.sum(par_dict['mu'] ** 2)
+    return np.sum(lam * (par_dict['mu'] ** 2))
 
 def get_normal_log_prob(x, sigma, mu):
     sigma_inv = np.linalg.inv(sigma)

@@ -374,6 +374,11 @@ class HyperparameterSensitivityLinearApproximation:
                 self._hess0 = self._obj_fun_hessian(self._opt0, self._hyper0)
             else:
                 self._hess0 = hessian_at_opt
+            # TODO: if the objective function returns a 1-d array and not a
+            # float then the Cholesky decomposition will fail because
+            # the Hessian will have an extra dimension.  This is a confusing
+            # error that we could catch explicitly at the cost of an extra
+            # function evaluation.  Is it worth it?
             self._hess0_chol = cho_factor(self._hess0)
         else:
             if hessian_at_opt is not None:
@@ -936,7 +941,7 @@ class ParametricSensitivityTaylorExpansion(object):
         else:
             self._hyper_par_objective_function = hyper_par_objective_function
 
-        self.set_base_values(input_val0, hyper_val0)
+        self.set_base_values(input_val0, hyper_val0, hess0=hess0)
         self._set_order(order)
 
     def set_base_values(self, input_val0, hyper_val0, hess0=None):
@@ -962,6 +967,11 @@ class ParametricSensitivityTaylorExpansion(object):
                     self._input_val0, self._hyper_val0)
         else:
             self._hess0 = hess0
+        # TODO: if the objective function returns a 1-d array and not a
+        # float then the Cholesky decomposition will fail because
+        # the Hessian will have an extra dimension.  This is a confusing
+        # error that we could catch explicitly at the cost of an extra
+        # function evaluation.  Is it worth it?
         self._hess0_chol = cho_factor(self._hess0)
 
     # Get a function returning the next derivative from the Taylor terms dterms.
