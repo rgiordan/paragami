@@ -10,8 +10,7 @@ from paragami.function_patterns import \
     FlattenFunctionInput, \
     FoldFunctionInput, \
     FoldFunctionOutput, \
-    FoldFunctionInputAndOutput, \
-    Functor
+    FoldFunctionInputAndOutput
 from paragami.simplex_patterns import SimplexArrayPattern
 from paragami.optimization_lib import \
     PreconditionedFunction, \

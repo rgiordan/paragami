@@ -19,12 +19,6 @@ Flattening and folding the input and outputs of a function
 .. autoclass:: paragami.function_patterns.FoldFunctionInputAndOutput
   :members:
 
-Reducing the number of arguments to a function
------------------------------------------------
-
-.. autoclass:: paragami.function_patterns.Functor
-  :members:
-
 Preconditioning an objective function
 -----------------------------------------------
 

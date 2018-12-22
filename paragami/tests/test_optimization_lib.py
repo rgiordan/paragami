@@ -3,6 +3,7 @@
 import autograd
 import autograd.numpy as np
 from autograd.test_util import check_grads
+import copy
 import itertools
 from numpy.testing import assert_array_almost_equal
 import paragami
@@ -16,8 +17,8 @@ class TestPreconditionedFunction(unittest.TestCase):
         model = QuadraticModel(dim=3)
 
         # Define a function of theta alone.
-        f = paragami.Functor(model.get_objective, argnums=0)
-        f.cache_args(None, model.lam)
+        lam0 = copy.deepcopy(model.lam)
+        f = lambda x: model.get_objective(x, lam0)
         f_grad = autograd.grad(f)
         f_hessian = autograd.hessian(f)
 

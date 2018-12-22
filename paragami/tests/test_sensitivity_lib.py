@@ -153,9 +153,7 @@ class TestHyperparameterSensitivityLinearApproximation(unittest.TestCase):
             free=[theta_free, lambda_free],
             argnums=[0, 1],
             patterns=[model.theta_pattern, model.lambda_pattern])
-        get_objective_for_opt = paragami.Functor(
-            get_objective_flat, argnums=0)
-        get_objective_for_opt.cache_args(None, lam0)
+        get_objective_for_opt = lambda x: get_objective_flat(x, lam0)
         get_objective_for_opt_grad = autograd.grad(get_objective_for_opt)
         get_objective_for_opt_hessian = autograd.hessian(get_objective_for_opt)
 
