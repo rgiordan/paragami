@@ -1023,9 +1023,10 @@ class ParametricSensitivityTaylorExpansion(object):
 
         Parameters
         --------------
-        dhyper: numpy array
-            The direction (hyper_val - hyper_val0).
-        k: integer
+        dhyper: `numpy.ndarray` (N, )
+            The direction ``new_hyper_val - hyper_val0`` in which to evaluate
+            the directional derivative.
+        k: `int`
             The order of the derivative.
 
         Returns
@@ -1041,14 +1042,16 @@ class ParametricSensitivityTaylorExpansion(object):
         deriv_fun = self._dkinput_dhyperk_list[k - 1]
         return deriv_fun(self._input_val0, self._hyper_val0, dhyper)
 
-    def evaluate_taylor_series(self, dhyper, add_offset=True, max_order=None):
+    def evaluate_taylor_series(self, new_hyper_val,
+                               add_offset=True, max_order=None):
         """
         Evaluate the derivative ``d^k input / d hyper^k`` in the direction dhyper.
 
         Parameters
         --------------
-        dhyper: numpy array
-            The direction (hyper_val - hyper_val0).
+        new_hyper_val: `numpy.ndarray` (N, )
+            The new hyperparameter value at which to evaluate the
+            Taylor series.
         add_offset: boolean
             Optional.  Whether to add the initial constant input_val0 to the
             Taylor series.
@@ -1058,9 +1061,9 @@ class ParametricSensitivityTaylorExpansion(object):
 
         Returns
         ------------
-            The Taylor series approximation to ``input_vak(hyper_val)`` if
+            The Taylor series approximation to ``input_val(new_hyper_val)`` if
             ``add_offset`` is ``True``, or to
-            ``input_val(hyper_val) - input_val0`` if ``False``.
+            ``input_val(new_hyper_val) - input_val0`` if ``False``.
         """
         if max_order is None:
             max_order = self._order
@@ -1072,6 +1075,7 @@ class ParametricSensitivityTaylorExpansion(object):
                     self._order))
 
         dinput = 0
+        dhyper = new_hyper_val - self._hyper_val0
         for k in range(1, max_order + 1):
             dinput += self.evaluate_dkinput_dhyperk(dhyper, k) / \
                 float(factorial(k))

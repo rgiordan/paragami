@@ -530,20 +530,20 @@ class TestTaylorExpansion(unittest.TestCase):
             d3, taylor_expansion.evaluate_dkinput_dhyperk(deps, k=3))
 
         assert_array_almost_equal(
-            eta0 + d1, taylor_expansion.evaluate_taylor_series(
-                deps, max_order=1))
+            eta0 + d1,
+            taylor_expansion.evaluate_taylor_series(eps1, max_order=1))
 
         assert_array_almost_equal(
             eta0 + d1 + 0.5 * d2,
-            taylor_expansion.evaluate_taylor_series(deps, max_order=2))
+            taylor_expansion.evaluate_taylor_series(eps1, max_order=2))
 
         assert_array_almost_equal(
             eta0 + d1 + d2 / 2 + d3 / 6,
-            taylor_expansion.evaluate_taylor_series(deps, max_order=3))
+            taylor_expansion.evaluate_taylor_series(eps1, max_order=3))
 
         assert_array_almost_equal(
             eta0 + d1 + d2 / 2 + d3 / 6,
-            taylor_expansion.evaluate_taylor_series(deps))
+            taylor_expansion.evaluate_taylor_series(eps1))
 
 
 if __name__ == '__main__':
