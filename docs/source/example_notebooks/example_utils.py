@@ -15,3 +15,6 @@ def get_normal_log_prob(x, sigma, mu):
         return -0.5 * (
             np.einsum('ni,ij,nj->n', x_centered, sigma_inv, x_centered) + \
             sigma_log_det)
+
+def draw_bootstrap_weights(n):
+    return np.random.multinomial(n, np.full(n, 1 / n))
