@@ -40,8 +40,9 @@ class BadTestPattern(paragami.base_patterns.Pattern):
         return []
 
 
-def _test_flat_indices(testcase, pattern):
-    pass
+def _test_array_flat_indices(testcase, pattern):
+    bool_val = pattern.empty(valid=False)
+    bool_val[]
 
 
 def _test_pattern(testcase, pattern, valid_value,

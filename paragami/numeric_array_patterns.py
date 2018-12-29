@@ -189,10 +189,10 @@ class NumericArrayPattern(Pattern):
         folded_bool = np.atleast_1d(folded_bool)
         shape_ok, err_msg = self._validate_folded_shape(folded_bool)
         if not shape_ok:
-            return shape_ok, err_msg
+            raise ValueError(err_msg)
         folded_indices = self.fold(
-            np.arange(self._flat_length(free)),
-            validate_values=False, free=free)
+            np.arange(self.flat_length(free)),
+            validate_values=False, free=False)
         return folded_indices[folded_bool]
 
 
