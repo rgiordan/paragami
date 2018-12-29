@@ -352,6 +352,9 @@ class PatternDict(Pattern):
                 json_dict['contents'][pattern_name])
         return pattern_dict
 
+    def flat_indices(self, folded_bool, free):
+        raise NotImplementedError()
+
 
 ##########################
 # An array of a pattern.
@@ -568,6 +571,9 @@ class PatternArray(Pattern):
         base_pattern = get_pattern_from_json(json_dict['base_pattern'])
         return cls(
             array_shape=json_dict['array_shape'], base_pattern=base_pattern)
+
+    def flat_indices(self, folded_bool, free):
+        raise NotImplementedError()
 
 
 register_pattern_json(PatternDict)

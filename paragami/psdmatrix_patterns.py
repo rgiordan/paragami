@@ -302,5 +302,8 @@ class PSDSymmetricMatrixPattern(Pattern):
                 raise ValueError(msg)
             return folded_val
 
+    def flat_indices(self, folded_bool, free):
+        raise NotImplementedError()
+
 
 register_pattern_json(PSDSymmetricMatrixPattern)

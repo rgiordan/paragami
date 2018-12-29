@@ -36,6 +36,9 @@ class BadTestPattern(paragami.base_patterns.Pattern):
     def validate_folded(self, folded_val):
         return True, ''
 
+    def flat_indices(self, folded_bool, free):
+        return []
+
 
 def _test_pattern(testcase, pattern, valid_value,
                   check_equal=assert_array_almost_equal,

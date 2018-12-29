@@ -178,6 +178,9 @@ class NumericArrayPattern(Pattern):
         else:
             return self._flat_length
 
+    def flat_indices(self, folded_bool, free):
+        raise NotImplementedError()
+
 
 class NumericVectorPattern(NumericArrayPattern):
     """A pattern for a (optionally bounded) numeric vector.

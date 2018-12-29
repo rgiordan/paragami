@@ -110,9 +110,32 @@ class Pattern(ABC):
         ------------
         is_valid : `bool`
             Whether ``folded_val`` is an allowable shape and value.
-        err_msg: `str`
+        err_msg : `str`
         """
         pass
+
+    @abstractmethod
+    def flat_indices(self, folded_bool, free):
+        """Get which flattened indices correspond to which folded values.
+
+        Parameters
+        ------------
+        folded_bool : Folded booleans
+            A variable in the folded shape but containing booleans.  The
+            elements that are ``True`` are the ones for which we will return
+            the flat indices.
+        free : `bool`
+            Whether or not the flattened value is to be in a free
+            parameterization.
+
+        Returns
+        --------
+        indices : `list`
+            A list of indices into the flattened value corresponding to
+            the ``True`` members of ``folded_bool``.
+        """
+        pass
+
 
     ##################################################
     # Methods that are standard for all patterns.

@@ -161,5 +161,8 @@ class SimplexArrayPattern(Pattern):
             array_shape=tuple(json_dict['array_shape']),
             default_validate=json_dict['default_validate'])
 
+    def flat_indices(self, folded_bool, free):
+        raise NotImplementedError()
+
 
 register_pattern_json(SimplexArrayPattern)
