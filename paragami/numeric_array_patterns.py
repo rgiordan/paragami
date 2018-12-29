@@ -114,13 +114,20 @@ class NumericArrayPattern(Pattern):
         else:
             return np.empty(self._shape)
 
-    def validate_folded(self, folded_val, validate_values=None):
-        folded_val = np.atleast_1d(folded_val)
+    def _validate_folded_shape(self, folded_val):
         if folded_val.shape != self.shape():
             err_msg = ('Wrong size for array.' +
                        ' Expected shape: ' + str(self.shape()) +
                        ' Got shape: ' + str(folded_val.shape))
             return False, err_msg
+        else:
+            return True, ''
+
+    def validate_folded(self, folded_val, validate_values=None):
+        folded_val = np.atleast_1d(folded_val)
+        shape_ok, err_msg = self._validate_folded_shape(folded_val)
+        if not shape_ok:
+            return shape_ok, err_msg
         if validate_values is None:
             validate_values = self.default_validate
         if validate_values:
@@ -179,7 +186,15 @@ class NumericArrayPattern(Pattern):
             return self._flat_length
 
     def flat_indices(self, folded_bool, free):
-        raise NotImplementedError()
+        folded_bool = np.atleast_1d(folded_bool)
+        shape_ok, err_msg = self._validate_folded_shape(folded_bool)
+        if not shape_ok:
+            return shape_ok, err_msg
+        folded_indices = self.fold(
+            np.arange(self._flat_length(free)),
+            validate_values=False, free=free)
+        return folded_indices[folded_bool]
+
 
 
 class NumericVectorPattern(NumericArrayPattern):

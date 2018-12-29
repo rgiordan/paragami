@@ -130,7 +130,7 @@ class Pattern(ABC):
 
         Returns
         --------
-        indices : `list`
+        indices : `numpy.ndarray` (N,)
             A list of indices into the flattened value corresponding to
             the ``True`` members of ``folded_bool``.
         """

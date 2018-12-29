@@ -40,6 +40,10 @@ class BadTestPattern(paragami.base_patterns.Pattern):
         return []
 
 
+def _test_flat_indices(testcase, pattern):
+    pass
+
+
 def _test_pattern(testcase, pattern, valid_value,
                   check_equal=assert_array_almost_equal,
                   jacobian_ad_test=True):
