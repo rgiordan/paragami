@@ -5,6 +5,8 @@ from .pattern_containers import register_pattern_json
 import autograd.numpy as np
 import autograd.scipy as sp
 
+import itertools
+
 import json
 import warnings
 
@@ -113,9 +115,16 @@ class SimplexArrayPattern(Pattern):
         else:
             return np.empty(self.__shape)
 
-    def validate_folded(self, folded_val, validate_values=None):
+    def _validate_folded_shape(self, folded_val):
         if folded_val.shape != self.__shape:
             return False, 'The folded value has the wrong shape.'
+        else:
+            return True, ''
+
+    def validate_folded(self, folded_val, validate_values=None):
+        shape_ok, err_msg = self._validate_folded_shape(folded_val)
+        if not shape_ok:
+            raise ValueError(err_msg)
         if validate_values is None:
             validate_values = self.default_validate
         if validate_values:
@@ -162,10 +171,34 @@ class SimplexArrayPattern(Pattern):
             default_validate=json_dict['default_validate'])
 
     def empty_bool(self, value):
-        return np.full(self._shape, value, dtype='bool')
+        return np.full(self.__shape, value, dtype='bool')
 
     def flat_indices(self, folded_bool, free):
-        raise NotImplementedError()
+        shape_ok, err_msg = self._validate_folded_shape(folded_bool)
+        if not shape_ok:
+            raise ValueError(err_msg)
+        if not free:
+            folded_indices = self.fold(
+                np.arange(self.flat_length(False)),
+                validate_values=False, free=False)
+            return folded_indices[folded_bool]
+        else:
+            # Every element of a particular simplex depends on all
+            # the free values for that simplex.
+
+            # The simplex is the last index, which moves the fastest.
+            indices = []
+            offset = 0
+            free_simplex_length = self.__simplex_size - 1
+            array_ranges = (range(n) for n in self.__array_shape)
+            for ind in itertools.product(*array_ranges):
+                if np.any(folded_bool[ind]):
+                    free_inds = np.arange(
+                        offset * free_simplex_length,
+                        (offset + 1) * free_simplex_length)
+                    indices.append(free_inds)
+                offset += 1
+            return np.hstack(indices)
 
 
 register_pattern_json(SimplexArrayPattern)

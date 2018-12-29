@@ -238,6 +238,10 @@ class TestBasicPatterns(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'sum to one'):
             pattern.fold(np.full(2 * 3 * 5, 0.1), free=False)
 
+        # Test flat indices.
+        pattern = paragami.SimplexArrayPattern(5, (2, 3))
+        _test_array_flat_indices(self, pattern)
+
     def test_numeric_array_patterns(self):
         for test_shape in [(1, ), (2, ), (2, 3), (2, 3, 4)]:
             valid_value = np.random.random(test_shape)

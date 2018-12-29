@@ -318,7 +318,7 @@ class PSDSymmetricMatrixPattern(Pattern):
             raise ValueError(err_msg)
         if not free:
             folded_indices = self.fold(
-                np.arange(self.flat_length(free)),
+                np.arange(self.flat_length(False)),
                 validate_value=False, free=False)
             return folded_indices[folded_bool]
         else:
