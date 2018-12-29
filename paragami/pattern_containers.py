@@ -249,6 +249,12 @@ class PatternDict(Pattern):
             empty_val[pattern_name] = pattern.empty(valid)
         return empty_val
 
+    def empty_bool(self, value):
+        empty_val = OrderedDict()
+        for pattern_name, pattern in self.__pattern_dict.items():
+            empty_val[pattern_name] = pattern.empty_bool(value)
+        return empty_val
+
     def validate_folded(self, folded_val):
         for pattern_name, pattern in self.__pattern_dict.items():
             if not pattern_name in folded_val:
@@ -462,6 +468,13 @@ class PatternArray(Pattern):
 
     def empty(self, valid):
         empty_pattern = self.__base_pattern.empty(valid=valid)
+        repeated_array = np.array(
+            [empty_pattern
+             for item in itertools.product(*self.__array_ranges)])
+        return np.reshape(repeated_array, self.__shape)
+
+    def empty_bool(self, value):
+        empty_pattern = self.__base_pattern.empty_bool(value)
         repeated_array = np.array(
             [empty_pattern
              for item in itertools.product(*self.__array_ranges)])

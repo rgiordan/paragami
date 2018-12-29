@@ -185,6 +185,9 @@ class NumericArrayPattern(Pattern):
         else:
             return self._flat_length
 
+    def empty_bool(self, value):
+        return np.full(self._shape, value, dtype='bool')
+
     def flat_indices(self, folded_bool, free):
         folded_bool = np.atleast_1d(folded_bool)
         shape_ok, err_msg = self._validate_folded_shape(folded_bool)

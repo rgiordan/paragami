@@ -6,6 +6,7 @@ from numpy.testing import assert_array_almost_equal
 import numpy as np
 import scipy as sp
 
+import itertools
 import json
 import collections
 
@@ -36,13 +37,49 @@ class BadTestPattern(paragami.base_patterns.Pattern):
     def validate_folded(self, folded_val):
         return True, ''
 
+    def empty_bool(self, value):
+        return []
+
     def flat_indices(self, folded_bool, free):
         return []
 
 
 def _test_array_flat_indices(testcase, pattern):
-    bool_val = pattern.empty(valid=False)
-    bool_val[]
+    x_bool = pattern.empty_bool(False)
+
+    free_len = pattern.flat_length(free=True)
+    flat_len = pattern.flat_length(free=False)
+    manual_jac = np.zeros((free_len, flat_len))
+    for ind in itertools.product(*(range(n) for n in x_bool.shape)):
+        x_bool[ind] = True
+        flat_ind = pattern.flat_indices(x_bool, free=False)
+        free_ind = pattern.flat_indices(x_bool, free=True)
+        manual_jac[np.ix_(flat_ind, free_ind)] = 1
+        x_bool[ind] = False
+
+    def flat_to_free(flat_val):
+        return pattern.flatten(pattern.fold(flat_val, free=False), free=True)
+
+    get_flat_to_free_jac = autograd.jacobian(flat_to_free)
+    flat_to_free_jac = get_flat_to_free_jac(np.full(flat_len, 0.1))
+
+    # As a sanity check, make sure there are an appropriate number of
+    # non-zero entries in the Jacobian.
+    num_nonzeros = 0
+    it = np.nditer(flat_to_free_jac, flags=['multi_index'])
+    while not it.finished:
+        # If the true Jacobian is non-zero, make sure we have indicated
+        # dependence in ``flat_indices``.  Note that this allows
+        # ``flat_indices`` to admit dependence where there is none.
+        if it[0] != 0:
+            num_nonzeros += 1
+            testcase.assertTrue(manual_jac[it.multi_index] != 0)
+        it.iternext()
+
+    # Every flat value is depended on by something, and every free value
+    # depends on something.
+    testcase.assertTrue(num_nonzeros >= flat_len)
+    testcase.assertTrue(num_nonzeros >= free_len)
 
 
 def _test_pattern(testcase, pattern, valid_value,
@@ -285,6 +322,9 @@ class TestBasicPatterns(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'beneath lower bound'):
             pattern.fold([-2], free=False)
 
+        # Test flat indices.
+        pattern = paragami.NumericArrayPattern((2, 3, 4), lb=-1, ub=1)
+        _test_array_flat_indices(self, pattern)
 
     def test_psdsymmetric_matrix_patterns(self):
         dim = 3

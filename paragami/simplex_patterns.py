@@ -161,6 +161,9 @@ class SimplexArrayPattern(Pattern):
             array_shape=tuple(json_dict['array_shape']),
             default_validate=json_dict['default_validate'])
 
+    def empty_bool(self, value):
+        return np.full(self._shape, value, dtype='bool')
+
     def flat_indices(self, folded_bool, free):
         raise NotImplementedError()
 

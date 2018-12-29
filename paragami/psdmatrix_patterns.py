@@ -302,6 +302,9 @@ class PSDSymmetricMatrixPattern(Pattern):
                 raise ValueError(msg)
             return folded_val
 
+    def empty_bool(self, value):
+        return np.full(self._shape, value, dtype='bool')
+
     def flat_indices(self, folded_bool, free):
         raise NotImplementedError()
 

@@ -98,6 +98,22 @@ class Pattern(ABC):
         pass
 
     @abstractmethod
+    def empty_bool(self, value):
+        """Return folded shape containing booleans.
+
+        Parameters
+        -------------
+        value : `bool`
+            The value with which to fill the folded shape.
+
+        Returns
+        ---------
+        folded_bool : Folded value
+            A boolean value in its original folded shape.
+        """
+        pass
+
+    @abstractmethod
     def validate_folded(self, folded_val):
         """Check whether a folded value is valid.
 
