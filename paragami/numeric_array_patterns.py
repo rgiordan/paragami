@@ -82,37 +82,37 @@ class NumericArrayPattern(Pattern):
             specified bounds.
         """
         self.default_validate = default_validate
-        self.__shape = tuple(shape)
-        self.__lb = lb
-        self.__ub = ub
+        self._shape = tuple(shape)
+        self._lb = lb
+        self._ub = ub
         assert lb >= -float('inf')
         assert ub <= float('inf')
         if lb >= ub:
             raise ValueError(
                 'Upper bound ub must strictly exceed lower bound lb')
 
-        free_flat_length = flat_length = int(np.product(self.__shape))
+        free_flat_length = flat_length = int(np.product(self._shape))
 
         super().__init__(flat_length, free_flat_length)
 
     def __str__(self):
         return 'NumericArrayPattern {} (lb={}, ub={})'.format(
-            self.__shape, self.__lb, self.__ub)
+            self._shape, self._lb, self._ub)
 
     def as_dict(self):
         return {
             'pattern': self.json_typename(),
-            'lb': self.__lb,
-            'ub': self.__ub,
-            'shape': self.__shape,
+            'lb': self._lb,
+            'ub': self._ub,
+            'shape': self._shape,
             'default_validate': self.default_validate}
 
     def empty(self, valid):
         if valid:
             return np.full(
-                self.__shape, _get_inbounds_value(self.__lb, self.__ub))
+                self._shape, _get_inbounds_value(self._lb, self._ub))
         else:
-            return np.empty(self.__shape)
+            return np.empty(self._shape)
 
     def validate_folded(self, folded_val, validate_values=None):
         folded_val = np.atleast_1d(folded_val)
@@ -124,9 +124,9 @@ class NumericArrayPattern(Pattern):
         if validate_values is None:
             validate_values = self.default_validate
         if validate_values:
-            if (np.array(folded_val < self.__lb)).any():
+            if (np.array(folded_val < self._lb)).any():
                 return False, 'Value beneath lower bound.'
-            if (np.array(folded_val > self.__ub)).any():
+            if (np.array(folded_val > self._ub)).any():
                 return False, 'Value above upper bound.'
         return True, ''
 
@@ -146,10 +146,10 @@ class NumericArrayPattern(Pattern):
 
         if free:
             constrained_array = \
-                _constrain_array(flat_val, self.__lb, self.__ub)
-            return constrained_array.reshape(self.__shape)
+                _constrain_array(flat_val, self._lb, self._ub)
+            return constrained_array.reshape(self._shape)
         else:
-            folded_val = flat_val.reshape(self.__shape)
+            folded_val = flat_val.reshape(self._shape)
             valid, msg = self.validate_folded(folded_val, validate_values)
             if not valid:
                 raise ValueError(msg)
@@ -162,15 +162,15 @@ class NumericArrayPattern(Pattern):
             raise ValueError(msg)
         if free:
             return \
-                _unconstrain_array(folded_val, self.__lb, self.__ub).flatten()
+                _unconstrain_array(folded_val, self._lb, self._ub).flatten()
         else:
             return folded_val.flatten()
 
     def shape(self):
-        return self.__shape
+        return self._shape
 
     def bounds(self):
-        return self.__lb, self.__ub
+        return self._lb, self._ub
 
     def flat_length(self, free):
         if free:
@@ -179,4 +179,49 @@ class NumericArrayPattern(Pattern):
             return self._flat_length
 
 
+class NumericVectorPattern(NumericArrayPattern):
+    """A pattern for a (optionally bounded) numeric vector.
+
+    See Also
+    ------------
+    NumericArrayPattern
+    """
+    def __init__(self, length, lb=-float("inf"), ub=float("inf"),
+                 default_validate=True):
+        super().__init__(shape=(length, ), lb=lb, ub=ub,
+                         default_validate=default_validate)
+
+    def length(self):
+        return self._shape[0]
+
+    def as_dict(self):
+        return {
+            'pattern': self.json_typename(),
+            'length': self.length(),
+            'lb': self._lb,
+            'ub': self._ub,
+            'default_validate': self.default_validate}
+
+
+class NumericScalarPattern(NumericArrayPattern):
+    """A pattern for a (optionally bounded) numeric scalar.
+
+    See Also
+    ------------
+    NumericArrayPattern
+    """
+    def __init__(self, lb=-float("inf"), ub=float("inf"),
+                 default_validate=True):
+        super().__init__(shape=(1, ), lb=lb, ub=ub,
+                         default_validate=default_validate)
+
+    def as_dict(self):
+        return {
+            'pattern': self.json_typename(),
+            'lb': self._lb,
+            'ub': self._ub,
+            'default_validate': self.default_validate}
+
+register_pattern_json(NumericVectorPattern)
+register_pattern_json(NumericScalarPattern)
 register_pattern_json(NumericArrayPattern)
