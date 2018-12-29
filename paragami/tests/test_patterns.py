@@ -54,14 +54,15 @@ def _test_array_flat_indices(testcase, pattern):
         x_bool[ind] = True
         flat_ind = pattern.flat_indices(x_bool, free=False)
         free_ind = pattern.flat_indices(x_bool, free=True)
-        manual_jac[np.ix_(flat_ind, free_ind)] = 1
+        manual_jac[np.ix_(free_ind, flat_ind)] = 1
         x_bool[ind] = False
 
     def flat_to_free(flat_val):
         return pattern.flatten(pattern.fold(flat_val, free=False), free=True)
 
     get_flat_to_free_jac = autograd.jacobian(flat_to_free)
-    flat_to_free_jac = get_flat_to_free_jac(np.full(flat_len, 0.1))
+    valid_val = pattern.flatten(pattern.empty(valid=True), free=False)
+    flat_to_free_jac = get_flat_to_free_jac(valid_val)
 
     # As a sanity check, make sure there are an appropriate number of
     # non-zero entries in the Jacobian.
@@ -378,6 +379,10 @@ class TestBasicPatterns(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,
                                     'Diagonal is less than the lower bound'):
             pattern.fold(flat_val, free=False)
+
+        # Test flat indices.
+        pattern = paragami.PSDSymmetricMatrixPattern(3, diag_lb=0.5)
+        _test_array_flat_indices(self, pattern)
 
 
 class TestContainerPatterns(unittest.TestCase):

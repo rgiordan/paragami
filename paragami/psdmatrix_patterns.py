@@ -231,6 +231,14 @@ class PSDSymmetricMatrixPattern(Pattern):
         else:
             return np.empty((self.__size, self.__size))
 
+    def _validate_folded_shape(self, folded_val):
+        expected_shape = (self.__size, self.__size)
+        if folded_val.shape != (self.__size, self.__size):
+            return \
+                False, 'The matrix is not of shape {}'.format(expected_shape)
+        else:
+            return True, ''
+
     def validate_folded(self, folded_val, validate_value=None):
         """Check that the folded value is valid.
 
@@ -258,10 +266,9 @@ class PSDSymmetricMatrixPattern(Pattern):
             A message describing the reason the value is invalid or an empty
             string if the value is valid.
         """
-        expected_shape = (self.__size, self.__size)
-        if folded_val.shape != (self.__size, self.__size):
-            return \
-                False, 'The matrix is not of shape {}'.format(expected_shape)
+        shape_ok, err_msg = self._validate_folded_shape(folded_val)
+        if not shape_ok:
+            raise ValueError(err_msg)
 
         if validate_value is None:
             validate_value = self.default_validate
@@ -303,10 +310,24 @@ class PSDSymmetricMatrixPattern(Pattern):
             return folded_val
 
     def empty_bool(self, value):
-        return np.full(self._shape, value, dtype='bool')
+        return np.full((self.__size, self.__size), value, dtype='bool')
 
     def flat_indices(self, folded_bool, free):
-        raise NotImplementedError()
+        shape_ok, err_msg = self._validate_folded_shape(folded_bool)
+        if not shape_ok:
+            raise ValueError(err_msg)
+        if not free:
+            folded_indices = self.fold(
+                np.arange(self.flat_length(free)),
+                validate_value=False, free=False)
+            return folded_indices[folded_bool]
+        else:
+            # This indicates that each folded value depends on each
+            # free value.  I think this is not true, but getting the exact
+            # pattern may be complicated and will
+            # probably not make much of a difference in practice.
+            return np.arange(self.flat_length(True))
+
 
 
 register_pattern_json(PSDSymmetricMatrixPattern)
