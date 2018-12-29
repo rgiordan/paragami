@@ -37,32 +37,23 @@ class BadTestPattern(paragami.base_patterns.Pattern):
     def validate_folded(self, folded_val, validate_value=None):
         return True, ''
 
-    def empty_bool(self, value):
-        return []
-
     def flat_indices(self, folded_bool, free):
         return []
 
 
 def _test_array_flat_indices(testcase, pattern):
-    x_bool = pattern.empty_bool(False)
-
     free_len = pattern.flat_length(free=True)
     flat_len = pattern.flat_length(free=False)
     manual_jac = np.zeros((free_len, flat_len))
-    for ind in itertools.product(*(range(n) for n in x_bool.shape)):
-        x_bool[ind] = True
+
+    for ind in range(flat_len):
+        bool_vec = np.full(flat_len, False, dtype='bool')
+        bool_vec[ind] = True
+        x_bool = pattern.fold(bool_vec, free=False, validate_value=False)
         flat_ind = pattern.flat_indices(x_bool, free=False)
         free_ind = pattern.flat_indices(x_bool, free=True)
         manual_jac[np.ix_(free_ind, flat_ind)] = 1
-        x_bool[ind] = False
 
-    def flat_to_free(flat_val):
-        return pattern.flatten(pattern.fold(flat_val, free=False), free=True)
-
-    # get_flat_to_free_jac = autograd.jacobian(flat_to_free)
-    # valid_val = pattern.flatten(pattern.empty(valid=True), free=False)
-    # flat_to_free_jac = get_flat_to_free_jac(valid_val)
     flat_to_free_jac = pattern.freeing_jacobian(
         pattern.empty(valid=True), sparse=False)
 

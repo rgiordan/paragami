@@ -170,9 +170,6 @@ class SimplexArrayPattern(Pattern):
             array_shape=tuple(json_dict['array_shape']),
             default_validate=json_dict['default_validate'])
 
-    def empty_bool(self, value):
-        return np.full(self.__shape, value, dtype='bool')
-
     def flat_indices(self, folded_bool, free):
         shape_ok, err_msg = self._validate_folded_shape(folded_bool)
         if not shape_ok:

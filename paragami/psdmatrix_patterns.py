@@ -309,9 +309,6 @@ class PSDSymmetricMatrixPattern(Pattern):
                 raise ValueError(msg)
             return folded_val
 
-    def empty_bool(self, value):
-        return np.full((self.__size, self.__size), value, dtype='bool')
-
     def flat_indices(self, folded_bool, free):
         shape_ok, err_msg = self._validate_folded_shape(folded_bool)
         if not shape_ok:

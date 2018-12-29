@@ -104,22 +104,6 @@ class Pattern(ABC):
         pass
 
     @abstractmethod
-    def empty_bool(self, value):
-        """Return folded shape containing booleans.
-
-        Parameters
-        -------------
-        value : `bool`
-            The value with which to fill the folded shape.
-
-        Returns
-        ---------
-        folded_bool : Folded value
-            A boolean value in its original folded shape.
-        """
-        pass
-
-    @abstractmethod
     def validate_folded(self, folded_val, validate_value=None):
         """Check whether a folded value is valid.
 
@@ -217,6 +201,22 @@ class Pattern(ABC):
             A random parameter value in its original folded shape.
         """
         return self.fold(np.random.random(self._free_flat_length), free=True)
+
+    def empty_bool(self, value):
+        """Return folded shape containing booleans.
+
+        Parameters
+        -------------
+        value : `bool`
+            The value with which to fill the folded shape.
+
+        Returns
+        ---------
+        folded_bool : Folded value
+            A boolean value in its original folded shape.
+        """
+        bool_vec = np.full(flat_len, value, dtype='bool')
+        return pattern.fold(bool_vec, free=False, validate_value=False)
 
     def freeing_jacobian(self, folded_val, sparse=True):
         """The Jacobian of the map from a flat free value to a flat value.
