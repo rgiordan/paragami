@@ -242,7 +242,7 @@ class PSDSymmetricMatrixPattern(Pattern):
     def validate_folded(self, folded_val, validate_value=None):
         """Check that the folded value is valid.
 
-        If `validate_values = True`, checks that `folded_val` is a symmetric,
+        If `validate_value = True`, checks that `folded_val` is a symmetric,
         matrix of the correct shape with diagonal entries
         greater than the specified lower bound.  Otherwise,
         only the shape is checked.

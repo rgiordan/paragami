@@ -121,13 +121,13 @@ class SimplexArrayPattern(Pattern):
         else:
             return True, ''
 
-    def validate_folded(self, folded_val, validate_values=None):
+    def validate_folded(self, folded_val, validate_value=None):
         shape_ok, err_msg = self._validate_folded_shape(folded_val)
         if not shape_ok:
             raise ValueError(err_msg)
-        if validate_values is None:
-            validate_values = self.default_validate
-        if validate_values:
+        if validate_value is None:
+            validate_value = self.default_validate
+        if validate_value:
             if np.any(folded_val < 0):
                 return False, 'Some values are negative.'
             simplex_sums = np.sum(folded_val, axis=-1)
@@ -135,7 +135,7 @@ class SimplexArrayPattern(Pattern):
                 return False, 'The simplexes do not sum to one.'
         return True, ''
 
-    def fold(self, flat_val, free, validate_values=None):
+    def fold(self, flat_val, free, validate_value=None):
         flat_size = self.flat_length(free)
         if len(flat_val) != flat_size:
             raise ValueError('flat_val is the wrong length.')
@@ -144,13 +144,13 @@ class SimplexArrayPattern(Pattern):
             return _constrain_simplex_matrix(free_mat)
         else:
             folded_val = np.reshape(flat_val, self.__shape)
-            valid, msg = self.validate_folded(folded_val, validate_values)
+            valid, msg = self.validate_folded(folded_val, validate_value)
             if not valid:
                 raise ValueError(msg)
             return folded_val
 
-    def flatten(self, folded_val, free, validate_values=None):
-        valid, msg = self.validate_folded(folded_val, validate_values)
+    def flatten(self, folded_val, free, validate_value=None):
+        valid, msg = self.validate_folded(folded_val, validate_value)
         if not valid:
             raise ValueError(msg)
         if free:
@@ -180,7 +180,7 @@ class SimplexArrayPattern(Pattern):
         if not free:
             folded_indices = self.fold(
                 np.arange(self.flat_length(False)),
-                validate_values=False, free=False)
+                validate_value=False, free=False)
             return folded_indices[folded_bool]
         else:
             # Every element of a particular simplex depends on all

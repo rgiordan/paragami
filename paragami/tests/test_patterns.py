@@ -25,16 +25,16 @@ class BadTestPattern(paragami.base_patterns.Pattern):
     def as_dict(self):
         return { 'pattern': 'bad_test_pattern' }
 
-    def fold(self, flat_val):
+    def fold(self, flat_val, validate_value=None):
         return 0
 
-    def flatten(self, flat_val):
+    def flatten(self, flat_val, validate_value=None):
         return 0
 
     def empty(self):
         return 0
 
-    def validate_folded(self, folded_val):
+    def validate_folded(self, folded_val, validate_value=None):
         return True, ''
 
     def empty_bool(self, value):
@@ -60,9 +60,11 @@ def _test_array_flat_indices(testcase, pattern):
     def flat_to_free(flat_val):
         return pattern.flatten(pattern.fold(flat_val, free=False), free=True)
 
-    get_flat_to_free_jac = autograd.jacobian(flat_to_free)
-    valid_val = pattern.flatten(pattern.empty(valid=True), free=False)
-    flat_to_free_jac = get_flat_to_free_jac(valid_val)
+    # get_flat_to_free_jac = autograd.jacobian(flat_to_free)
+    # valid_val = pattern.flatten(pattern.empty(valid=True), free=False)
+    # flat_to_free_jac = get_flat_to_free_jac(valid_val)
+    flat_to_free_jac = pattern.freeing_jacobian(
+        pattern.empty(valid=True), sparse=False)
 
     # As a sanity check, make sure there are an appropriate number of
     # non-zero entries in the Jacobian.
