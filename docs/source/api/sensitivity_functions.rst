@@ -20,6 +20,11 @@ Linear response covariances
 .. autoclass:: paragami.sensitivity_lib.LinearResponseCovariances
   :members:
 
+Sparse Hessian helper
+------------------------
+.. autoclass:: paragami.sensitivity_lib.SparseBlockHessian
+  :members:
+
 DerivativeTerm class
 ---------------------------
 

@@ -18,7 +18,8 @@ from paragami.optimization_lib import \
 from paragami.sensitivity_lib import \
     HyperparameterSensitivityLinearApproximation, \
     ParametricSensitivityTaylorExpansion, \
-    LinearResponseCovariances
+    LinearResponseCovariances, \
+    SparseBlockHessian
 import paragami.autograd_supplement_lib
 
 from ._version import get_versions
