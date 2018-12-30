@@ -45,7 +45,7 @@ class Pattern(ABC):
         pass
 
     @abstractmethod
-    def fold(self, flat_val, free):
+    def fold(self, flat_val, free, validate_value=None):
         """Fold a flat value into a parameter.
 
         Parameters
@@ -54,6 +54,9 @@ class Pattern(ABC):
             The flattened value.
         free : `bool`
             Whether or not the flattened value is a free parameterization.
+        validate_value : `bool`
+            Whether to check that the folded value is valid.  If ``None``,
+            the pattern will employ a default behavior.
 
         Returns
         ---------
@@ -63,7 +66,7 @@ class Pattern(ABC):
         pass
 
     @abstractmethod
-    def flatten(self, folded_val, free):
+    def flatten(self, folded_val, free, validate_value=None):
         """Flatten a folded value into a flat vector.
 
         Parameters
@@ -73,6 +76,9 @@ class Pattern(ABC):
         free : `bool`
             Whether or not the flattened value is to be in a free
             parameterization.
+        validate_value : `bool`
+            Whether to check that the folded value is valid.  If ``None``,
+            the pattern will employ a default behavior.
 
         Returns
         ---------
@@ -98,21 +104,47 @@ class Pattern(ABC):
         pass
 
     @abstractmethod
-    def validate_folded(self, folded_val):
+    def validate_folded(self, folded_val, validate_value=None):
         """Check whether a folded value is valid.
 
         Parameters
         ----------------
         folded_val : Folded value
             A parameter value in its original folded shape.
+        validate_value : `bool`
+            Whether to validate the value in addition to the shape.  The
+            shape is always validated.
 
         Returns
         ------------
         is_valid : `bool`
             Whether ``folded_val`` is an allowable shape and value.
-        err_msg: `str`
+        err_msg : `str`
         """
         pass
+
+    @abstractmethod
+    def flat_indices(self, folded_bool, free):
+        """Get which flattened indices correspond to which folded values.
+
+        Parameters
+        ------------
+        folded_bool : Folded booleans
+            A variable in the folded shape but containing booleans.  The
+            elements that are ``True`` are the ones for which we will return
+            the flat indices.
+        free : `bool`
+            Whether or not the flattened value is to be in a free
+            parameterization.
+
+        Returns
+        --------
+        indices : `numpy.ndarray` (N,)
+            A list of indices into the flattened value corresponding to
+            the ``True`` members of ``folded_bool``.
+        """
+        pass
+
 
     ##################################################
     # Methods that are standard for all patterns.
@@ -169,6 +201,22 @@ class Pattern(ABC):
             A random parameter value in its original folded shape.
         """
         return self.fold(np.random.random(self._free_flat_length), free=True)
+
+    def empty_bool(self, value):
+        """Return folded shape containing booleans.
+
+        Parameters
+        -------------
+        value : `bool`
+            The value with which to fill the folded shape.
+
+        Returns
+        ---------
+        folded_bool : Folded value
+            A boolean value in its original folded shape.
+        """
+        bool_vec = np.full(flat_len, value, dtype='bool')
+        return pattern.fold(bool_vec, free=False, validate_value=False)
 
     def freeing_jacobian(self, folded_val, sparse=True):
         """The Jacobian of the map from a flat free value to a flat value.

@@ -5,6 +5,8 @@ from .pattern_containers import register_pattern_json
 import autograd.numpy as np
 import autograd.scipy as sp
 
+import itertools
+
 import json
 import warnings
 
@@ -113,12 +115,19 @@ class SimplexArrayPattern(Pattern):
         else:
             return np.empty(self.__shape)
 
-    def validate_folded(self, folded_val, validate_values=None):
+    def _validate_folded_shape(self, folded_val):
         if folded_val.shape != self.__shape:
             return False, 'The folded value has the wrong shape.'
-        if validate_values is None:
-            validate_values = self.default_validate
-        if validate_values:
+        else:
+            return True, ''
+
+    def validate_folded(self, folded_val, validate_value=None):
+        shape_ok, err_msg = self._validate_folded_shape(folded_val)
+        if not shape_ok:
+            raise ValueError(err_msg)
+        if validate_value is None:
+            validate_value = self.default_validate
+        if validate_value:
             if np.any(folded_val < 0):
                 return False, 'Some values are negative.'
             simplex_sums = np.sum(folded_val, axis=-1)
@@ -126,7 +135,7 @@ class SimplexArrayPattern(Pattern):
                 return False, 'The simplexes do not sum to one.'
         return True, ''
 
-    def fold(self, flat_val, free, validate_values=None):
+    def fold(self, flat_val, free, validate_value=None):
         flat_size = self.flat_length(free)
         if len(flat_val) != flat_size:
             raise ValueError('flat_val is the wrong length.')
@@ -135,13 +144,13 @@ class SimplexArrayPattern(Pattern):
             return _constrain_simplex_matrix(free_mat)
         else:
             folded_val = np.reshape(flat_val, self.__shape)
-            valid, msg = self.validate_folded(folded_val, validate_values)
+            valid, msg = self.validate_folded(folded_val, validate_value)
             if not valid:
                 raise ValueError(msg)
             return folded_val
 
-    def flatten(self, folded_val, free, validate_values=None):
-        valid, msg = self.validate_folded(folded_val, validate_values)
+    def flatten(self, folded_val, free, validate_value=None):
+        valid, msg = self.validate_folded(folded_val, validate_value)
         if not valid:
             raise ValueError(msg)
         if free:
@@ -160,6 +169,33 @@ class SimplexArrayPattern(Pattern):
             simplex_size=json_dict['simplex_size'],
             array_shape=tuple(json_dict['array_shape']),
             default_validate=json_dict['default_validate'])
+
+    def flat_indices(self, folded_bool, free):
+        shape_ok, err_msg = self._validate_folded_shape(folded_bool)
+        if not shape_ok:
+            raise ValueError(err_msg)
+        if not free:
+            folded_indices = self.fold(
+                np.arange(self.flat_length(False)),
+                validate_value=False, free=False)
+            return folded_indices[folded_bool]
+        else:
+            # Every element of a particular simplex depends on all
+            # the free values for that simplex.
+
+            # The simplex is the last index, which moves the fastest.
+            indices = []
+            offset = 0
+            free_simplex_length = self.__simplex_size - 1
+            array_ranges = (range(n) for n in self.__array_shape)
+            for ind in itertools.product(*array_ranges):
+                if np.any(folded_bool[ind]):
+                    free_inds = np.arange(
+                        offset * free_simplex_length,
+                        (offset + 1) * free_simplex_length)
+                    indices.append(free_inds)
+                offset += 1
+            return np.hstack(indices)
 
 
 register_pattern_json(SimplexArrayPattern)
