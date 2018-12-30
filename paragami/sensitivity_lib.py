@@ -1118,22 +1118,43 @@ class ParametricSensitivityTaylorExpansion(object):
 
 
 class SparseBlockHessian():
+    """Efficiently calculate block-sparse Hessians.
+
+        The objective function is expected to be of the form
+
+        .. math ::
+            x = (x_1 , ... , x_G)
+
+            w = (w_1 , ... , w_G)
+
+            f(x, w) = \sum_{g=1}^{G} w_g \\cdot f_g(x_g)
+
+        Each :math:`x_g` is
+        expected to have the same dimension.  Consequently, the Hessian
+        matrix of ``f`` with respect to ``x`` is block diagonal with
+        ``G`` blocks.  The purpose of this class is to efficiently calculate
+        this Hessian when the block structure (i.e., the partition of ``x``)
+        is known.  The biggest efficiency gains relative to calculating the
+        Hessian of ``f`` directly
+
+    """
     def __init__(self, objective_function, sparsity_array):
-        """
+        """In terms of the class description, ``objective_function = f``,
+        ``opt_par = x``, and ``weights = w``.  ``sparsity_array`` describes
+        the partition of ``x`` into :math:`(x_1, ..., x_G)`.
+
         Parameters
         ------------
         objective_function : `callable`
             An objective function of which to calculate a Hessian.   The
             two arguments should be
-            - ``opt_par`` : `numpy.ndarray` (N,) The parameter with respect
-                to which the derivative is calcualted.
-            - ``weights`` : `numpy.ndarray` (W,) A vector of weights where
-                each weight multiplies the term corresponding to one block
-                of the sparse Hessian.  See the class description for more
-                details.
-        sparsity_array : `numpy.ndarray` (B, M)
+
+            - ``opt_par``: `numpy.ndarray` (N,) The optimization parameter.
+            - ``weights``: `numpy.ndarray` (G,) A vector of weights.
+
+        sparsity_array : `numpy.ndarray` (G, M)
             An array containing the indices of rows and columns of each block.
-            The Hessian should contain ``B`` dense blocks, each of which
+            The Hessian should contain ``G`` dense blocks, each of which
             is ``M`` by ``M``.  Each row of ``sparsity_array`` should contain
             the indices of the corresponding block.  There must be no repeated
             indices, and each block must be the same size.
