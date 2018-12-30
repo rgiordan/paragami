@@ -1117,40 +1117,6 @@ class ParametricSensitivityTaylorExpansion(object):
                 for term in self._taylor_terms_list[order]:
                     print(term)
 
-#
-# def _get_sparse_sub_matrix(
-#     sub_matrix, row_indices, col_indices, row_dim, col_dim):
-#     """Return a sparse matrix of size (``row_dim``, ``col_dim``), where
-#     the entries of the dense matrix ``sub_matrix`` are in the locations
-#     indicated by the vectors ``row_indices`` and ``col_indices``.
-#     """
-#     mat_vals = [] # These will be the entries of the Hessian
-#     mat_rows = [] # These will be the z indices
-#     mat_cols = [] # These will be the data indices
-#
-#     for row in range(sub_matrix.shape[0]):
-#         for col in range(sub_matrix.shape[1]):
-#             if sub_matrix[row, col] != 0:
-#                 mat_vals.append(sub_matrix[row, col])
-#                 mat_rows.append(int(row_indices[row]))
-#                 mat_cols.append(int(col_indices[col]))
-#
-#     return coo_matrix((mat_vals, (mat_rows, mat_cols)), (row_dim, col_dim))
-#
-#
-# def _get_sparse_sub_hessian(
-#     sub_hessian, full_indices, full_hess_dim):
-#     """Return a sparse matrix of size (``full_hess_dim``, ``full_hess_dim``),
-#     where the entries of the dense matrix sub_hessian are in the locations
-#     indicated by the vector full_indices.
-#     """
-#     return _get_sparse_sub_matrix(
-#         sub_matrix=sub_hessian,
-#         row_indices=full_indices,
-#         col_indices=full_indices,
-#         row_dim=full_hess_dim,
-#         col_dim=full_hess_dim)
-
 
 class SparseBlockHessian():
     """Efficiently calculate block-sparse Hessians.
@@ -1220,7 +1186,7 @@ class SparseBlockHessian():
         return self._f_fwd_hess(opt_par, weights, v1, v2)
 
     def get_block_hessian(
-        self, opt_par, weights, verbose=False, print_every=1):
+        self, opt_par, weights, print_every=0):
         """Get the block Hessian at ``opt_par`` and ``weights``.
 
         Parmeters
@@ -1228,10 +1194,8 @@ class SparseBlockHessian():
         opt_par, weights : `numpy.ndarray`
             The arguments to ``objective_function`` at which to evaluate
             the Hessian matrix
-        verbose : `bool`
-            Whether to display progress.
-        print_every : `int`
-            How often to display progress.
+        print_every : `int`, optional.
+            How often to display progress.  If ``0``, nothing is printed.
 
         Returns
         --------
@@ -1252,39 +1216,27 @@ class SparseBlockHessian():
                         'which is {}').format(self._num_blocks)
             raise ValueError(err_msg)
 
-        # if verbose:
-        #     print('Allocating memory.')
-        # h_sparse = np.zeros((d, d))
-        # h_sparse = coo_matrix((d, d))
         mat_vals = [] # These will be the entries of the Hessian
-        mat_rows = [] # These will be the z indices
-        mat_cols = [] # These will be the data indices
+        mat_rows = [] # These will be the row indices
+        mat_cols = [] # These will be the column indices
 
-        if verbose:
-            print('Beginning.')
         total_components = int(0.5 * self._block_size * (self._block_size + 1))
         component_count = 0
         for ig1 in range(self._block_size):
             for ig2 in range(ig1 + 1):
-                if verbose:
+                if print_every > 0:
                     if component_count % print_every == 0:
-                        print('{} of {} differentiations'.format(
+                        print('{} of {} forward differentiation passes'.format(
                             component_count + 1, total_components))
                 component_count += 1
                 hess_split = self._hess_split_term(
                     opt_par, weights, ig1, ig2)
-                # h_sparse[
-                #     self._sparsity_array[:, ig1],
-                #     self._sparsity_array[:, ig2]] = hess_split
                 for i in range(len(hess_split)):
                     mat_vals.append(hess_split[i])
                     mat_rows.append(self._sparsity_array[i, ig1])
                     mat_cols.append(self._sparsity_array[i, ig2])
                     if ig1 != ig2:
                         # The Hessian is symmetric
-                        # h_sparse[
-                        #     self._sparsity_array[:, ig2],
-                        #     self._sparsity_array[:, ig1]] = hess_split
                         mat_vals.append(hess_split[i])
                         mat_rows.append(self._sparsity_array[i, ig2])
                         mat_cols.append(self._sparsity_array[i, ig1])
