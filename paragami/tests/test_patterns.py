@@ -500,6 +500,11 @@ class TestContainerPatterns(unittest.TestCase):
         valid_value = pattern_array_array.random()
         _test_pattern(self, pattern_array_array, valid_value)
 
+        # Test flat indices.
+        matrix_pattern = paragami.PSDSymmetricMatrixPattern(size=2)
+        pattern_array = paragami.PatternArray((2, 3), matrix_pattern)
+        _test_array_flat_indices(self, pattern_array)
+
         self.assertTrue(
             paragami.PatternArray((3, 3), matrix_pattern) !=
             paragami.PatternArray((2, 3), matrix_pattern))

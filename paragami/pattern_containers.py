@@ -528,7 +528,7 @@ class PatternArray(Pattern):
         folded_array = np.array([
             self.__base_pattern.fold(
                 flat_val[self._stacked_obs_slice(item, flat_length)],
-                free=free)
+                free=free, validate_value=validate_value)
             for item in itertools.product(*self.__array_ranges)])
 
         folded_val = np.reshape(folded_array, self.__shape)
@@ -599,7 +599,23 @@ class PatternArray(Pattern):
             array_shape=json_dict['array_shape'], base_pattern=base_pattern)
 
     def flat_indices(self, folded_bool, free):
-        raise NotImplementedError()
+        valid, msg = self.validate_folded(folded_bool, validate_value=False)
+        if not valid:
+            raise ValueError(msg)
+
+        indices = []
+        pattern_flat_length = self.__base_pattern.flat_length(free=free)
+        offset = 0
+        for item in itertools.product(*self.__array_ranges):
+            pattern_indices = self.__base_pattern.flat_indices(
+                folded_bool[item], free=free)
+            if len(pattern_indices) > 0:
+                indices.append(pattern_indices + offset)
+            offset += pattern_flat_length
+        if len(indices) > 0:
+            return np.hstack(indices)
+        else:
+            return np.array([])
 
 
 register_pattern_json(PatternDict)
