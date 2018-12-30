@@ -421,6 +421,9 @@ class TestContainerPatterns(unittest.TestCase):
         dict_pattern['d'] = subdict
         test_pattern(dict_pattern, dict_pattern.random())
 
+        # Test flat indices.
+        _test_array_flat_indices(self, dict_pattern)
+
         # Test keys.
         self.assertEqual(list(dict_pattern.keys()), ['a', 'b', 'c', 'd'])
 

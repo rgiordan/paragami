@@ -360,7 +360,24 @@ class PatternDict(Pattern):
         return pattern_dict
 
     def flat_indices(self, folded_bool, free):
-        raise NotImplementedError()
+        valid, msg = self.validate_folded(folded_bool, validate_value=False)
+        if not valid:
+            raise ValueError(msg)
+
+        flat_length = self.flat_length(free)
+        offset = 0
+        indices = []
+        for pattern_name, pattern in self.__pattern_dict.items():
+            pattern_flat_length = pattern.flat_length(free)
+            pattern_indices = pattern.flat_indices(
+                folded_bool[pattern_name], free=free)
+            if len(pattern_indices) > 0:
+                indices.append(pattern_indices + offset)
+            offset += pattern_flat_length
+        if len(indices) > 0:
+            return np.hstack(indices)
+        else:
+            return np.array([])
 
 
 ##########################
