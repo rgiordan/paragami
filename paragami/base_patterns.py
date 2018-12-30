@@ -215,8 +215,9 @@ class Pattern(ABC):
         folded_bool : Folded value
             A boolean value in its original folded shape.
         """
+        flat_len = self.flat_length(free=False)
         bool_vec = np.full(flat_len, value, dtype='bool')
-        return pattern.fold(bool_vec, free=False, validate_value=False)
+        return self.fold(bool_vec, free=False, validate_value=False)
 
     def freeing_jacobian(self, folded_val, sparse=True):
         """The Jacobian of the map from a flat free value to a flat value.

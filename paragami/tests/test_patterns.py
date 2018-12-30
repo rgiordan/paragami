@@ -93,6 +93,8 @@ def _test_pattern(testcase, pattern, valid_value,
 
     str(pattern)
 
+    pattern.empty_bool(True)
+
     # Make sure to test != using a custom test.
     testcase.assertTrue(pattern == pattern)
 

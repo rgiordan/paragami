@@ -1115,3 +1115,118 @@ class ParametricSensitivityTaylorExpansion(object):
                 print('\nTerms for order {}:'.format(order + 1))
                 for term in self._taylor_terms_list[order]:
                     print(term)
+
+
+class SparseBlockHessian():
+    """Efficiently calculate block-sparse Hessians.
+
+        The objective function is expected to be of the form
+
+        .. math ::
+            x = (x_1 , ... , x_G)
+
+            w = (w_1 , ... , w_G)
+
+            f(x, w) = \sum_{g=1}^{G} w_g \\cdot f_g(x_g)
+
+        Each :math:`x_g` is
+        expected to have the same dimension.  Consequently, the Hessian
+        matrix of ``f`` with respect to ``x`` is block diagonal with
+        ``G`` blocks.  The purpose of this class is to efficiently calculate
+        this Hessian when the block structure (i.e., the partition of ``x``)
+        is known.  The biggest efficiency gains relative to calculating the
+        Hessian of ``f`` directly
+
+    """
+    def __init__(self, objective_function, sparsity_array):
+        """In terms of the class description, ``objective_function = f``,
+        ``opt_par = x``, and ``weights = w``.  ``sparsity_array`` describes
+        the partition of ``x`` into :math:`(x_1, ..., x_G)`.
+
+        Parameters
+        ------------
+        objective_function : `callable`
+            An objective function of which to calculate a Hessian.   The
+            two arguments should be
+
+            - ``opt_par``: `numpy.ndarray` (N,) The optimization parameter.
+            - ``weights``: `numpy.ndarray` (G,) A vector of weights.
+
+        sparsity_array : `numpy.ndarray` (G, M)
+            An array containing the indices of rows and columns of each block.
+            The Hessian should contain ``G`` dense blocks, each of which
+            is ``M`` by ``M``.  Each row of ``sparsity_array`` should contain
+            the indices of the corresponding block.  There must be no repeated
+            indices, and each block must be the same size.
+        """
+        self._fun = objective_function
+        self._sparsity_array = sparsity_array
+        self._num_blocks = self._sparsity_array.shape[0]
+        self._block_size = self._sparsity_array.shape[1]
+
+        if len(np.unique(sparsity_array)) != len(sparsity_array.flatten()):
+            raise ValueError(
+                'The indices in ``sparsity array`` must be unique.')
+
+        self._f_fwd_grad = _append_jvp(
+            self._fun, num_base_args=2, argnum=0)
+        self._f_fwd_hess = _append_jvp(
+            self._f_fwd_grad, num_base_args=2, argnum=0)
+
+        self._hess_split_term = autograd.jacobian(
+            self._hess_summed_term, argnum=1)
+
+    def _hess_summed_term(self, opt_par, weights, ig1, ig2):
+        d = len(opt_par)
+        v1 = np.zeros(d)
+        v2 = np.zeros(d)
+        v1[self._sparsity_array[:, ig1]] = 1
+        v2[self._sparsity_array[:, ig2]] = 1
+        return self._f_fwd_hess(opt_par, weights, v1, v2)
+
+    def get_block_hessian(self, opt_par, weights):
+        """Get the block Hessian at ``opt_par`` and ``weights``.
+
+        Parmeters
+        ----------
+        opt_par, weights : `numpy.ndarray`
+            The arguments to ``objective_function`` at which to evaluate
+            the Hessian matrix
+
+        Returns
+        --------
+        hessian : `numpy.ndarray` (N, N)
+            The block-sparse Hessian given by ``weights`` and
+            ``sparsity_array``.
+        """
+        opt_par = np.atleast_1d(opt_par)
+        if opt_par.ndim != 1:
+            raise ValueError('``opt_par`` must be a vector.')
+
+        weights = np.atleast_1d(weights)
+        if weights.ndim != 1:
+            raise ValueError('``weights`` must be a vector.')
+        if len(weights) != self._num_blocks:
+            err_msg = ('``weights`` must be as long as the first ' +
+                        'dimension of ``sparsity_array``, ' +
+                        'which is {}').format(self._num_blocks)
+            raise ValueError(err_msg)
+
+        # TODO: do this with actual sparse matrices.
+        d = len(opt_par)
+        h_sparse = np.zeros((d, d))
+
+        for ig1 in range(self._block_size):
+            for ig2 in range(ig1 + 1):
+                hess_split = self._hess_split_term(
+                    opt_par, weights, ig1, ig2)
+                h_sparse[
+                    self._sparsity_array[:, ig1],
+                    self._sparsity_array[:, ig2]] = hess_split
+                if ig1 != ig2:
+                    # The Hessian is symmetric
+                    h_sparse[
+                        self._sparsity_array[:, ig2],
+                        self._sparsity_array[:, ig1]] = hess_split
+
+        return h_sparse
