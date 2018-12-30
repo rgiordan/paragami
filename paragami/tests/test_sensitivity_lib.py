@@ -591,7 +591,7 @@ class TestBlockHessian(unittest.TestCase):
         sparse_hess = paragami.SparseBlockHessian(f_flat, inds)
         block_hess = sparse_hess.get_block_hessian(x_flat, w)
 
-        assert_array_almost_equal(block_hess, h0)
+        assert_array_almost_equal(np.array(block_hess.todense()), h0)
 
 
 if __name__ == '__main__':
