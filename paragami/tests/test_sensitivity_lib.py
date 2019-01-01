@@ -558,40 +558,44 @@ class TestBlockHessian(unittest.TestCase):
         num_groups = 10
         d = group_size * num_groups
 
-        def get_pd_mat(d):
-            a = np.random.random((d, d))
-            a = a + a.T + np.eye(d)
-            return a
+        # def get_pd_mat(d):
+        #     a = np.random.random((d, d))
+        #     a = a + a.T + np.eye(d)
+        #     return a
+        #
+        # group_mats = np.array([ get_pd_mat(group_size) for g in range(num_groups) ])
+        pattern = paragami.PatternDict()
+        pattern['array'] = \
+            paragami.NumericArrayPattern((num_groups, group_size))
+        mat_pattern = paragami.PSDSymmetricMatrixPattern(size=group_size)
+        pattern['mats'] = paragami.PatternArray((num_groups,), mat_pattern)
 
-        group_mats = np.array([ get_pd_mat(group_size) for g in range(num_groups) ])
-        pattern = paragami.NumericArrayPattern((num_groups, group_size))
-        def f(x_array, w):
-            return 0.5 * np.einsum('n,nij,ni,nj', w, group_mats, x_array, x_array)
+        def f(x_dict):
+            return 0.5 * np.einsum(
+                'nij,ni,nj', x_dict['mats'], x_dict['array'], x_dict['array'])
 
         f_flat = paragami.FlattenFunctionInput(
             f, argnums=0, free=True, patterns=pattern)
 
-        x = np.random.random((num_groups, group_size))
+        x = pattern.random()
         x_flat = pattern.flatten(x, free=True)
-        w = np.ones(num_groups)
-        f(x, w)
+        f(x)
 
-        f_grad = autograd.grad(f_flat, argnum=0)
         f_hess = autograd.hessian(f_flat, argnum=0)
-
-        h0 = f_hess(x_flat, w)
+        h0 = f_hess(x_flat)
 
         inds = []
         for g in range(num_groups):
             x_bool = pattern.empty_bool(False)
-            x_bool[g, :] = True
+            x_bool['array'][g, :] = True
+            x_bool['mats'][g, :, :] = True
             inds.append(pattern.flat_indices(x_bool, free=True))
         inds = np.array(inds)
 
         sparse_hess = paragami.SparseBlockHessian(f_flat, inds)
-        block_hess = sparse_hess.get_block_hessian(x_flat, w)
+        block_hess = sparse_hess.get_block_hessian(x_flat)
 
-        assert_array_almost_equal(block_hess, h0)
+        assert_array_almost_equal(np.array(block_hess.todense()), h0)
 
 
 if __name__ == '__main__':

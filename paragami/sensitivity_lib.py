@@ -7,6 +7,7 @@ import autograd.numpy as np
 from copy import deepcopy
 from math import factorial
 from scipy.linalg import cho_factor, cho_solve
+from scipy.sparse import coo_matrix
 import warnings
 
 from .function_patterns import FlattenFunctionInput
@@ -1123,34 +1124,31 @@ class SparseBlockHessian():
         The objective function is expected to be of the form
 
         .. math ::
-            x = (x_1 , ... , x_G)
+            x = (x_1 , ... , x_G) \\textrm{ (or some permutation thereof)}
 
-            w = (w_1 , ... , w_G)
-
-            f(x, w) = \sum_{g=1}^{G} w_g \\cdot f_g(x_g)
+            f(x) = \sum_{g=1}^{G} f_g(x_g)
 
         Each :math:`x_g` is
         expected to have the same dimension.  Consequently, the Hessian
-        matrix of ``f`` with respect to ``x`` is block diagonal with
-        ``G`` blocks.  The purpose of this class is to efficiently calculate
+        matrix of ``f`` with respect to ``x``, is block diagonal with
+        ``G`` blocks, up to a permutation of the order of ``x``.
+        The purpose of this class is to efficiently calculate
         this Hessian when the block structure (i.e., the partition of ``x``)
-        is known.  The biggest efficiency gains relative to calculating the
-        Hessian of ``f`` directly
+        is known.
 
     """
     def __init__(self, objective_function, sparsity_array):
         """In terms of the class description, ``objective_function = f``,
-        ``opt_par = x``, and ``weights = w``.  ``sparsity_array`` describes
+        ``opt_par = x``, and ``sparsity_array`` describes
         the partition of ``x`` into :math:`(x_1, ..., x_G)`.
 
         Parameters
         ------------
         objective_function : `callable`
             An objective function of which to calculate a Hessian.   The
-            two arguments should be
+            argument should be
 
             - ``opt_par``: `numpy.ndarray` (N,) The optimization parameter.
-            - ``weights``: `numpy.ndarray` (G,) A vector of weights.
 
         sparsity_array : `numpy.ndarray` (G, M)
             An array containing the indices of rows and columns of each block.
@@ -1168,65 +1166,53 @@ class SparseBlockHessian():
             raise ValueError(
                 'The indices in ``sparsity array`` must be unique.')
 
-        self._f_fwd_grad = _append_jvp(
-            self._fun, num_base_args=2, argnum=0)
-        self._f_fwd_hess = _append_jvp(
-            self._f_fwd_grad, num_base_args=2, argnum=0)
+        self._f_grad = autograd.grad(self._fun, argnum=0)
+        self._f_fwd_hess = _append_jvp(self._f_grad, num_base_args=1)
 
-        self._hess_split_term = autograd.jacobian(
-            self._hess_summed_term, argnum=1)
+    def _hess_summed_term(self, opt_par, ib):
+        """``ib`` is the index within the block.
+        """
+        v = np.zeros_like(opt_par)
+        v[self._sparsity_array[:, ib]] = 1
+        return self._f_fwd_hess(opt_par, v)
 
-    def _hess_summed_term(self, opt_par, weights, ig1, ig2):
-        d = len(opt_par)
-        v1 = np.zeros(d)
-        v2 = np.zeros(d)
-        v1[self._sparsity_array[:, ig1]] = 1
-        v2[self._sparsity_array[:, ig2]] = 1
-        return self._f_fwd_hess(opt_par, weights, v1, v2)
-
-    def get_block_hessian(self, opt_par, weights):
+    def get_block_hessian(self, opt_par, print_every=0):
         """Get the block Hessian at ``opt_par`` and ``weights``.
 
         Parmeters
         ----------
-        opt_par, weights : `numpy.ndarray`
-            The arguments to ``objective_function`` at which to evaluate
-            the Hessian matrix
+        opt_par : `numpy.ndarray`
+            The argument to ``objective_function`` at which to evaluate
+            the Hessian matrix.
+        print_every : `int`, optional.
+            How often to display progress.  If ``0``, nothing is printed.
 
         Returns
         --------
-        hessian : `numpy.ndarray` (N, N)
-            The block-sparse Hessian given by ``weights`` and
-            ``sparsity_array``.
+        hessian : `scipy.sparse.coo_matrix` (N, N)
+            The block-sparse Hessian given by and ``sparsity_array``.
         """
         opt_par = np.atleast_1d(opt_par)
         if opt_par.ndim != 1:
             raise ValueError('``opt_par`` must be a vector.')
 
-        weights = np.atleast_1d(weights)
-        if weights.ndim != 1:
-            raise ValueError('``weights`` must be a vector.')
-        if len(weights) != self._num_blocks:
-            err_msg = ('``weights`` must be as long as the first ' +
-                        'dimension of ``sparsity_array``, ' +
-                        'which is {}').format(self._num_blocks)
-            raise ValueError(err_msg)
+        mat_vals = [] # These will be the entries of the Hessian
+        mat_rows = [] # These will be the row indices
+        mat_cols = [] # These will be the column indices
 
-        # TODO: do this with actual sparse matrices.
+        for ib in range(self._block_size):
+            if print_every > 0:
+                if ib % print_every == 0:
+                    print('Block index {} of {}.'.format(ib, self._block_size))
+            hess_prod = self._hess_summed_term(opt_par, ib)
+            for b in range(self._num_blocks):
+                hess_inds = self._sparsity_array[b, :]
+                mat_vals.extend(hess_prod[hess_inds])
+                mat_rows.extend(hess_inds)
+                mat_cols.extend(np.full(self._block_size, hess_inds[ib]))
+        if print_every > 0:
+            print('Done differentiating.')
+
         d = len(opt_par)
-        h_sparse = np.zeros((d, d))
-
-        for ig1 in range(self._block_size):
-            for ig2 in range(ig1 + 1):
-                hess_split = self._hess_split_term(
-                    opt_par, weights, ig1, ig2)
-                h_sparse[
-                    self._sparsity_array[:, ig1],
-                    self._sparsity_array[:, ig2]] = hess_split
-                if ig1 != ig2:
-                    # The Hessian is symmetric
-                    h_sparse[
-                        self._sparsity_array[:, ig2],
-                        self._sparsity_array[:, ig1]] = hess_split
-
+        h_sparse = coo_matrix((mat_vals, (mat_rows, mat_cols)), (d, d))
         return h_sparse

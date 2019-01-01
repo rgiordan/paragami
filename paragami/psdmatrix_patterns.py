@@ -323,7 +323,10 @@ class PSDSymmetricMatrixPattern(Pattern):
             # free value.  I think this is not true, but getting the exact
             # pattern may be complicated and will
             # probably not make much of a difference in practice.
-            return np.arange(self.flat_length(True))
+            if np.any(folded_bool):
+                return np.arange(self.flat_length(True))
+            else:
+                return np.array([])
 
 
 
