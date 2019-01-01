@@ -1169,24 +1169,17 @@ class SparseBlockHessian():
             raise ValueError(
                 'The indices in ``sparsity array`` must be unique.')
 
-        self._f_fwd_grad = _append_jvp(
-            self._fun, num_base_args=2, argnum=0)
-        self._f_fwd_hess = _append_jvp(
-            self._f_fwd_grad, num_base_args=2, argnum=0)
+        self._f_grad = autograd.grad(self._fun, argnum=0)
+        self._f_fwd_hess = _append_jvp(self._f_grad, num_base_args=1)
 
-        self._hess_split_term = autograd.jacobian(
-            self._hess_summed_term, argnum=1)
+    def _hess_summed_term(self, opt_par, ib):
+        """ib = index within the block
+        """
+        v = np.zeros_like(opt_par)
+        v[self._sparsity_array[:, ib]] = 1
+        return self._f_fwd_hess(opt_par, v)
 
-    def _hess_summed_term(self, opt_par, weights, ig1, ig2):
-        d = len(opt_par)
-        v1 = np.zeros(d)
-        v2 = np.zeros(d)
-        v1[self._sparsity_array[:, ig1]] = 1
-        v2[self._sparsity_array[:, ig2]] = 1
-        return self._f_fwd_hess(opt_par, weights, v1, v2)
-
-    def get_block_hessian(
-        self, opt_par, weights, print_every=0):
+    def get_block_hessian(self, opt_par, print_every=0):
         """Get the block Hessian at ``opt_par`` and ``weights``.
 
         Parmeters
@@ -1207,40 +1200,56 @@ class SparseBlockHessian():
         if opt_par.ndim != 1:
             raise ValueError('``opt_par`` must be a vector.')
 
-        weights = np.atleast_1d(weights)
-        if weights.ndim != 1:
-            raise ValueError('``weights`` must be a vector.')
-        if len(weights) != self._num_blocks:
-            err_msg = ('``weights`` must be as long as the first ' +
-                        'dimension of ``sparsity_array``, ' +
-                        'which is {}').format(self._num_blocks)
-            raise ValueError(err_msg)
+        # weights = np.atleast_1d(weights)
+        # if weights.ndim != 1:
+        #     raise ValueError('``weights`` must be a vector.')
+        # if len(weights) != self._num_blocks:
+        #     err_msg = ('``weights`` must be as long as the first ' +
+        #                 'dimension of ``sparsity_array``, ' +
+        #                 'which is {}').format(self._num_blocks)
+        #     raise ValueError(err_msg)
 
         mat_vals = [] # These will be the entries of the Hessian
         mat_rows = [] # These will be the row indices
         mat_cols = [] # These will be the column indices
 
-        total_components = int(0.5 * self._block_size * (self._block_size + 1))
-        component_count = 0
-        for ig1 in range(self._block_size):
-            for ig2 in range(ig1 + 1):
-                if print_every > 0:
-                    if component_count % print_every == 0:
-                        print('{} of {} forward differentiation passes'.format(
-                            component_count + 1, total_components))
-                component_count += 1
-                hess_split = self._hess_split_term(
-                    opt_par, weights, ig1, ig2)
-                for i in range(len(hess_split)):
-                    mat_vals.append(hess_split[i])
-                    mat_rows.append(self._sparsity_array[i, ig1])
-                    mat_cols.append(self._sparsity_array[i, ig2])
-                    if ig1 != ig2:
-                        # The Hessian is symmetric
-                        mat_vals.append(hess_split[i])
-                        mat_rows.append(self._sparsity_array[i, ig2])
-                        mat_cols.append(self._sparsity_array[i, ig1])
+        for ib in range(self._block_size):
+            hess_prod = self._hess_summed_term(opt_par, ib)
+            for b in range(self._num_blocks):
+                hess_inds = self._sparsity_array[b, :]
+                mat_vals.extend(hess_prod[hess_inds])
+                mat_rows.extend(hess_inds)
+                mat_cols.extend(np.full(self._block_size, hess_inds[ib]))
 
         d = len(opt_par)
         h_sparse = coo_matrix((mat_vals, (mat_rows, mat_cols)), (d, d))
         return h_sparse
+
+        # mat_vals = [] # These will be the entries of the Hessian
+        # mat_rows = [] # These will be the row indices
+        # mat_cols = [] # These will be the column indices
+        #
+        # total_components = int(0.5 * self._block_size * (self._block_size + 1))
+        # component_count = 0
+        # for ig1 in range(self._block_size):
+        #     for ig2 in range(ig1 + 1):
+        #         if print_every > 0:
+        #             if component_count % print_every == 0:
+        #                 print('{} of {} forward differentiation passes'.format(
+        #                     component_count + 1, total_components))
+        #         component_count += 1
+        #         hess_split = self._hess_split_term(
+        #             opt_par, weights, ig1, ig2)
+        #         for i in range(len(hess_split)):
+        #             mat_vals.append(hess_split[i])
+        #             mat_rows.append(self._sparsity_array[i, ig1])
+        #             mat_cols.append(self._sparsity_array[i, ig2])
+        #             if ig1 != ig2:
+        #                 # The Hessian is symmetric
+        #                 mat_vals.append(hess_split[i])
+        #                 mat_rows.append(self._sparsity_array[i, ig2])
+        #                 mat_cols.append(self._sparsity_array[i, ig1])
+        #
+        # d = len(opt_par)
+        # h_sparse = coo_matrix((mat_vals, (mat_rows, mat_cols)), (d, d))
+        # return h_sparse
