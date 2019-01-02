@@ -470,32 +470,33 @@ class TestTaylorExpansion(unittest.TestCase):
             dg_deps(eta0, eps0, deps),
             dterms1[0].evaluate(eta0, eps0, deps))
 
+        hess_solver = sensitivity_lib.HessianSolver(hess0, 'factorization')
         assert_array_almost_equal(
             np.einsum('ij,j', true_deta_deps(eps0), deps),
             sensitivity_lib.evaluate_dketa_depsk(
-                hess0, dterms1, eta0, eps0, deps))
+                hess_solver, dterms1, eta0, eps0, deps))
 
         assert_array_almost_equal(
             eval_deta_deps(eta0, eps0, deps),
             sensitivity_lib.evaluate_dketa_depsk(
-                hess0, dterms1, eta0, eps0, deps))
+                hess_solver, dterms1, eta0, eps0, deps))
 
-        dterms2 = sensitivity_lib.differentiate_terms(hess0, dterms1)
+        dterms2 = sensitivity_lib.differentiate_terms(hess_solver, dterms1)
         self.assertTrue(np.linalg.norm(sensitivity_lib.evaluate_dketa_depsk(
-            hess0, dterms2, eta0, eps0, deps)) > 0)
+            hess_solver, dterms2, eta0, eps0, deps)) > 0)
         assert_array_almost_equal(
             np.einsum('ijk,j, k', true_d2eta_deps2(eps0), deps, deps),
             sensitivity_lib.evaluate_dketa_depsk(
-                hess0, dterms2, eta0, eps0, deps))
+                hess_solver, dterms2, eta0, eps0, deps))
 
-        dterms3 = sensitivity_lib.differentiate_terms(hess0, dterms2)
+        dterms3 = sensitivity_lib.differentiate_terms(hess_solver, dterms2)
         self.assertTrue(np.linalg.norm(sensitivity_lib.evaluate_dketa_depsk(
-            hess0, dterms3, eta0, eps0, deps)) > 0)
+            hess_solver, dterms3, eta0, eps0, deps)) > 0)
 
         assert_array_almost_equal(
             np.einsum('ijkl,j,k,l', true_d3eta_deps3(eps0), deps, deps, deps),
             sensitivity_lib.evaluate_dketa_depsk(
-                hess0, dterms3, eta0, eps0, deps))
+                hess_solver, dterms3, eta0, eps0, deps))
 
         ###################################
         # Test the Taylor series itself.

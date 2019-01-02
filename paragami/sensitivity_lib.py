@@ -192,22 +192,12 @@ class LinearResponseCovariances:
             self._hess0 = hessian_at_opt
 
         method = 'factorization' if factorize_hessian else 'cg'
-        self._hess_solver = HessianSolver(self._hess0, method)
-        # self._factorize_hessian = factorize_hessian
-        # if self._factorize_hessian:
-        #     self._hess0_chol = cho_factor(self._hess0)
-        # else:
-        #     if hessian_at_opt is not None:
-        #         raise ValueError('If factorize_hessian is False, ' +
-        #                          'hessian_at_opt must be None.')
-        #     self._hess0 = None
-        #     self._hess0_chol = None
+        self.hess_solver = HessianSolver(self._hess0, method)
 
         if validate:
             # Check that the gradient of the objective is zero at the optimum.
             grad0 = self._obj_fun_grad(self._opt0)
-            #newton_step = -1 * cho_solve(self._hess0_chol, grad0)
-            newton_step = -1 * self._hess_solver.solve(grad0)
+            newton_step = -1 * self.hess_solver.solve(grad0)
 
             newton_step_norm = np.linalg.norm(newton_step)
             if newton_step_norm > grad_tol:
@@ -271,7 +261,7 @@ class LinearResponseCovariances:
 
         # return moment_jacobian1 @ cho_solve(
         #     self._hess0_chol, moment_jacobian2.T)
-        return moment_jacobian1 @ self._hess_solver.solve(moment_jacobian2.T)
+        return moment_jacobian1 @ self.hess_solver.solve(moment_jacobian2.T)
 
     def get_moment_jacobian(self, calculate_moments):
         """
@@ -446,24 +436,12 @@ class HyperparameterSensitivityLinearApproximation:
         self._hyper0 = deepcopy(hyper_par_value)
 
         # Set the values of the Hessian at the optimum.
-        self._factorize_hessian = factorize_hessian
-        if self._factorize_hessian:
-            if hessian_at_opt is None:
-                self._hess0 = self._obj_fun_hessian(self._opt0, self._hyper0)
-            else:
-                self._hess0 = hessian_at_opt
-            # TODO: if the objective function returns a 1-d array and not a
-            # float then the Cholesky decomposition will fail because
-            # the Hessian will have an extra dimension.  This is a confusing
-            # error that we could catch explicitly at the cost of an extra
-            # function evaluation.  Is it worth it?
-            self._hess0_chol = cho_factor(self._hess0)
+        if hessian_at_opt is None:
+            self._hess0 = self._obj_fun_hessian(self._opt0, self._hyper0)
         else:
-            if hessian_at_opt is not None:
-                raise ValueError('If factorize_hessian is False, ' +
-                                 'hessian_at_opt must be None.')
-            self._hess0 = None
-            self._hess0_chol = None
+            self._hess0 = hessian_at_opt
+        method = 'factorization' if factorize_hessian else 'cg'
+        self.hess_solver = HessianSolver(self._hess0, method)
 
         if validate_optimum:
             if grad_tol is None:
@@ -471,7 +449,7 @@ class HyperparameterSensitivityLinearApproximation:
 
             # Check that the gradient of the objective is zero at the optimum.
             grad0 = self._obj_fun_grad(self._opt0, self._hyper0)
-            newton_step = -1 * cho_solve(self._hess0_chol, grad0)
+            newton_step = -1 * self.hess_solver.solve(grad0)
 
             newton_step_norm = np.linalg.norm(newton_step)
             if newton_step_norm > grad_tol:
@@ -482,7 +460,8 @@ class HyperparameterSensitivityLinearApproximation:
                 raise ValueError(err_msg)
 
         self._cross_hess = self._hyper_obj_cross_hess(self._opt0, self._hyper0)
-        self._sens_mat = -1 * cho_solve(self._hess0_chol, self._cross_hess)
+        self._sens_mat = -1 * self.hess_solver.solve(self._cross_hess)
+
 
     # Methods:
     def get_dopt_dhyper(self):
@@ -500,11 +479,6 @@ class HyperparameterSensitivityLinearApproximation:
         new_hyper_par_value: `numpy.ndarray` (M,)
             The value of ``hyper_par`` at which to approximate ``opt_par``.
         """
-
-        if not self._factorize_hessian:
-            raise NotImplementedError(
-                'CG is not yet implemented for predict_opt_par_from_hyper_par')
-
         return \
             self._opt0 + \
             self._sens_mat @ (new_hyper_par_value - self._hyper0)
@@ -926,17 +900,26 @@ def _get_taylor_base_terms(eval_g_derivs):
 # Given a collection of dterms (formed either with _get_taylor_base_terms
 # or derivatives), evaluate the implied dketa_depsk.
 #
-# Args:
-#   - hess0: The Hessian of the objective wrt the first argument.
-#   - dterms: An array of DerivativeTerms.
-#   - eta0: The value of the first argument.
-#   - eps0: The value of the second argument.
-#   - deps: The change in epsilon by which to multiply the Jacobians.
-def evaluate_dketa_depsk(hess0, dterms, eta0, eps0, deps):
+def evaluate_dketa_depsk(hess_solver, dterms, eta0, eps0, deps):
+    """Evaluate the kth derivative of an optimum wrt a hyperparameter.
+
+    Parameters
+    ----------------------
+    hess_solver : `HessianSolver`
+        A class to solve :math:`H^{-1} v`
+    dterms : list of `DerivativeTerm`
+        The terms contributing to the derivative.
+    eta0 : `numpy.ndarray` (N, )
+        The value of the optimization parameter.
+    eps0 : `numpy.ndarray` (M, )
+        The value of the hyperparameter.
+    deps : `numpy.ndarray` (M, )
+        The change in epsilon by which to multiply the Jacobians.
+    """
     vec = evaluate_terms(
         dterms, eta0, eps0, deps, include_highest_eta_order=False)
     assert vec is not None
-    return -1 * np.linalg.solve(hess0, vec)
+    return -1 * hess_solver.solve(vec)
 
 
 # Calculate the derivative of an array of DerivativeTerms.
@@ -947,9 +930,9 @@ def evaluate_dketa_depsk(hess0, dterms, eta0, eps0, deps):
 #
 # Returns:
 #   An array of the derivatives of dterms with respect to the second argument.
-def differentiate_terms(hess0, dterms):
+def differentiate_terms(hess_solver, dterms):
     def eval_next_eta_deriv(eta, eps, deps):
-        return evaluate_dketa_depsk(hess0, dterms, eta, eps, deps)
+        return evaluate_dketa_depsk(hess_solver, dterms, eta, eps, deps)
 
     dterms_derivs = []
     for term in dterms:
@@ -1045,12 +1028,14 @@ class ParametricSensitivityTaylorExpansion(object):
                     self._input_val0, self._hyper_val0)
         else:
             self._hess0 = hess0
+
         # TODO: if the objective function returns a 1-d array and not a
         # float then the Cholesky decomposition will fail because
         # the Hessian will have an extra dimension.  This is a confusing
         # error that we could catch explicitly at the cost of an extra
         # function evaluation.  Is it worth it?
-        self._hess0_chol = cho_factor(self._hess0)
+        self.hess_solver = HessianSolver(self._hess0, 'factorization')
+        # self._hess0_chol = cho_factor(self._hess0)
 
     # Get a function returning the next derivative from the Taylor terms dterms.
     def _get_dkinput_dhyperk_from_terms(self, dterms):
@@ -1060,7 +1045,7 @@ class ParametricSensitivityTaylorExpansion(object):
                 assert np.max(np.abs(input_val - self._input_val0)) <= tolerance
                 assert np.max(np.abs(hyper_val - self._hyper_val0)) <= tolerance
             return evaluate_dketa_depsk(
-                self._hess0, dterms,
+                self.hess_solver, dterms,
                 self._input_val0, self._hyper_val0, dhyper)
         return dkinput_dhyperk
 
