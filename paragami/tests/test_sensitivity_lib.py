@@ -83,8 +83,6 @@ class TestLinearResponseCovariances(unittest.TestCase):
                     grad_tol=1e-15)
 
             assert_array_almost_equal(hess0, lr_covs.get_hessian_at_opt())
-            # Just check that you can get the cholesky decomposition.
-            lr_covs.get_hessian_cholesky_at_opt()
 
             get_mean_flat = paragami.FlattenFunctionInput(
                 lambda mfvb_par: mfvb_par['mean'],

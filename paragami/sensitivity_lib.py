@@ -16,7 +16,18 @@ from .function_patterns import FlattenFunctionInput
 
 
 class HessianSolver:
+    """A class to provide a common interface for solving :math:`H^{-1} g`.
+    """
     def __init__(self, h, method):
+        """
+        Parameters
+        -------------
+        h : `numpy.ndarray` or `scipy.sparse` matrix
+            The "Hessian" matrix for sensitivity analysis.
+        method : {'factorization', 'cg'}
+            How to solve the system.  `factorization` uses a Cholesky decomposition,
+            and `cg` uses conjugate gradient.
+        """
         self.__valid_methods = [ 'factorization', 'cg' ]
         if method not in self.__valid_methods:
             raise ValueError('method must be one of {}'.format(self.__valid_methods))
@@ -25,6 +36,8 @@ class HessianSolver:
         self.set_cg_options({})
 
     def set_h(self, h):
+        """Set the Hessian matrix.
+        """
         self._h = h
         self._sparse = sp.sparse.issparse(h)
         if self._method == 'factorization':
@@ -39,10 +52,29 @@ class HessianSolver:
 
     def set_cg_options(self, cg_opts):
         """Set the cg options as a dictionary.
+
+        Parameters
+        -------------
+        cg_opts : `dict`
+            A dictionary of keyword options to be passed to
+            `scipy.sparse.linalg.cg`.  If ``method`` is not ``cg``, these will be
+            ignored.
         """
         self._cg_opts = cg_opts
 
     def solve(self, v):
+        """Solve the linear system :math:`H{-1} v`.
+
+        Parameters
+        ------------
+        v : `numpy.ndarray`
+            A numpy array.
+
+        Returns
+        --------
+        h_inv_v : `numpy.ndarray`
+            The value of :math:`H{-1} v`.
+        """
         if self._method == 'factorization':
             if self._sparse:
                 return self._solve_h(v)
@@ -154,24 +186,28 @@ class LinearResponseCovariances:
         self._opt0 = deepcopy(opt_par_value)
 
         # Set the values of the Hessian at the optimum.
-        self._factorize_hessian = factorize_hessian
-        if self._factorize_hessian:
-            if hessian_at_opt is None:
-                self._hess0 = self._obj_fun_hessian(self._opt0)
-            else:
-                self._hess0 = hessian_at_opt
-            self._hess0_chol = cho_factor(self._hess0)
+        if hessian_at_opt is None:
+            self._hess0 = self._obj_fun_hessian(self._opt0)
         else:
-            if hessian_at_opt is not None:
-                raise ValueError('If factorize_hessian is False, ' +
-                                 'hessian_at_opt must be None.')
-            self._hess0 = None
-            self._hess0_chol = None
+            self._hess0 = hessian_at_opt
+
+        method = 'factorization' if factorize_hessian else 'cg'
+        self._hess_solver = HessianSolver(self._hess0, method)
+        # self._factorize_hessian = factorize_hessian
+        # if self._factorize_hessian:
+        #     self._hess0_chol = cho_factor(self._hess0)
+        # else:
+        #     if hessian_at_opt is not None:
+        #         raise ValueError('If factorize_hessian is False, ' +
+        #                          'hessian_at_opt must be None.')
+        #     self._hess0 = None
+        #     self._hess0_chol = None
 
         if validate:
             # Check that the gradient of the objective is zero at the optimum.
             grad0 = self._obj_fun_grad(self._opt0)
-            newton_step = -1 * cho_solve(self._hess0_chol, grad0)
+            #newton_step = -1 * cho_solve(self._hess0_chol, grad0)
+            newton_step = -1 * self._hess_solver.solve(grad0)
 
             newton_step_norm = np.linalg.norm(newton_step)
             if newton_step_norm > grad_tol:
@@ -184,9 +220,6 @@ class LinearResponseCovariances:
     # Methods:
     def get_hessian_at_opt(self):
         return self._hess0
-
-    def get_hessian_cholesky_at_opt(self):
-        return self._hess0_chol
 
     def get_lr_covariance_from_jacobians(self,
                                          moment_jacobian1,
@@ -216,10 +249,6 @@ class LinearResponseCovariances:
             :math:`\\mathrm{Cov}_p(g_1(\\theta), g_2(\\theta))`.
         """
 
-        if not self._factorize_hessian:
-            raise NotImplementedError(
-                'CG is not yet implemented for get_lr_covariance_from_jacobian')
-
         if moment_jacobian1.ndim != 2:
             raise ValueError('moment_jacobian1 must be a 2d array.')
 
@@ -240,8 +269,9 @@ class LinearResponseCovariances:
                          len(self._opt0), moment_jacobian2.shape)
             raise ValueError(err_msg)
 
-        return moment_jacobian1 @ cho_solve(
-            self._hess0_chol, moment_jacobian2.T)
+        # return moment_jacobian1 @ cho_solve(
+        #     self._hess0_chol, moment_jacobian2.T)
+        return moment_jacobian1 @ self._hess_solver.solve(moment_jacobian2.T)
 
     def get_moment_jacobian(self, calculate_moments):
         """
