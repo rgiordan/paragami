@@ -1035,7 +1035,6 @@ class ParametricSensitivityTaylorExpansion(object):
         # error that we could catch explicitly at the cost of an extra
         # function evaluation.  Is it worth it?
         self.hess_solver = HessianSolver(self._hess0, 'factorization')
-        # self._hess0_chol = cho_factor(self._hess0)
 
     # Get a function returning the next derivative from the Taylor terms dterms.
     def _get_dkinput_dhyperk_from_terms(self, dterms):

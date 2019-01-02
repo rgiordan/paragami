@@ -13,6 +13,28 @@ import unittest
 import warnings
 
 
+class TestHessianSolver(unittest.TestCase):
+    def test_solver(self):
+        np.random.seed(101)
+        d = 10
+        h_dense = np.random.random((d, d))
+        h_dense = h_dense + h_dense.T + d * np.eye(d)
+        h_sparse = sp.sparse.csc_matrix(h_dense)
+        v = np.random.random(d)
+        h_inv_v = np.linalg.solve(h_dense, v)
+
+        for h in [h_dense, h_sparse]:
+            for method in ['factorization', 'cg']:
+                h_solver = sensitivity_lib.HessianSolver(h, method)
+                assert_array_almost_equal(h_solver.solve(v), h_inv_v)
+
+        h_solver = paragami.sensitivity_lib.HessianSolver(h_dense, 'cg')
+        h_solver.set_cg_options({'maxiter': 1})
+        with self.assertWarns(UserWarning):
+            # With only one iteration, the CG should fail and raise a warning.
+            h_solver.solve(v)
+
+
 class TestLinearResponseCovariances(unittest.TestCase):
     def test_lr(self):
         np.random.seed(42)
