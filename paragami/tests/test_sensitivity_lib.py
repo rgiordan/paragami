@@ -162,6 +162,7 @@ class TestHyperparameterSensitivityLinearApproximation(unittest.TestCase):
     def _test_linear_approximation(self, dim,
                                    theta_free, lambda_free,
                                    use_hessian_at_opt,
+                                   use_cross_hessian_at_opt,
                                    use_hyper_par_objective_fun):
         model = QuadraticModel(dim=dim)
         lam_folded0 = deepcopy(model.lam)
@@ -176,6 +177,11 @@ class TestHyperparameterSensitivityLinearApproximation(unittest.TestCase):
         get_objective_for_opt = lambda x: get_objective_flat(x, lam0)
         get_objective_for_opt_grad = autograd.grad(get_objective_for_opt)
         get_objective_for_opt_hessian = autograd.hessian(get_objective_for_opt)
+
+        get_objective_for_sens_grad = \
+            autograd.grad(get_objective_flat, argnum=0)
+        get_objective_for_sens_cross_hess = \
+            autograd.jacobian(get_objective_for_sens_grad, argnum=1)
 
         opt_output = sp.optimize.minimize(
             fun=get_objective_for_opt,
@@ -193,6 +199,11 @@ class TestHyperparameterSensitivityLinearApproximation(unittest.TestCase):
         else:
             hess0 = None
 
+        if use_cross_hessian_at_opt:
+            cross_hess0 = get_objective_for_sens_cross_hess(theta0, lam0)
+        else:
+            cross_hess0 = None
+
         if use_hyper_par_objective_fun:
             hyper_par_objective_fun = \
                 paragami.FlattenFunctionInput(
@@ -209,6 +220,7 @@ class TestHyperparameterSensitivityLinearApproximation(unittest.TestCase):
                 opt_par_value=theta0,
                 hyper_par_value=lam0,
                 hessian_at_opt=hess0,
+                cross_hess_at_opt=cross_hess0,
                 hyper_par_objective_fun=hyper_par_objective_fun,
                 validate_optimum=True)
 
@@ -255,15 +267,15 @@ class TestHyperparameterSensitivityLinearApproximation(unittest.TestCase):
     def test_quadratic_model(self):
         ft_vec = [False, True]
         dim = 3
-        for (theta_free, lambda_free, use_hess, use_hyperobj) in \
-            itertools.product(ft_vec, ft_vec, ft_vec, ft_vec):
+        for (theta_free, lambda_free, use_hess, use_hyperobj, use_cross_hess) in \
+            itertools.product(ft_vec, ft_vec, ft_vec, ft_vec, ft_vec):
 
             print(('theta_free: {}, lambda_free: {}, ' +
                    'use_hess: {}, use_hyperobj: {}').format(
                    theta_free, lambda_free, use_hess, use_hyperobj))
             self._test_linear_approximation(
                 dim, theta_free, lambda_free,
-                use_hess, use_hyperobj)
+                use_hess, use_cross_hess, use_hyperobj)
 
 
 class TestTaylorExpansion(unittest.TestCase):
