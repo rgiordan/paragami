@@ -6,11 +6,58 @@ import autograd
 import autograd.numpy as np
 from copy import deepcopy
 from math import factorial
+import scipy as sp
+import scipy.sparse
 from scipy.linalg import cho_factor, cho_solve
 from scipy.sparse import coo_matrix
 import warnings
 
 from .function_patterns import FlattenFunctionInput
+
+
+class HessianSolver:
+    def __init__(self, h, method):
+        self.__valid_methods = [ 'factorization', 'cg' ]
+        if method not in self.__valid_methods:
+            raise ValueError('method must be one of {}'.format(self.__valid_methods))
+        self._method = method
+        self.set_h(h)
+        self.set_cg_options({})
+
+    def set_h(self, h):
+        self._h = h
+        self._sparse = sp.sparse.issparse(h)
+        if self._method == 'factorization':
+            if self._sparse:
+                self._solve_h = sp.sparse.linalg.factorized(self._h)
+            else:
+                self._h_chol = sp.linalg.cho_factor(self._h)
+        elif self._method == 'cg':
+            self._linop = sp.sparse.linalg.aslinearoperator(self._h)
+        else:
+            raise ValueError('Unknown method {}'.format(self._method))
+
+    def set_cg_options(self, cg_opts):
+        """Set the cg options as a dictionary.
+        """
+        self._cg_opts = cg_opts
+
+    def solve(self, v):
+        if self._method == 'factorization':
+            if self._sparse:
+                return self._solve_h(v)
+            else:
+                return sp.linalg.cho_solve(self._h_chol, v)
+        elif self._method == 'cg':
+            cg_result = sp.sparse.linalg.cg(self._linop, v, **self._cg_opts)
+            if cg_result[1] != 0:
+                warnings.warn('CG exited with error code {}'.format(cg_result[1]))
+            return cg_result[0]
+
+        else:
+            raise ValueError('Unknown method {}'.format(self._method))
+
+
 
 ##############
 # LRVB class #
