@@ -358,35 +358,40 @@ class HyperparameterSensitivityLinearApproximation:
         opt_par_value, hyper_par_value,
         validate_optimum=False,
         hessian_at_opt=None,
+        cross_hess_at_opt=None,
         factorize_hessian=True,
         hyper_par_objective_fun=None,
         grad_tol=1e-8):
         """
         Parameters
         --------------
-        objective_fun: `callable`
+        objective_fun : `callable`
             The objective function taking two positional arguments,
             - ``opt_par``: The parameter to be optimized (`numpy.ndarray` (N,))
             - ``hyper_par``: A hyperparameter (`numpy.ndarray` (N,))
             and returning a real value to be minimized.
-        opt_par_value:  `numpy.ndarray` (N,)
+        opt_par_value :  `numpy.ndarray` (N,)
             The value of ``opt_par`` at which ``objective_fun`` is
             optimized for the given value of ``hyper_par_value``.
-        hyper_par_value: `numpy.ndarray` (M,)
+        hyper_par_value : `numpy.ndarray` (M,)
             The value of ``hyper_par`` at which ``opt_par`` optimizes
             ``objective_fun``.
-        validate_optimum: `bool`, optional
+        validate_optimum : `bool`, optional
             When setting the values of ``opt_par`` and ``hyper_par``, check
             that ``opt_par`` is, in fact, a critical point of
             ``objective_fun``.
-        hessian_at_opt: `numpy.ndarray` (N,N), optional
+        hessian_at_opt : `numpy.ndarray` (N,N), optional
             The Hessian of ``objective_fun`` at the optimum.  If not specified,
             it is calculated using automatic differentiation.
-        factorize_hessian: `bool`, optional
+        cross_hess_at_opt : `numpy.ndarray`  (N, M)
+            Optional.  The second derivative of the objective with respect to
+            ``input_val`` then ``hyper_val``.
+            If not specified it is calculated at initialization.
+        factorize_hessian : `bool`, optional
             If ``True``, solve the required linear system using a Cholesky
             factorization.  If ``False``, use the conjugate gradient algorithm
             to avoid forming or inverting the Hessian.
-        hyper_par_objective_fun: `callable`, optional
+        hyper_par_objective_fun : `callable`, optional
             The part of ``objective_fun`` depending on both ``opt_par`` and
             ``hyper_par``.  The arguments must be the same as
             ``objective_fun``:
@@ -395,7 +400,7 @@ class HyperparameterSensitivityLinearApproximation:
             This can be useful if only a small part of the objective function
             depends on both ``opt_par`` and ``hyper_par``.  If not specified,
             ``objective_fun`` is used.
-        grad_tol: `float`, optional
+        grad_tol : `float`, optional
             The tolerance used to check that the gradient is approximately
             zero at the optimum.
         """
@@ -422,13 +427,15 @@ class HyperparameterSensitivityLinearApproximation:
 
         self.set_base_values(
             opt_par_value, hyper_par_value,
-            hessian_at_opt, factorize_hessian,
+            hessian_at_opt, cross_hess_at_opt,
+            factorize_hessian,
             validate_optimum=validate_optimum,
             grad_tol=self._grad_tol)
 
     def set_base_values(self,
                         opt_par_value, hyper_par_value,
-                        hessian_at_opt, factorize_hessian,
+                        hessian_at_opt, cross_hess_at_opt,
+                        factorize_hessian,
                         validate_optimum=True, grad_tol=None):
 
         # Set the values of the optimal parameters.
@@ -440,6 +447,9 @@ class HyperparameterSensitivityLinearApproximation:
             self._hess0 = self._obj_fun_hessian(self._opt0, self._hyper0)
         else:
             self._hess0 = hessian_at_opt
+        if self._hess0.shape != (len(self._opt0), len(self._opt0)):
+            raise ValueError('``hessian_at_opt`` is the wrong shape.')
+
         method = 'factorization' if factorize_hessian else 'cg'
         self.hess_solver = HessianSolver(self._hess0, method)
 
@@ -459,7 +469,13 @@ class HyperparameterSensitivityLinearApproximation:
                         newton_step_norm, grad_tol)
                 raise ValueError(err_msg)
 
-        self._cross_hess = self._hyper_obj_cross_hess(self._opt0, self._hyper0)
+        if cross_hess_at_opt is None:
+            self._cross_hess = self._hyper_obj_cross_hess(self._opt0, self._hyper0)
+        else:
+            self._cross_hess = cross_hess_at_opt
+        if self._cross_hess.shape != (len(self._opt0), len(self._hyper0)):
+            raise ValueError('``cross_hess_at_opt`` is the wrong shape.')
+
         self._sens_mat = -1 * self.hess_solver.solve(self._cross_hess)
 
 
@@ -959,25 +975,26 @@ class ParametricSensitivityTaylorExpansion(object):
     """
     def __init__(self, objective_function,
                  input_val0, hyper_val0, order,
-                 hess0=None, hyper_par_objective_function=None):
+                 hess0=None,
+                 hyper_par_objective_function=None):
         """
         Parameters
         ------------------
-        objective_function: callable function
+        objective_function : `callable`
             The optimization objective as a function of two arguments
             (eta, eps), where eta is the parameter that is optimized and
             eps is a hyperparameter.
-        input_val0: numpy array
+        input_val0 : `numpy.ndarray` (N,)
             The value of ``input_par`` at the optimum.
-        hyper_val0: numpy array
+        hyper_val0 : `numpy.ndarray` (M,)
             The value of ``hyper_par`` at which ``input_val0`` was found.
-        order: positive integer
+        order : `int`
             The maximum order of the Taylor series to be calculated.
-        hess0: numpy array
+        hess0 : `numpy.ndarray` (N, N)
             Optional.  The Hessian of the objective at
             (``input_val0``, ``hyper_val0``).
             If not specified it is calculated at initialization.
-        hyper_par_objective_function:
+        hyper_par_objective_function : `callable`
             Optional.  A function containing the dependence
             of ``objective_function`` on the hyperparameter.  Sometimes
             only a small, easily calculated part of the objective depends
@@ -1011,11 +1028,11 @@ class ParametricSensitivityTaylorExpansion(object):
 
         Parameters
         ---------------
-        input_val0: numpy array
+        input_val0: `numpy.ndarray` (N,)
             The value of input_par at the optimum.
-        hyper_val0: numpy array
+        hyper_val0: `numpy.ndarray` (M,)
             The value of hyper_par at which input_val0 was found.
-        hess0: numpy array
+        hess0: `numpy.ndarray` (N, N)
             Optional.  The Hessian of the objective at (input_val0, hyper_val0).
             If not specified it is calculated at initialization.
         """
