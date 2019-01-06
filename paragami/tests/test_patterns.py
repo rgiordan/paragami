@@ -590,12 +590,12 @@ class TestHelperFunctions(unittest.TestCase):
             return np.log(np.sum(np.exp(mat), axis=axis, keepdims=True))
 
         check_grads(
-            paragami.simplex_patterns._logsumexp,
+            paragami.simplex_patterns.logsumexp,
             modes=['fwd', 'rev'], order=3)(mat, axis)
 
         assert_array_almost_equal(
             logsumexp_simple(mat, axis),
-            paragami.simplex_patterns._logsumexp(mat, axis))
+            paragami.simplex_patterns.logsumexp(mat, axis))
 
     def test_logsumexp(self):
         mat = np.random.random((3, 3, 3))

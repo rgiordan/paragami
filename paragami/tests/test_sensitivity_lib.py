@@ -13,6 +13,28 @@ import unittest
 import warnings
 
 
+class TestHessianSolver(unittest.TestCase):
+    def test_solver(self):
+        np.random.seed(101)
+        d = 10
+        h_dense = np.random.random((d, d))
+        h_dense = h_dense + h_dense.T + d * np.eye(d)
+        h_sparse = sp.sparse.csc_matrix(h_dense)
+        v = np.random.random(d)
+        h_inv_v = np.linalg.solve(h_dense, v)
+
+        for h in [h_dense, h_sparse]:
+            for method in ['factorization', 'cg']:
+                h_solver = sensitivity_lib.HessianSolver(h, method)
+                assert_array_almost_equal(h_solver.solve(v), h_inv_v)
+
+        h_solver = paragami.sensitivity_lib.HessianSolver(h_dense, 'cg')
+        h_solver.set_cg_options({'maxiter': 1})
+        with self.assertWarns(UserWarning):
+            # With only one iteration, the CG should fail and raise a warning.
+            h_solver.solve(v)
+
+
 class TestLinearResponseCovariances(unittest.TestCase):
     def test_lr(self):
         np.random.seed(42)
@@ -83,8 +105,6 @@ class TestLinearResponseCovariances(unittest.TestCase):
                     grad_tol=1e-15)
 
             assert_array_almost_equal(hess0, lr_covs.get_hessian_at_opt())
-            # Just check that you can get the cholesky decomposition.
-            lr_covs.get_hessian_cholesky_at_opt()
 
             get_mean_flat = paragami.FlattenFunctionInput(
                 lambda mfvb_par: mfvb_par['mean'],
@@ -142,6 +162,7 @@ class TestHyperparameterSensitivityLinearApproximation(unittest.TestCase):
     def _test_linear_approximation(self, dim,
                                    theta_free, lambda_free,
                                    use_hessian_at_opt,
+                                   use_cross_hessian_at_opt,
                                    use_hyper_par_objective_fun):
         model = QuadraticModel(dim=dim)
         lam_folded0 = deepcopy(model.lam)
@@ -156,6 +177,11 @@ class TestHyperparameterSensitivityLinearApproximation(unittest.TestCase):
         get_objective_for_opt = lambda x: get_objective_flat(x, lam0)
         get_objective_for_opt_grad = autograd.grad(get_objective_for_opt)
         get_objective_for_opt_hessian = autograd.hessian(get_objective_for_opt)
+
+        get_objective_for_sens_grad = \
+            autograd.grad(get_objective_flat, argnum=0)
+        get_objective_for_sens_cross_hess = \
+            autograd.jacobian(get_objective_for_sens_grad, argnum=1)
 
         opt_output = sp.optimize.minimize(
             fun=get_objective_for_opt,
@@ -173,6 +199,11 @@ class TestHyperparameterSensitivityLinearApproximation(unittest.TestCase):
         else:
             hess0 = None
 
+        if use_cross_hessian_at_opt:
+            cross_hess0 = get_objective_for_sens_cross_hess(theta0, lam0)
+        else:
+            cross_hess0 = None
+
         if use_hyper_par_objective_fun:
             hyper_par_objective_fun = \
                 paragami.FlattenFunctionInput(
@@ -189,6 +220,7 @@ class TestHyperparameterSensitivityLinearApproximation(unittest.TestCase):
                 opt_par_value=theta0,
                 hyper_par_value=lam0,
                 hessian_at_opt=hess0,
+                cross_hess_at_opt=cross_hess0,
                 hyper_par_objective_fun=hyper_par_objective_fun,
                 validate_optimum=True)
 
@@ -235,15 +267,15 @@ class TestHyperparameterSensitivityLinearApproximation(unittest.TestCase):
     def test_quadratic_model(self):
         ft_vec = [False, True]
         dim = 3
-        for (theta_free, lambda_free, use_hess, use_hyperobj) in \
-            itertools.product(ft_vec, ft_vec, ft_vec, ft_vec):
+        for (theta_free, lambda_free, use_hess, use_hyperobj, use_cross_hess) in \
+            itertools.product(ft_vec, ft_vec, ft_vec, ft_vec, ft_vec):
 
             print(('theta_free: {}, lambda_free: {}, ' +
                    'use_hess: {}, use_hyperobj: {}').format(
                    theta_free, lambda_free, use_hess, use_hyperobj))
             self._test_linear_approximation(
                 dim, theta_free, lambda_free,
-                use_hess, use_hyperobj)
+                use_hess, use_cross_hess, use_hyperobj)
 
 
 class TestTaylorExpansion(unittest.TestCase):
@@ -472,32 +504,33 @@ class TestTaylorExpansion(unittest.TestCase):
             dg_deps(eta0, eps0, deps),
             dterms1[0].evaluate(eta0, eps0, deps))
 
+        hess_solver = sensitivity_lib.HessianSolver(hess0, 'factorization')
         assert_array_almost_equal(
             np.einsum('ij,j', true_deta_deps(eps0), deps),
             sensitivity_lib.evaluate_dketa_depsk(
-                hess0, dterms1, eta0, eps0, deps))
+                hess_solver, dterms1, eta0, eps0, deps))
 
         assert_array_almost_equal(
             eval_deta_deps(eta0, eps0, deps),
             sensitivity_lib.evaluate_dketa_depsk(
-                hess0, dterms1, eta0, eps0, deps))
+                hess_solver, dterms1, eta0, eps0, deps))
 
-        dterms2 = sensitivity_lib.differentiate_terms(hess0, dterms1)
+        dterms2 = sensitivity_lib.differentiate_terms(hess_solver, dterms1)
         self.assertTrue(np.linalg.norm(sensitivity_lib.evaluate_dketa_depsk(
-            hess0, dterms2, eta0, eps0, deps)) > 0)
+            hess_solver, dterms2, eta0, eps0, deps)) > 0)
         assert_array_almost_equal(
             np.einsum('ijk,j, k', true_d2eta_deps2(eps0), deps, deps),
             sensitivity_lib.evaluate_dketa_depsk(
-                hess0, dterms2, eta0, eps0, deps))
+                hess_solver, dterms2, eta0, eps0, deps))
 
-        dterms3 = sensitivity_lib.differentiate_terms(hess0, dterms2)
+        dterms3 = sensitivity_lib.differentiate_terms(hess_solver, dterms2)
         self.assertTrue(np.linalg.norm(sensitivity_lib.evaluate_dketa_depsk(
-            hess0, dterms3, eta0, eps0, deps)) > 0)
+            hess_solver, dterms3, eta0, eps0, deps)) > 0)
 
         assert_array_almost_equal(
             np.einsum('ijkl,j,k,l', true_d3eta_deps3(eps0), deps, deps, deps),
             sensitivity_lib.evaluate_dketa_depsk(
-                hess0, dterms3, eta0, eps0, deps))
+                hess_solver, dterms3, eta0, eps0, deps))
 
         ###################################
         # Test the Taylor series itself.

@@ -11,10 +11,12 @@ import json
 import warnings
 
 
-def _logsumexp(mat, axis):
+def logsumexp(mat, axis):
+    """Calculate logsumexp along the axis ``axis`` without dropping the axis.
+    """
     if not type(axis) is int:
         raise ValueError(
-            'This hacky _logsumexp is only designed for exactly one axis.')
+            'This version of logsumexp is only designed for exactly one axis.')
     mat_max = np.max(mat, axis=axis, keepdims=True)
     exp_mat_norm = np.exp(mat - mat_max)
     return np.log(np.sum(exp_mat_norm, axis=axis, keepdims=True)) + mat_max
@@ -29,7 +31,7 @@ def _constrain_simplex_matrix(free_mat):
     # Note that autograd needs to update their logsumexp to be in special
     # not misc before this can be changed.  Furthermore, logsumexp is
     # not even available in the pypi version of autograd.
-    log_norm = _logsumexp(free_mat_aug, axis=-1)
+    log_norm = logsumexp(free_mat_aug, axis=-1)
     return np.exp(free_mat_aug - log_norm)
 
 
@@ -195,7 +197,10 @@ class SimplexArrayPattern(Pattern):
                         (offset + 1) * free_simplex_length)
                     indices.append(free_inds)
                 offset += 1
-            return np.hstack(indices)
+            if len(indices) > 0:
+                return np.hstack(indices)
+            else:
+                return np.array([])
 
 
 register_pattern_json(SimplexArrayPattern)
