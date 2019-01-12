@@ -166,6 +166,9 @@ class LinearResponseCovariances:
             zero at the optimum.
         """
 
+        warnings.warn(
+            'This class is being moved to the vittles package.',
+            DeprecationWarning)
         self._obj_fun = objective_fun
         self._obj_fun_grad = autograd.grad(self._obj_fun, argnum=0)
         self._obj_fun_hessian = autograd.hessian(self._obj_fun, argnum=0)
@@ -409,6 +412,10 @@ class HyperparameterSensitivityLinearApproximation:
             The tolerance used to check that the gradient is approximately
             zero at the optimum.
         """
+
+        warnings.warn(
+            'This class is being moved to the vittles package.',
+            DeprecationWarning)
 
         self._objective_fun = objective_fun
         self._obj_fun_grad = autograd.grad(self._objective_fun, argnum=0)
@@ -1009,6 +1016,10 @@ class ParametricSensitivityTaylorExpansion(object):
             unset, ``objective_function`` is used.
         """
         warnings.warn(
+            'This class is being moved to the vittles package.',
+            DeprecationWarning)
+
+        warnings.warn(
             'The ParametricSensitivityTaylorExpansion is experimental.')
         self._objective_function = objective_function
         self._objective_function_hessian = \
@@ -1240,6 +1251,10 @@ class SparseBlockHessian():
             the indices of the corresponding block.  There must be no repeated
             indices, and each block must be the same size.
         """
+        warnings.warn(
+            'This class is being moved to the vittles package.',
+            DeprecationWarning)
+
         self._fun = objective_function
         self._sparsity_array = sparsity_array
         self._num_blocks = self._sparsity_array.shape[0]
