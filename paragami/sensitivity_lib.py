@@ -14,6 +14,11 @@ import warnings
 
 from .function_patterns import FlattenFunctionInput
 
+#############################################
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
+# This will soon be moved to vittles.       #
+# Do not develop in paragami!               #
+#############################################
 
 class HessianSolver:
     """A class to provide a common interface for solving :math:`H^{-1} g`.
