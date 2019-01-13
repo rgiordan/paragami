@@ -1,7 +1,7 @@
 Documentation for ``paragami``
 ===============================
 
-Parameter folding and flattening, parameter origami [#]_: ``paragami``! 
+Parameter folding and flattening, parameter origami [#]_: ``paragami``!
 
 This is a library (very much still in development) intended to make sensitivity
 analysis easier for optimization problems. The core functionality consists of
@@ -48,6 +48,5 @@ For additional background and motivation, see the following papers:
    installation
    example_notebooks/examples
    api/api
-   release-history
 
 .. [#] Thanks to Stéfan van der Walt for the suggesting the package name.
