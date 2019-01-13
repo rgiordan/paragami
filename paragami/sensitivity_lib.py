@@ -14,6 +14,11 @@ import warnings
 
 from .function_patterns import FlattenFunctionInput
 
+#############################################
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
+# This will soon be moved to vittles.       #
+# Do not develop in paragami!               #
+#############################################
 
 class HessianSolver:
     """A class to provide a common interface for solving :math:`H^{-1} g`.
@@ -161,9 +166,9 @@ class LinearResponseCovariances:
             zero at the optimum.
         """
 
-        warnings.warn('This is now implemented in the vittles package.',
-                      DeprecationWarning)
-
+        warnings.warn(
+            'This class is being moved to the vittles package.',
+            DeprecationWarning)
         self._obj_fun = objective_fun
         self._obj_fun_grad = autograd.grad(self._obj_fun, argnum=0)
         self._obj_fun_hessian = autograd.hessian(self._obj_fun, argnum=0)
@@ -408,8 +413,9 @@ class HyperparameterSensitivityLinearApproximation:
             zero at the optimum.
         """
 
-        warnings.warn('This is now implemented in the vittles package.',
-                      DeprecationWarning)
+        warnings.warn(
+            'This class is being moved to the vittles package.',
+            DeprecationWarning)
 
         self._objective_fun = objective_fun
         self._obj_fun_grad = autograd.grad(self._objective_fun, argnum=0)
@@ -509,6 +515,7 @@ class HyperparameterSensitivityLinearApproximation:
 ################################
 # Higher-order approximations. #
 ################################
+
 class ParametricSensitivityTaylorExpansion(object):
     def __init__(self, objective_function,
                  input_val0, hyper_val0, order,
