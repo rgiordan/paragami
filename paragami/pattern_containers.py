@@ -175,12 +175,12 @@ class PatternDict(Pattern):
         new_dict_val_flat = np.random.random(len(dict_val_flat))
         new_dict_val = dict_pattern.fold(new_dict_val_flat, free=True)
     """
-    def __init__(self):
+    def __init__(self, free_default=None):
         self.__pattern_dict = OrderedDict()
 
         # __lock determines whether new elements can be added.
         self.__lock = False
-        super().__init__(0, 0)
+        super().__init__(0, 0, free_default=free_default)
 
     def lock(self):
         self.__lock = True
@@ -262,7 +262,8 @@ class PatternDict(Pattern):
                 return False, err_msg
         return True, ''
 
-    def fold(self, flat_val, free, validate_value=None):
+    def fold(self, flat_val, free=None, validate_value=None):
+        free = self._free_with_default(free)
         flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
@@ -281,6 +282,8 @@ class PatternDict(Pattern):
             pattern_flat_length = pattern.flat_length(free)
             pattern_flat_val = flat_val[offset:(offset + pattern_flat_length)]
             offset += pattern_flat_length
+            # Containers must not mix free and non-free values, so do not
+            # use default values for free.
             folded_val[pattern_name] = \
                 pattern.fold(pattern_flat_val,
                              free=free,
@@ -292,7 +295,8 @@ class PatternDict(Pattern):
                 raise ValueError(msg)
         return folded_val
 
-    def flatten(self, folded_val, free, validate_value=None):
+    def flatten(self, folded_val, free=None, validate_value=None):
+        free = self._free_with_default(free)
         valid, msg = self.validate_folded(folded_val)
         if not valid:
             raise ValueError(msg)
@@ -302,6 +306,8 @@ class PatternDict(Pattern):
         flat_val = np.full(flat_length, float('nan'))
         for pattern_name, pattern in self.__pattern_dict.items():
             pattern_flat_length = pattern.flat_length(free)
+            # Containers must not mix free and non-free values, so do not
+            # use default values for free.
             flat_val[offset:(offset + pattern_flat_length)] = \
                 pattern.flatten(
                     folded_val[pattern_name],
@@ -359,7 +365,8 @@ class PatternDict(Pattern):
                 json_dict['contents'][pattern_name])
         return pattern_dict
 
-    def flat_indices(self, folded_bool, free):
+    def flat_indices(self, folded_bool, free=None):
+        free = self._free_with_default(free)
         valid, msg = self.validate_folded(folded_bool, validate_value=False)
         if not valid:
             raise ValueError(msg)
@@ -369,6 +376,8 @@ class PatternDict(Pattern):
         indices = []
         for pattern_name, pattern in self.__pattern_dict.items():
             pattern_flat_length = pattern.flat_length(free)
+            # Containers must not mix free and non-free values, so do not
+            # use default values for free.
             pattern_indices = pattern.flat_indices(
                 folded_bool[pattern_name], free=free)
             if len(pattern_indices) > 0:
@@ -397,7 +406,7 @@ class PatternArray(Pattern):
     numeric arrays (i.e., `NumericArrayPattern`, `SimplexArrayPattern`, and
     `PSDSymmetricMatrixPattern`).
     """
-    def __init__(self, array_shape, base_pattern):
+    def __init__(self, array_shape, base_pattern, free_default=None):
         """
         Parameters
         ------------
@@ -438,7 +447,8 @@ class PatternArray(Pattern):
 
         super().__init__(
             num_elements * base_pattern.flat_length(free=False),
-            num_elements * base_pattern.flat_length(free=True))
+            num_elements * base_pattern.flat_length(free=True),
+            free_default=free_default)
 
     def __str__(self):
         return('PatternArray {} of {}'.format(
@@ -514,7 +524,8 @@ class PatternArray(Pattern):
         linear_item = np.ravel_multi_index(item, self.__array_shape) * flat_length
         return slice(linear_item, linear_item + flat_length)
 
-    def fold(self, flat_val, free, validate_value=None):
+    def fold(self, flat_val, free=None, validate_value=None):
+        free = self._free_with_default(free)
         flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
@@ -539,7 +550,8 @@ class PatternArray(Pattern):
                 raise ValueError(msg)
         return folded_val
 
-    def flatten(self, folded_val, free, validate_value=None):
+    def flatten(self, folded_val, free=None, validate_value=None):
+        free = self._free_with_default(free)
         valid, msg = self.validate_folded(folded_val)
         if not valid:
             raise ValueError(msg)
@@ -549,7 +561,8 @@ class PatternArray(Pattern):
                 folded_val[item], free=free, validate_value=validate_value)
             for item in itertools.product(*self.__array_ranges)]))
 
-    def flat_length(self, free):
+    def flat_length(self, free=None):
+        free = self._free_with_default(free)
         return self._free_flat_length if free else self._flat_length
 
     def unfreeing_jacobian(self, folded_val, sparse=True):
@@ -598,7 +611,8 @@ class PatternArray(Pattern):
         return cls(
             array_shape=json_dict['array_shape'], base_pattern=base_pattern)
 
-    def flat_indices(self, folded_bool, free):
+    def flat_indices(self, folded_bool, free=None):
+        free = self._free_with_default(free)
         valid, msg = self.validate_folded(folded_bool, validate_value=False)
         if not valid:
             raise ValueError(msg)
