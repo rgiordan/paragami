@@ -297,7 +297,8 @@ class PatternDict(Pattern):
 
     def flatten(self, folded_val, free=None, validate_value=None):
         free = self._free_with_default(free)
-        valid, msg = self.validate_folded(folded_val)
+        valid, msg = self.validate_folded(
+            folded_val, validate_value=validate_value)
         if not valid:
             raise ValueError(msg)
 
@@ -545,14 +546,16 @@ class PatternArray(Pattern):
         folded_val = np.reshape(folded_array, self.__shape)
 
         if not free:
-            valid, msg = self.validate_folded(folded_val, validate_value)
+            valid, msg = self.validate_folded(
+                folded_val, validate_value=validate_value)
             if not valid:
                 raise ValueError(msg)
         return folded_val
 
     def flatten(self, folded_val, free=None, validate_value=None):
         free = self._free_with_default(free)
-        valid, msg = self.validate_folded(folded_val)
+        valid, msg = self.validate_folded(
+            folded_val, validate_value=validate_value)
         if not valid:
             raise ValueError(msg)
 
