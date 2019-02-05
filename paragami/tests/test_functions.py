@@ -57,15 +57,14 @@ def flat_to_num(param_flat, pattern, free):
     param_folded = pattern.fold(param_flat, free=free)
     return fold_to_num(param_folded)
 
-def num_to_fold(x):
-    pattern = get_test_pattern()
+def num_to_fold(x, pattern):
     new_param = pattern.empty(valid=True)
     new_param['array'] = new_param['array'] + x
     new_param['mat'] = x * new_param['mat']
     return new_param
 
 def num_to_flat(x, pattern, free):
-    new_param = num_to_fold(x)
+    new_param = num_to_fold(x, pattern)
     return pattern.flatten(new_param, free=free)
 
 
@@ -100,13 +99,14 @@ class TestFlatteningAndFolding(unittest.TestCase):
             # Use the flat representation to check that parameters are equal.
             if original_is_flat:
                 assert_array_almost_equal(
-                    orig_val, patterns.flatten(trans_val, free=free))
+                    orig_val, pattern.flatten(trans_val, free=free))
             else:
                 assert_array_almost_equal(
-                    patterns.flatten(orig_val, free=free), trans_val)
+                    pattern.flatten(orig_val, free=free), trans_val)
 
         patterns_array = np.atleast_1d(patterns)
         free_array = np.atleast_1d(free)
+        retnums_array = np.atleast_1d(retnums)
 
         orig_rets = original_fun()
         trans_rets = fun_trans()
@@ -114,17 +114,17 @@ class TestFlatteningAndFolding(unittest.TestCase):
             self.assertTrue(len(orig_rets) == len(trans_rets))
 
             # Check that the non-transformed return values are the same.
-            for ind in len(orig_rets):
+            for ind in range(len(orig_rets)):
                 if not np.isin(ind, retnums):
                     assert_array_almost_equal(
                         orig_rets[ind], trans_rets[ind])
 
             # Check that the transformed return values are the same.
-            for ret_ind in retnums:
-                ind = retnums[ret_ind]
+            for ret_ind in range(len(retnums_array)):
+                ind = retnums_array[ret_ind]
                 check_equal(
                     orig_rets[ind], trans_rets[ind],
-                    patterns[ret_ind], free[ret_ind])
+                    patterns_array[ret_ind], free_array[ret_ind])
         else:
             check_equal(
                 orig_rets, trans_rets, patterns_array[0], free_array[0])
@@ -204,8 +204,8 @@ class TestFlatteningAndFolding(unittest.TestCase):
                     tf1, pattern, free, origflat, [0, 0])
 
             with self.assertRaises(ValueError):
-                fun_flat = paragami.FlattenFunctionInput(
-                    tf1, pattern, free, [0, 1])
+                fun_flat = paragami.TransformFunctionInput(
+                    tf1, pattern, free, origflat, [0, 1])
 
         # Test two-parameter flattening.
         pattern0 = get_test_pattern()
@@ -282,132 +282,99 @@ class TestFlatteningAndFolding(unittest.TestCase):
 
         ft = [False, True]
         def this_num_to_fold():
-            return num_to_fold(x)
+            return num_to_fold(x, pattern)
 
         for free, origflat in itertools.product(ft, ft):
             def this_num_to_flat():
                 return num_to_flat(x, pattern, free)
 
-            param_flat = pattern.flatten(param_val, free=free)
+            #param_flat = pattern.flatten(param_val, free=free)
             tf1 = this_num_to_flat if origflat else this_num_to_fold
 
             def tf2():
-                return tf1(val), y
+                return tf1(), y
 
             def tf3():
-                return y, tf1(val), z
+                return y, tf1(), z
 
             self._test_transform_output(
-                original_fun=tf1, patterns=pattern, free=free,
-                retnums=0,
-                original_is_flat=origflat)
+                original_fun=tf1, original_is_flat=origflat,
+                free=free, patterns=pattern, retnums=0)
 
-        #     self._test_transform_input(
-        #         original_fun=tf2, patterns=pattern, free=free,
-        #         argnums=1,
-        #         original_is_flat=origflat,
-        #         folded_args=(x, param_val, ),
-        #         flat_args=(x, param_flat, ),
-        #         kwargs={'y': 5})
-        #
-        #     self._test_transform_input(
-        #         original_fun=tf3, patterns=pattern, free=free,
-        #         argnums=0,
-        #         original_is_flat=origflat,
-        #         folded_args=(param_val, x, ),
-        #         flat_args=(param_flat, x, ),
-        #         kwargs={'y': 5})
-        #
-        #     # Test once with arrays.
-        #     self._test_transform_input(
-        #         original_fun=tf3, patterns=[pattern], free=[free],
-        #         argnums=[0],
-        #         original_is_flat=origflat,
-        #         folded_args=(param_val, x, ),
-        #         flat_args=(param_flat, x, ),
-        #         kwargs={'y': 5})
-        #
-        #     # Test bad inits
-        #     with self.assertRaises(ValueError):
-        #         fun_flat = paragami.TransformFunctionInput(
-        #             tf1, [[ pattern ]], free, origflat, 0)
-        #
-        #     with self.assertRaises(ValueError):
-        #         fun_flat = paragami.TransformFunctionInput(
-        #             tf1, pattern, free, origflat, [[0]])
-        #
-        #     with self.assertRaises(ValueError):
-        #         fun_flat = paragami.TransformFunctionInput(
-        #             tf1, pattern, free, origflat, [0, 0])
-        #
-        #     with self.assertRaises(ValueError):
-        #         fun_flat = paragami.FlattenFunctionInput(
-        #             tf1, pattern, free, [0, 1])
-        #
-        # # Test two-parameter flattening.
-        # pattern0 = get_test_pattern()
-        # pattern1 = get_small_test_pattern()
-        # param0_val = pattern0.random()
-        # param1_val = pattern1.random()
-        # for (free0, free1, origflat) in itertools.product(ft, ft, ft):
-        #
-        #     if origflat:
-        #         def tf1(p0, p1):
-        #             return flat_to_num(p0, pattern0, free0) + \
-        #                    flat_to_num(p1, pattern1, free1)
-        #     else:
-        #         def tf1(p0, p1):
-        #             return fold_to_num(p0) + fold_to_num(p1)
-        #
-        #     def tf2(x, p0, z, p1, y=5):
-        #         return tf1(p0, p1) + scalarfun(x, y, z)
-        #
-        #     def tf3(p0, z, p1, x, y=5):
-        #         return tf1(p0, p1) + scalarfun(x, y, z)
-        #
-        #     param0_flat = pattern0.flatten(param0_val, free=free0)
-        #     param1_flat = pattern1.flatten(param1_val, free=free1)
-        #
-        #     self._test_transform_input(
-        #         original_fun=tf1,
-        #         patterns=[pattern0, pattern1],
-        #         free=[free0, free1],
-        #         argnums=[0, 1],
-        #         original_is_flat=origflat,
-        #         folded_args=(param0_val, param1_val),
-        #         flat_args=(param0_flat, param1_flat),
-        #         kwargs={})
-        #
-        #     # Test switching the order of the patterns.
-        #     self._test_transform_input(
-        #         original_fun=tf1,
-        #         patterns=[pattern1, pattern0],
-        #         free=[free1, free0],
-        #         argnums=[1, 0],
-        #         original_is_flat=origflat,
-        #         folded_args=(param0_val, param1_val),
-        #         flat_args=(param0_flat, param1_flat),
-        #         kwargs={})
-        #
-        #     self._test_transform_input(
-        #         original_fun=tf2,
-        #         patterns=[pattern1, pattern0],
-        #         free=[free1, free0],
-        #         argnums=[3, 1],
-        #         original_is_flat=origflat,
-        #         folded_args=(x, param0_val, z, param1_val, ),
-        #         flat_args=(x, param0_flat, z, param1_flat),
-        #         kwargs={'y': 5})
-        #
-        #     self._test_transform_input(
-        #         original_fun=tf3,
-        #         patterns=[pattern1, pattern0],
-        #         free=[free1, free0],
-        #         argnums=[2, 0],
-        #         original_is_flat=origflat,
-        #         folded_args=(param0_val, z, param1_val, x, ),
-        #         flat_args=(param0_flat, z, param1_flat, x),
-        #         kwargs={'y': 5})
+            self._test_transform_output(
+                original_fun=tf2, original_is_flat=origflat,
+                free=free, patterns=pattern, retnums=0)
+
+            self._test_transform_output(
+                original_fun=tf3, original_is_flat=origflat,
+                free=free, patterns=pattern, retnums=1)
+
+            # Test bad inits
+            with self.assertRaises(ValueError):
+                fun_flat = paragami.TransformFunctionOutput(
+                    tf1, [[ pattern ]], free, origflat, 0)
+
+            with self.assertRaises(ValueError):
+                fun_flat = paragami.TransformFunctionOutput(
+                    tf1, pattern, free, origflat, [[0]])
+
+            with self.assertRaises(ValueError):
+                fun_flat = paragami.TransformFunctionOutput(
+                    tf1, pattern, free, origflat, [0, 0])
+
+            with self.assertRaises(ValueError):
+                fun_flat = paragami.TransformFunctionOutput(
+                    tf1, pattern, free, origflat, [0, 1])
+
+        # Test two-parameter transforms.
+        pattern0 = get_test_pattern()
+        pattern1 = get_small_test_pattern()
+        for (free0, free1, origflat) in itertools.product(ft, ft, ft):
+
+            if origflat:
+                def basef0():
+                    return num_to_flat(x, pattern0, free0)
+                def basef1():
+                    return num_to_flat(y, pattern1, free1)
+            else:
+                def basef0():
+                    return num_to_fold(x, pattern0)
+                def basef1():
+                    return num_to_fold(y, pattern1)
+
+            def tf1():
+                return basef0(), basef1()
+
+            def tf2():
+                return basef0(), z, basef1(), x
+
+            def tf3():
+                return x, basef0(), z, basef1()
+
+            self._test_transform_output(
+                original_fun=tf1, original_is_flat=origflat,
+                free=[free0, free1],
+                patterns=[pattern0, pattern1],
+                retnums=[0, 1])
+
+            # Test switching the order of the patterns.
+            self._test_transform_output(
+                original_fun=tf1, original_is_flat=origflat,
+                free=[free1, free0],
+                patterns=[pattern1, pattern0],
+                retnums=[1, 0])
+
+            self._test_transform_output(
+                original_fun=tf2, original_is_flat=origflat,
+                free=[free1, free0],
+                patterns=[pattern1, pattern0],
+                retnums=[2, 0])
+
+            self._test_transform_output(
+                original_fun=tf3, original_is_flat=origflat,
+                free=[free1, free0],
+                patterns=[pattern1, pattern0],
+                retnums=[3, 1])
 
 
 
