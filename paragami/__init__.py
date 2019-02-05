@@ -9,7 +9,8 @@ from paragami.psdmatrix_patterns import PSDSymmetricMatrixPattern
 from paragami.function_patterns import \
     FlattenFunctionInput, FoldFunctionInput, \
     FlattenFunctionOutput, FoldFunctionOutput, \
-    FoldFunctionInputAndOutput, FlattenFunctionInputAndOutput
+    FoldFunctionInputAndOutput, FlattenFunctionInputAndOutput, \
+    TransformFunctionInput, TransformFunctionOutput
 from paragami.simplex_patterns import SimplexArrayPattern
 from paragami.optimization_lib import \
     PreconditionedFunction, \
