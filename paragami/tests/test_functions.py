@@ -164,6 +164,19 @@ class TestFlatteningAndFolding(unittest.TestCase):
                 flat_args=(param_flat, ),
                 kwargs={})
 
+            # Just call the wrappers -- assume that their functionality
+            # is tested with TransformFunctionInput.
+            if origflat:
+                fold_tf1 = paragami.FoldFunctionInput(
+                    tf1, pattern, free, 0)
+                assert_array_almost_equal(
+                    fold_tf1(param_val), tf1(param_flat))
+            else:
+                flat_tf1 = paragami.FlattenFunctionInput(
+                    tf1, pattern, free, 0)
+                assert_array_almost_equal(
+                    flat_tf1(param_flat), tf1(param_val))
+
             self._test_transform_input(
                 original_fun=tf2, patterns=pattern, free=free,
                 argnums=1,
@@ -272,7 +285,7 @@ class TestFlatteningAndFolding(unittest.TestCase):
                 kwargs={'y': 5})
 
 
-    def test_transform_function_output(self):
+    def test_transform_output(self):
         pattern = get_test_pattern()
         param_val = pattern.random()
         x = 3.
@@ -299,6 +312,19 @@ class TestFlatteningAndFolding(unittest.TestCase):
             self._test_transform_output(
                 original_fun=tf1, original_is_flat=origflat,
                 free=free, patterns=pattern, retnums=0)
+
+            # Just call the wrappers -- assume that their functionality
+            # is tested with TransformFunctionOutput.
+            if origflat:
+                fold_tf1 = paragami.FoldFunctionOutput(
+                    tf1, pattern, free, 0)
+                assert_array_almost_equal(
+                    pattern.flatten(fold_tf1(), free=free), tf1())
+            else:
+                flat_tf1 = paragami.FlattenFunctionOutput(
+                    tf1, pattern, free, 0)
+                assert_array_almost_equal(
+                    pattern.flatten(tf1(), free=free), flat_tf1())
 
             self._test_transform_output(
                 original_fun=tf2, original_is_flat=origflat,
@@ -376,7 +402,6 @@ class TestFlatteningAndFolding(unittest.TestCase):
                 retnums=[3, 1])
 
 
-
     def test_flatten_and_fold(self):
         pattern = get_test_pattern()
         pattern_val = pattern.random()
@@ -418,8 +443,6 @@ class TestFlatteningAndFolding(unittest.TestCase):
             fold_to_fold(pattern_val), free=True)
         assert_array_almost_equal(
             flat_out, flat_out_test)
-
-
 
 
     def test_autograd(self):
