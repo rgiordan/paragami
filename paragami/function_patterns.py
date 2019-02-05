@@ -34,12 +34,12 @@ class TransformFunctionInput:
               flattened_fun(2, pd_mat_flat, kwoffset=3)))
     """
     def __init__(self, original_fun, patterns, free,
-                 original_is_flat, argnums=None, ):
+                 original_is_flat, argnums=None):
         """
         Parameters
         ------------
         original_fun: callable
-            A function that takes one or more folded values as input.
+            A function that takes one or more values as input.
 
         patterns: `paragami.Pattern` or list of `paragami.PatternPattern`
             A single pattern or array of patterns describing the input to
@@ -97,7 +97,7 @@ class TransformFunctionInput:
 
     def __call__(self, *args, **kwargs):
         # Loop through the arguments from beginning to end, replacing
-        # parameters with their flattened values.
+        # parameters with their transformed values.
         new_args = ()
         last_argnum = 0
         for i in self._argnum_sort:
@@ -145,6 +145,114 @@ class FlattenFunctionInput(TransformFunctionInput):
             free=free,
             original_is_flat=False,
             argnums=argnums)
+
+
+class TransformFunctionOutput:
+    """
+    Convert a function of folded (or flattened) values into one that returns
+    flattened (or folded) values.
+    """
+    def __init__(self, original_fun, patterns, free,
+                 original_is_flat, retnums=None):
+        """
+        Parameters
+        ------------
+        original_fun: callable
+            A function that returns one or more values.
+
+        patterns: `paragami.Pattern` or list of `paragami.PatternPattern`
+            A single pattern or array of patterns describing the return value
+            of `original_fun`.
+
+        free: `bool` or list of `bool`
+            Whether or not the corresponding elements of `patterns` should
+            use free or non-free flattened values.
+
+        original_is_flat: `bool`
+            If `True`, convert `original_fun` from returning flat values to
+            one returning folded values.  If `False`, convert `original_fun`
+            from returning folded values to one returning flat values.
+
+        retnums: `int` or list of `int`
+            The 0-indexed locations of the corresponding pattern in `patterns`
+            in the order of the return values of `original_fun`.
+        """
+
+        self._fun = original_fun
+        self._patterns = np.atleast_1d(patterns)
+        if retnums is None:
+            retnums = np.arange(0, len(self._patterns))
+        self._retnums = np.atleast_1d(retnums)
+        self._retnum_sort = np.argsort(self._retnums)
+        self.free = np.broadcast_to(free, self._patterns.shape)
+        self._original_is_flat = original_is_flat
+
+        self._validate_args()
+
+    def _validate_args(self):
+        if self._patterns.ndim != 1:
+            raise ValueError('patterns must be a 1d vector.')
+        if self._retnums.ndim != 1:
+            raise ValueError('retnums must be a 1d vector.')
+        if len(self._retnums) != len(np.unique(self._retnums)):
+            raise ValueError('retnums must not contain duplicated values.')
+        if len(self._retnums) != len(self._patterns):
+            raise ValueError('retnums must be the same length as patterns.')
+        # These two actually cannot be violated because the broadcast_to
+        # would fail first.  In case something changes later, leave them in
+        # as checks.
+        if self.free.ndim != 1:
+            raise ValueError(
+                'free must be a single boolean or a 1d vector of booleans.')
+        if len(self.free) != len(self._patterns):
+            raise ValueError(
+                'free must broadcast to the same shape as patterns.')
+
+    def __str__(self):
+        return(('Function: {}\nretnums: {}\n' +
+                'free: {}\npatterns: {}, orignal_is_flat: {}').format(
+                self._fun, self._retnums,
+                self.free, self._patterns, self._original_is_flat))
+
+    def __call__(self, *args, **kwargs):
+        # Loop through the return values from beginning to end, replacing
+        # parameters with their transformed values.
+        rets = self._fun(*args, **kwargs)
+        if not isinstance(rets, tuple):
+            if not self._retnums == [0]:
+                err_msg = ('{} returned only one value, but multiple' +
+                           'retnums were specified: {}'.format(
+                            self._fun.__name__, self._retnums))
+                raise ValueError(err_msg)
+            if self._original_is_flat:
+                return self._patterns[0].fold(rets, free=self.free[i])
+            else:
+                return \
+                    self._patterns[i].flatten(rets, free=self.free[i])
+
+        # rets is a tuple containing multiple return values.
+        new_rets = ()
+        last_retnum = 0
+        for i in self._retnum_sort:
+            retnum = self._retnums[i]
+            if len(rets) <= retnum:
+                err_msg = ('Not enough return values in {} ({}) for' +
+                           'specified retnums {}.'.format(
+                            self._fun.__name__,
+                            len(rets),
+                            self._retnums))
+                raise ValueError(err_msg)
+            if self._original_is_flat:
+                new_ret = \
+                    self._patterns[i].fold(rets[retnum], free=self.free[i])
+            else:
+                new_ret = \
+                    self._patterns[i].flatten(rets[retnum], free=self.free[i])
+            new_rets += rets[last_retnum:retnum] + (new_ret, )
+            last_retnum = retnum + 1
+        new_rets += rets[last_retnum:len(rets)]
+
+        return new_rets
 
 
 class FoldFunctionOutput:

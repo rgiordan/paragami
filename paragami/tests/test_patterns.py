@@ -394,7 +394,7 @@ class TestBasicPatterns(unittest.TestCase):
 class TestContainerPatterns(unittest.TestCase):
     def test_dictionary_patterns(self):
         def test_pattern(dict_pattern, dict_val):
-            # autograd can't differnetiate the folding of a dictionary
+            # autograd can't differentiate the folding of a dictionary
             # because it involves assignment to elements of a dictionary.
             _test_pattern(self, dict_pattern, dict_val,
                           check_equal=check_dict_equal,
