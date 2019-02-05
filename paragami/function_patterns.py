@@ -347,7 +347,7 @@ class FoldFunctionInputAndOutput():
     """
     def __init__(self, original_fun,
                  input_patterns, input_free, input_argnums,
-                 output_pattern, output_free, output_retnums=None):
+                 output_patterns, output_free, output_retnums=None):
         self._folded_output = \
             FoldFunctionOutput(
                 original_fun=original_fun,
@@ -390,4 +390,4 @@ class FlattenFunctionInputAndOutput():
             argnums=input_argnums)
 
     def __call__(self, *args, **kwargs):
-        return self._folded_fun(*args, **kwargs)
+        return self._flattened_fun(*args, **kwargs)

@@ -5,9 +5,8 @@ from numpy.testing import assert_array_almost_equal
 
 import autograd.numpy as np
 from autograd.test_util import check_grads
-
+from copy import deepcopy
 import itertools
-
 import paragami
 
 
@@ -378,56 +377,50 @@ class TestFlatteningAndFolding(unittest.TestCase):
 
 
 
-    def test_fold_function_output(self):
-        pattern = get_test_pattern()
-        param_val = pattern.random()
-        param_flat = pattern.flatten(param_val, free=False)
-        param_free = pattern.flatten(param_val, free=True)
-
-        def get_param(a, b=0.1):
-            param_val = pattern.empty(valid=False)
-            param_val['array'][:] = a + b
-            param_val['mat'] = \
-                a * np.eye(param_val['mat'].shape[0]) + b
-            param_val['simplex'] = np.full(param_val['simplex'].shape, 0.5)
-            param_val['dict']['array2'][:] = a + b
-
-            return param_val
-
-        for free in [False, True]:
-            def get_flat_param(a, b=0.1):
-                return pattern.flatten(get_param(a, b=b), free=free)
-
-            get_folded_param = paragami.FoldFunctionOutput(
-                get_flat_param, pattern=pattern, free=free)
-            a = 0.1
-            b = 0.2
-            assert_test_dict_equal(
-                get_param(a, b=b), get_folded_param(a, b=b))
-
     def test_flatten_and_fold(self):
         pattern = get_test_pattern()
         pattern_val = pattern.random()
         free_val = pattern.flatten(pattern_val, free=True)
 
-        def operate_on_free(free_val, a, b=2):
-            return free_val * a + b
-
-        a = 2
-        b = 3
+        def flat_to_flat(par_flat):
+            return par_flat + 1.0
 
         folded_fun = paragami.FoldFunctionInputAndOutput(
-            original_fun=operate_on_free,
+            original_fun=flat_to_flat,
             input_patterns=pattern,
             input_free=True,
             input_argnums=0,
-            output_pattern=pattern,
+            output_patterns=pattern,
             output_free=True)
 
-        pattern_out = folded_fun(pattern_val, a, b=b)
-        pattern_out_test = pattern.fold(
-            operate_on_free(free_val, a, b=b), free=True)
-        assert_test_dict_equal(pattern_out_test, pattern_out)
+        folded_out = folded_fun(pattern_val)
+        folded_out_test = pattern.fold(
+            flat_to_flat(free_val), free=True)
+        assert_test_dict_equal(folded_out_test, folded_out)
+
+
+        def fold_to_fold(par_fold):
+            num = fold_to_num(par_fold)
+            out_par = deepcopy(par_fold)
+            out_par['mat'] *= num
+            return out_par
+
+        flat_fun = paragami.FlattenFunctionInputAndOutput(
+            original_fun=fold_to_fold,
+            input_patterns=pattern,
+            input_free=True,
+            input_argnums=0,
+            output_patterns=pattern,
+            output_free=True)
+
+        flat_out = flat_fun(free_val)
+        flat_out_test = pattern.flatten(
+            fold_to_fold(pattern_val), free=True)
+        assert_array_almost_equal(
+            flat_out, flat_out_test)
+
+
+
 
     def test_autograd(self):
         pattern = get_test_pattern()
