@@ -255,53 +255,86 @@ class TransformFunctionOutput:
         return new_rets
 
 
-class FoldFunctionOutput:
+
+class FoldFunctionOutput(TransformFunctionOutput):
+    """A convenience wrapper of `paragami.TransformFunctionOutput`.
+
+    See also
+    -----------
+    paragami.TransformFunctionOutput
     """
-    Convert a function returning a flat value to one returning a folded value.
+    def __init__(self, original_fun, patterns, free, retnums=None):
+        super().__init__(
+            original_fun=original_fun,
+            patterns=patterns,
+            free=free,
+            original_is_flat=True,
+            retnums=retnums)
 
-    Examples
-    ----------
-    .. code-block:: python
 
-        mat_pattern = paragami.PSDSymmetricMatrixPattern(3)
+class FlattenFunctionOutput(TransformFunctionOutput):
+    """A convenience wrapper of `paragami.TransformFunctionOutput`.
 
-        def fun(scale, kwoffset=3):
-            mat = np.eye(3) * scale + kwoffset
-            return mat_pattern.fold(mat, free=True)
-
-        folded_fun = paragami.FoldFunctionOutput(
-            original_fun=fun, pattern=mat_pattern, free=True)
-
-        flat_mat = fun(3, kwoffset=1)
-        # These two are the same:
-        mat_pattern.fold(flat_mat, free=True)
-        folded_fun(3, kwoffset=1)
+    See also
+    -----------
+    paragami.TransformFunctionOutput
     """
-    def __init__(self, original_fun, pattern, free):
-        """
-        Parameters
-        ------------
-        original_fun: callable
-            A function that returns a flattened value.
+    def __init__(self, original_fun, patterns, free, retnums=None):
+        super().__init__(
+            original_fun=original_fun,
+            patterns=patterns,
+            free=free,
+            original_is_flat=False,
+            retnums=retnums)
 
-        pattern: `paragami.Pattern`
-            A pattern describing how to fold the output.
 
-        free: `bool`
-            Whether the returned value is free.
-        """
-
-        self._fun = original_fun
-        self._pattern = pattern
-        self._free = free
-
-    def __str__(self):
-        return('Function: {}\nfree: {}\npattern: {}'.format(
-            self._fun, self._free, self._pattern))
-
-    def __call__(self, *args, **kwargs):
-        flat_val = self._fun(*args, **kwargs)
-        return self._pattern.fold(flat_val, free=self._free)
+# class FoldFunctionOutput:
+#     """
+#     Convert a function returning a flat value to one returning a folded value.
+#
+#     Examples
+#     ----------
+#     .. code-block:: python
+#
+#         mat_pattern = paragami.PSDSymmetricMatrixPattern(3)
+#
+#         def fun(scale, kwoffset=3):
+#             mat = np.eye(3) * scale + kwoffset
+#             return mat_pattern.fold(mat, free=True)
+#
+#         folded_fun = paragami.FoldFunctionOutput(
+#             original_fun=fun, pattern=mat_pattern, free=True)
+#
+#         flat_mat = fun(3, kwoffset=1)
+#         # These two are the same:
+#         mat_pattern.fold(flat_mat, free=True)
+#         folded_fun(3, kwoffset=1)
+#     """
+#     def __init__(self, original_fun, pattern, free):
+#         """
+#         Parameters
+#         ------------
+#         original_fun: callable
+#             A function that returns a flattened value.
+#
+#         pattern: `paragami.Pattern`
+#             A pattern describing how to fold the output.
+#
+#         free: `bool`
+#             Whether the returned value is free.
+#         """
+#
+#         self._fun = original_fun
+#         self._pattern = pattern
+#         self._free = free
+#
+#     def __str__(self):
+#         return('Function: {}\nfree: {}\npattern: {}'.format(
+#             self._fun, self._free, self._pattern))
+#
+#     def __call__(self, *args, **kwargs):
+#         flat_val = self._fun(*args, **kwargs)
+#         return self._pattern.fold(flat_val, free=self._free)
 
 
 class FoldFunctionInputAndOutput():
@@ -315,14 +348,44 @@ class FoldFunctionInputAndOutput():
     """
     def __init__(self, original_fun,
                  input_patterns, input_free, input_argnums,
-                 output_pattern, output_free):
+                 output_pattern, output_free, output_retnums=None):
         self._folded_output = \
             FoldFunctionOutput(
                 original_fun=original_fun,
-                pattern=output_pattern,
-                free=output_free)
+                patterns=output_patterns,
+                free=output_free,
+                retnums=output_retnums)
         self._folded_fun = FoldFunctionInput(
             original_fun=self._folded_output,
+            patterns=input_patterns,
+            free=input_free,
+            argnums=input_argnums)
+
+    def __call__(self, *args, **kwargs):
+        return self._folded_fun(*args, **kwargs)
+
+
+
+class FlattenFunctionInputAndOutput():
+    """A convenience wrapper of `paragami.FlattenFunctionInput` and
+    `paragami.FlattenFunctionOutput`.
+
+    See also
+    -----------
+    paragami.FlattenFunctionInput
+    paragami.FlattenFunctionOutput
+    """
+    def __init__(self, original_fun,
+                 input_patterns, input_free, input_argnums,
+                 output_patterns, output_free, output_retnums=None):
+        self._flattened_output = \
+            FlattenFunctionOutput(
+                original_fun=original_fun,
+                patterns=output_patterns,
+                free=output_free,
+                retnums=output_retnums)
+        self._flattened_fun = FlattenFunctionInput(
+            original_fun=self._flattened_output,
             patterns=input_patterns,
             free=input_free,
             argnums=input_argnums)

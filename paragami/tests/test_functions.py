@@ -36,33 +36,81 @@ def assert_test_dict_equal(d1, d2):
     assert_array_almost_equal(d1['dict']['array2'], d2['dict']['array2'])
 
 
+# Test functions using get_test_pattern().
+def fold_to_num(param_folded):
+    return \
+        np.mean(param_folded['array'] ** 2) + \
+        np.mean(param_folded['mat'] ** 2)
+
+def flat_to_num(param_flat, free):
+    pattern = get_test_pattern()
+    param_folded = pattern.fold(param_flat, free=free)
+    return fold_to_num(param_folded)
+
+def num_to_fold(x):
+    pattern = get_test_pattern()
+    new_param = pattern.get_empty(valid=True)
+    new_param['array'] = param_folded['array'] + x
+    new_param['mat'] = x * param_folded['mat']
+    return new_param
+
+def num_to_flat(x, free):
+    pattern = get_test_pattern()
+    new_param = num_to_fold(x)
+    return pattern.flatten(new_param, free=free)
+
+
 class TestFlatteningAndFolding(unittest.TestCase):
-    def _test_flatten_function(self, original_fun, patterns, free, argnums,
-                               args, flat_args, kwargs):
+    def _test_transform_input(
+        self, original_fun, patterns, free, argnums, original_is_flat,
+        folded_args, flat_args, kwargs):
 
-        fun_flat = paragami.FlattenFunctionInput(
-            original_fun, patterns, free, argnums)
+        orig_args = flat_args if original_is_flat else folded_args
+        trans_args = folded_args if original_is_flat else flat_args
+        fun_trans = paragami.TransformFunctionInput(
+            original_fun, patterns, free,
+            original_is_flat, argnums)
 
-        # Sanity check that the flat_args were set correctly.
         argnums_array = np.atleast_1d(argnums)
         patterns_array = np.atleast_1d(patterns)
         free_array = np.atleast_1d(free)
-        for i in range(len(argnums_array)):
-            argnum = argnums_array[i]
-            pattern = patterns_array[i]
-            assert_array_almost_equal(
-                flat_args[argnum],
-                pattern.flatten(args[argnum], free=free_array[i]))
 
         # Check that the flattened and original function are the same.
         assert_array_almost_equal(
-            original_fun(*args, **kwargs),
-            fun_flat(*flat_args, **kwargs))
+            original_fun(*orig_args, **kwargs),
+            fun_trans(*trans_args, **kwargs))
 
         # Check that the string method works.
-        str(fun_flat)
+        str(fun_trans)
 
-    def test_flatten_function(self):
+    # def _test_flatten_function(self, original_fun, patterns, free, argnums,
+    #                            args, flat_args, kwargs):
+    #
+    #     fun_flat = paragami.FlattenFunctionInput(
+    #         original_fun, patterns, free, argnums)
+    #
+    #     # Sanity check that the flat_args were set correctly.
+    #     argnums_array = np.atleast_1d(argnums)
+    #     patterns_array = np.atleast_1d(patterns)
+    #     free_array = np.atleast_1d(free)
+    #     for i in range(len(argnums_array)):
+    #         argnum = argnums_array[i]
+    #         pattern = patterns_array[i]
+    #         assert_array_almost_equal(
+    #             flat_args[argnum],
+    #             pattern.flatten(args[argnum], free=free_array[i]))
+    #
+    #     # Check that the flattened and original function are the same.
+    #     assert_array_almost_equal(
+    #         original_fun(*args, **kwargs),
+    #         fun_flat(*flat_args, **kwargs))
+    #
+    #     # Check that the string method works.
+    #     str(fun_flat)
+
+
+
+    def test_transform_input(self):
         pattern = get_test_pattern()
         param_val = pattern.random()
         x = 3
@@ -84,88 +132,129 @@ class TestFlatteningAndFolding(unittest.TestCase):
                 np.mean(param_val['array'] ** 2) + \
                 np.mean(param_val['mat'] ** 2) + x**2 + y**2
 
-        for free in [False, True]:
-            param_val_flat = pattern.flatten(param_val, free=free)
-            self._test_flatten_function(
-                testfun1, pattern, free, 0,
-                (param_val, ), (param_val_flat, ), {})
+        ft = [False, True]
+        for free, origflat in itertools.product(ft, ft):
+            if origflat:
+                def tf1(x):
+                    return flat_to_num(x, free)
+            else:
+                tf1 = fold_to_num
+            param_flat = pattern.flatten(param_val, free=free)
 
-            self._test_flatten_function(
-                testfun2, pattern, free, 1,
-                (x, param_val, ), (x, param_val_flat, ), {'y': 5})
+            def tf2(x, val, y=5):
+                return tf1(val) + x ** 2 + y ** 2
 
-            self._test_flatten_function(
-                testfun3, pattern, free, 0,
-                (param_val, x, ), (param_val_flat, x), {'y': 5})
+            def tf3(val, x, y=5):
+                return tf1(val) + x ** 2 + y ** 2
+
+            self._test_transform_input(
+                original_fun=tf1, patterns=pattern, free=free,
+                argnums=0,
+                original_is_flat=origflat,
+                folded_args=(param_val, ),
+                flat_args=(param_flat, ),
+                kwargs={})
+            # self._test_flatten_function(
+            #     testfun1, pattern, free, 0,
+            #     (param_val, ), (param_val_flat, ), {})
+
+            # self._test_flatten_function(
+            #     testfun2, pattern, free, 1,
+            #     (x, param_val, ), (x, param_val_flat, ), {'y': 5})
+            self._test_transform_input(
+                original_fun=tf2, patterns=pattern, free=free,
+                argnums=1,
+                original_is_flat=origflat,
+                folded_args=(x, param_val, ),
+                flat_args=(x, param_flat, ),
+                kwargs={'y': 5})
+
+            # self._test_flatten_function(
+            #     testfun3, pattern, free, 0,
+            #     (param_val, x, ), (param_val_flat, x), {'y': 5})
+            self._test_transform_input(
+                original_fun=tf3, patterns=pattern, free=free,
+                argnums=0,
+                original_is_flat=origflat,
+                folded_args=(param_val, x, ),
+                flat_args=(param_flat, x, ),
+                kwargs={'y': 5})
 
             # Test once with arrays.
-            self._test_flatten_function(
-                testfun3, [pattern], [free], [0],
-                (param_val, x, ), (param_val_flat, x), {'y': 5})
-
-        # Test two-parameter flattening.
-        def testfun1(a, b):
-            return np.mean(a**2) + np.mean(b**2)
-
-        def testfun2(x, a, z, b, y=5):
-            return np.mean(a**2) + np.mean(b**2) + x**2 + y**2 + z**2
-
-        def testfun3(a, z, b, x, y=5):
-            return np.mean(a**2) + np.mean(b**2) + x**2 + y**2 + z**2
-
-        a = param_val['array']
-        b = param_val['mat']
-        ft_list = [False, True]
-        for (a_free, b_free) in itertools.product(ft_list, ft_list):
-            a_flat = pattern['array'].flatten(param_val['array'], free=a_free)
-            b_flat = pattern['mat'].flatten(param_val['mat'], free=b_free)
-
-            self._test_flatten_function(
-                testfun1, [pattern['array'], pattern['mat']],
-                [a_free, b_free], [0, 1],
-                (a, b, ), (a_flat, b_flat, ), {})
-
-            self._test_flatten_function(
-                testfun1, [pattern['mat'], pattern['array']],
-                [b_free, a_free], [1, 0],
-                (a, b, ), (a_flat, b_flat, ), {})
-
-            self._test_flatten_function(
-                testfun2, [pattern['array'], pattern['mat']],
-                [a_free, b_free], [1, 3],
-                (x, a, z, b, ), (x, a_flat, z, b_flat, ), {'y': 5})
-
-            self._test_flatten_function(
-                testfun2, [pattern['mat'], pattern['array']],
-                [b_free, a_free], [3, 1],
-                (x, a, z, b, ), (x, a_flat, z, b_flat, ), {'y': 5})
-
-            self._test_flatten_function(
-                testfun3, [pattern['array'], pattern['mat']],
-                [a_free, b_free], [0, 2],
-                (a, z, b, x, ), (a_flat, z, b_flat, x, ), {'y': 5})
-
-            self._test_flatten_function(
-                testfun3, [pattern['mat'], pattern['array']],
-                [b_free, a_free], [2, 0],
-                (a, z, b, x, ), (a_flat, z, b_flat, x, ), {'y': 5})
-
-        # Test bad inits
-        with self.assertRaises(ValueError):
-            fun_flat = paragami.FlattenFunctionInput(
-                testfun1, [[ pattern['mat'] ]], True, 0)
-
-        with self.assertRaises(ValueError):
-            fun_flat = paragami.FlattenFunctionInput(
-                testfun1, pattern['mat'], True, [[0]])
-
-        with self.assertRaises(ValueError):
-            fun_flat = paragami.FlattenFunctionInput(
-                testfun1, pattern['mat'], True, [0, 0])
-
-        with self.assertRaises(ValueError):
-            fun_flat = paragami.FlattenFunctionInput(
-                testfun1, pattern['mat'], True, [0, 1])
+            # self._test_flatten_function(
+            #     testfun3, [pattern], [free], [0],
+            #     (param_val, x, ), (param_val_flat, x), {'y': 5})
+            self._test_transform_input(
+                original_fun=tf3, patterns=[pattern], free=[free],
+                argnums=[0],
+                original_is_flat=origflat,
+                folded_args=(param_val, x, ),
+                flat_args=(param_flat, x, ),
+                kwargs={'y': 5})
+        #
+        # # Test two-parameter flattening.
+        # def testfun1(a, b):
+        #     return np.mean(a**2) + np.mean(b**2)
+        #
+        # def testfun2(x, a, z, b, y=5):
+        #     return np.mean(a**2) + np.mean(b**2) + x**2 + y**2 + z**2
+        #
+        # def testfun3(a, z, b, x, y=5):
+        #     return np.mean(a**2) + np.mean(b**2) + x**2 + y**2 + z**2
+        #
+        # a = param_val['array']
+        # b = param_val['mat']
+        # ft_list = [False, True]
+        # for (a_free, b_free) in itertools.product(ft_list, ft_list):
+        #     a_flat = pattern['array'].flatten(param_val['array'], free=a_free)
+        #     b_flat = pattern['mat'].flatten(param_val['mat'], free=b_free)
+        #
+        #     self._test_flatten_function(
+        #         testfun1, [pattern['array'], pattern['mat']],
+        #         [a_free, b_free], [0, 1],
+        #         (a, b, ), (a_flat, b_flat, ), {})
+        #
+        #     self._test_flatten_function(
+        #         testfun1, [pattern['mat'], pattern['array']],
+        #         [b_free, a_free], [1, 0],
+        #         (a, b, ), (a_flat, b_flat, ), {})
+        #
+        #     self._test_flatten_function(
+        #         testfun2, [pattern['array'], pattern['mat']],
+        #         [a_free, b_free], [1, 3],
+        #         (x, a, z, b, ), (x, a_flat, z, b_flat, ), {'y': 5})
+        #
+        #     self._test_flatten_function(
+        #         testfun2, [pattern['mat'], pattern['array']],
+        #         [b_free, a_free], [3, 1],
+        #         (x, a, z, b, ), (x, a_flat, z, b_flat, ), {'y': 5})
+        #
+        #     self._test_flatten_function(
+        #         testfun3, [pattern['array'], pattern['mat']],
+        #         [a_free, b_free], [0, 2],
+        #         (a, z, b, x, ), (a_flat, z, b_flat, x, ), {'y': 5})
+        #
+        #     self._test_flatten_function(
+        #         testfun3, [pattern['mat'], pattern['array']],
+        #         [b_free, a_free], [2, 0],
+        #         (a, z, b, x, ), (a_flat, z, b_flat, x, ), {'y': 5})
+        #
+        # # Test bad inits
+        # with self.assertRaises(ValueError):
+        #     fun_flat = paragami.FlattenFunctionInput(
+        #         testfun1, [[ pattern['mat'] ]], True, 0)
+        #
+        # with self.assertRaises(ValueError):
+        #     fun_flat = paragami.FlattenFunctionInput(
+        #         testfun1, pattern['mat'], True, [[0]])
+        #
+        # with self.assertRaises(ValueError):
+        #     fun_flat = paragami.FlattenFunctionInput(
+        #         testfun1, pattern['mat'], True, [0, 0])
+        #
+        # with self.assertRaises(ValueError):
+        #     fun_flat = paragami.FlattenFunctionInput(
+        #         testfun1, pattern['mat'], True, [0, 1])
 
 
     def test_fold_function_output(self):

@@ -7,10 +7,10 @@ from paragami.numeric_array_patterns import \
     NumericScalarPattern
 from paragami.psdmatrix_patterns import PSDSymmetricMatrixPattern
 from paragami.function_patterns import \
-    FlattenFunctionInput, \
-    FoldFunctionInput, \
-    FoldFunctionOutput, \
-    FoldFunctionInputAndOutput
+    FlattenFunctionInput, FoldFunctionInput, \
+    FlattenFunctionOutput, FoldFunctionOutput, \
+    FoldFunctionInputAndOutput, FlattenFunctionInputAndOutput, \
+    TransformFunctionInput, TransformFunctionOutput
 from paragami.simplex_patterns import SimplexArrayPattern
 from paragami.optimization_lib import \
     PreconditionedFunction, \
