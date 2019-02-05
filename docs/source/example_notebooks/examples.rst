@@ -7,4 +7,6 @@ Examples
 .. toctree::
    :maxdepth: 1
 
-   psd_matrix_extended_example.ipynb
+   flattening_and_folding_psd_matrix.ipynb
+   optimizing_psd_matrix.ipynb
+   flattening_and_folding_free_default.ipynb

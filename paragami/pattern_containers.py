@@ -302,20 +302,22 @@ class PatternDict(Pattern):
         if not valid:
             raise ValueError(msg)
 
-        flat_length = self.flat_length(free)
-        offset = 0
-        flat_val = np.full(flat_length, float('nan'))
+        # flat_length = self.flat_length(free)
+        # offset = 0
+        # flat_val = np.full(flat_length, float('nan'))
+        flat_vals = []
         for pattern_name, pattern in self.__pattern_dict.items():
             pattern_flat_length = pattern.flat_length(free)
             # Containers must not mix free and non-free values, so do not
             # use default values for free.
-            flat_val[offset:(offset + pattern_flat_length)] = \
+            # flat_val[offset:(offset + pattern_flat_length)] = \
+            flat_vals.append(
                 pattern.flatten(
                     folded_val[pattern_name],
                     free=free,
-                    validate_value=validate_value)
-            offset += pattern_flat_length
-        return flat_val
+                    validate_value=validate_value))
+            #offset += pattern_flat_length
+        return np.hstack(flat_vals)
 
     def _update_flat_length(self, free):
         # This is a little wasteful with the benefit of being less error-prone

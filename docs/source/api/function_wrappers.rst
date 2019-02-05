@@ -13,10 +13,16 @@ Flattening and folding the input and outputs of a function
 .. autoclass:: paragami.function_patterns.FoldFunctionInput
   :members:
 
+.. autoclass:: paragami.function_patterns.FlattenFunctionOutput
+  :members:
+
 .. autoclass:: paragami.function_patterns.FoldFunctionOutput
   :members:
 
 .. autoclass:: paragami.function_patterns.FoldFunctionInputAndOutput
+  :members:
+
+.. autoclass:: paragami.function_patterns.FlattenFunctionInputAndOutput
   :members:
 
 Preconditioning an objective function
