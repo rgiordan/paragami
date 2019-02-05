@@ -3,7 +3,7 @@ API
 ====
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 4
 
    parent_pattern
    numeric_patterns
