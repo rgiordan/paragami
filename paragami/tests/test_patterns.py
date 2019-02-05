@@ -100,13 +100,21 @@ def _test_pattern(testcase, pattern, valid_value,
 
     ###############################
     # Test folding and unfolding.
-    for free in [True, False]:
-        flat_val = pattern.flatten(valid_value, free=free)
-        testcase.assertEqual(len(flat_val), pattern.flat_length(free))
-        folded_val = pattern.fold(flat_val, free=free)
-        check_equal(valid_value, folded_val)
-        if hasattr(valid_value, 'shape'):
-            testcase.assertEqual(valid_value.shape, folded_val.shape)
+    for free in [True, False, None]:
+        for free_default in [True, False, None]:
+            pattern.free_default = free_default
+            if (free_default is None) and (free is None):
+                with testcase.assertRaises(ValueError):
+                    flat_val = pattern.flatten(valid_value, free=free)
+                with testcase.assertRaises(ValueError):
+                    folded_val = pattern.fold(flat_val, free=free)
+            else:
+                flat_val = pattern.flatten(valid_value, free=free)
+                testcase.assertEqual(len(flat_val), pattern.flat_length(free))
+                folded_val = pattern.fold(flat_val, free=free)
+                check_equal(valid_value, folded_val)
+                if hasattr(valid_value, 'shape'):
+                    testcase.assertEqual(valid_value.shape, folded_val.shape)
 
     ####################################
     # Test conversion to and from JSON.
@@ -186,8 +194,7 @@ class TestBasicPatterns(unittest.TestCase):
             valid_value = \
                 valid_value / np.sum(valid_value, axis=-1, keepdims=True)
 
-            pattern = paragami.SimplexArrayPattern(
-                simplex_size, array_shape)
+            pattern = paragami.SimplexArrayPattern(simplex_size, array_shape)
             _test_pattern(self, pattern, valid_value)
 
         test_shape_and_size(4, (2, 3))

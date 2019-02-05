@@ -67,19 +67,22 @@ class NumericArrayPattern(Pattern):
         specified bounds.
     """
     def __init__(self, shape,
-                 lb=-float("inf"), ub=float("inf"), default_validate=True):
+                 lb=-float("inf"), ub=float("inf"),
+                 default_validate=True, free_default=None):
         """
         Parameters
         -------------
-        shape: Tuple of int
+        shape: `tuple` of `int`
             The shape of the array.
-        lb: float
+        lb: `float`
             The (inclusive) lower bound for the entries of the array.
-        ub: float
+        ub: `float`
             The (inclusive) upper bound for the entries of the array.
-        default_validate: bool
+        default_validate: `bool`, optional
             Whether or not the array is checked by default to lie within the
             specified bounds.
+        free_default: `bool`, optional
+            Whether the pattern is free by default.
         """
         self.default_validate = default_validate
         self._shape = tuple(shape)
@@ -93,7 +96,8 @@ class NumericArrayPattern(Pattern):
 
         free_flat_length = flat_length = int(np.product(self._shape))
 
-        super().__init__(flat_length, free_flat_length)
+        super().__init__(flat_length, free_flat_length,
+                         free_default=free_default)
 
     def __str__(self):
         return 'NumericArrayPattern {} (lb={}, ub={})'.format(
@@ -105,7 +109,8 @@ class NumericArrayPattern(Pattern):
             'lb': self._lb,
             'ub': self._ub,
             'shape': self._shape,
-            'default_validate': self.default_validate}
+            'default_validate': self.default_validate,
+            'free_default': self.free_default }
 
     def empty(self, valid):
         if valid:
@@ -137,7 +142,8 @@ class NumericArrayPattern(Pattern):
                 return False, 'Value above upper bound.'
         return True, ''
 
-    def fold(self, flat_val, free, validate_value=None):
+    def fold(self, flat_val, free=None, validate_value=None):
+        free = self._free_with_default(free)
         flat_val = np.atleast_1d(flat_val)
 
         if flat_val.ndim != 1:
@@ -162,7 +168,8 @@ class NumericArrayPattern(Pattern):
                 raise ValueError(msg)
             return folded_val
 
-    def flatten(self, folded_val, free, validate_value=None):
+    def flatten(self, folded_val, free=None, validate_value=None):
+        free = self._free_with_default(free)
         folded_val = np.atleast_1d(folded_val)
         valid, msg = self.validate_folded(folded_val, validate_value)
         if not valid:
@@ -179,13 +186,15 @@ class NumericArrayPattern(Pattern):
     def bounds(self):
         return self._lb, self._ub
 
-    def flat_length(self, free):
+    def flat_length(self, free=None):
+        free = self._free_with_default(free)
         if free:
             return self._free_flat_length
         else:
             return self._flat_length
 
-    def flat_indices(self, folded_bool, free):
+    def flat_indices(self, folded_bool, free=None):
+        free = self._free_with_default(free)
         folded_bool = np.atleast_1d(folded_bool)
         shape_ok, err_msg = self._validate_folded_shape(folded_bool)
         if not shape_ok:
@@ -205,9 +214,10 @@ class NumericVectorPattern(NumericArrayPattern):
     NumericArrayPattern
     """
     def __init__(self, length, lb=-float("inf"), ub=float("inf"),
-                 default_validate=True):
+                 default_validate=True, free_default=None):
         super().__init__(shape=(length, ), lb=lb, ub=ub,
-                         default_validate=default_validate)
+                         default_validate=default_validate,
+                         free_default=free_default)
 
     def length(self):
         return self._shape[0]
@@ -218,7 +228,8 @@ class NumericVectorPattern(NumericArrayPattern):
             'length': self.length(),
             'lb': self._lb,
             'ub': self._ub,
-            'default_validate': self.default_validate}
+            'default_validate': self.default_validate,
+            'free_default': self.free_default }
 
 
 class NumericScalarPattern(NumericArrayPattern):
@@ -229,16 +240,19 @@ class NumericScalarPattern(NumericArrayPattern):
     NumericArrayPattern
     """
     def __init__(self, lb=-float("inf"), ub=float("inf"),
-                 default_validate=True):
+                 default_validate=True, free_default=None):
         super().__init__(shape=(1, ), lb=lb, ub=ub,
-                         default_validate=default_validate)
+                         default_validate=default_validate,
+                         free_default=free_default)
 
     def as_dict(self):
         return {
             'pattern': self.json_typename(),
             'lb': self._lb,
             'ub': self._ub,
-            'default_validate': self.default_validate}
+            'default_validate': self.default_validate,
+            'free_default': self.free_default}
+
 
 register_pattern_json(NumericVectorPattern)
 register_pattern_json(NumericScalarPattern)

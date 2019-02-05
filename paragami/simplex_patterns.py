@@ -69,18 +69,21 @@ class SimplexArrayPattern(Pattern):
     shape: tuple of ints
         The shape of the entire array including the simplex dimension.
     """
-    def __init__(self, simplex_size, array_shape, default_validate=True):
+    def __init__(self, simplex_size, array_shape, default_validate=True,
+                 free_default=None):
         """
         Parameters
         ------------
-        simplex_size: int
+        simplex_size: `int`
             The length of the simplexes.
-        array_shape: tuple of integers
+        array_shape: `tuple` of `int`
             The size of the array of simplexes (not including the simplexes
             themselves).
-        default_validate: bool
+        default_validate: `bool`, optional
             Whether or not to check for legal (i.e., positive and normalized)
             folded values by default.
+        free_default: `bool`, optional
+            The default value for free.
         """
         self.__simplex_size = int(simplex_size)
         if self.__simplex_size <= 1:
@@ -89,7 +92,9 @@ class SimplexArrayPattern(Pattern):
         self.__shape = self.__array_shape + (self.__simplex_size, )
         self.__free_shape = self.__array_shape + (self.__simplex_size - 1, )
         self.default_validate = default_validate
-        super().__init__(np.prod(self.__shape), np.prod(self.__free_shape))
+        super().__init__(np.prod(self.__shape),
+                         np.prod(self.__free_shape),
+                         free_default=free_default)
 
     def __str__(self):
         return 'SimplexArrayPattern {} of {}-d simplices'.format(
@@ -137,7 +142,8 @@ class SimplexArrayPattern(Pattern):
                 return False, 'The simplexes do not sum to one.'
         return True, ''
 
-    def fold(self, flat_val, free, validate_value=None):
+    def fold(self, flat_val, free=None, validate_value=None):
+        free = self._free_with_default(free)
         flat_size = self.flat_length(free)
         if len(flat_val) != flat_size:
             raise ValueError('flat_val is the wrong length.')
@@ -151,7 +157,8 @@ class SimplexArrayPattern(Pattern):
                 raise ValueError(msg)
             return folded_val
 
-    def flatten(self, folded_val, free, validate_value=None):
+    def flatten(self, folded_val, free=None, validate_value=None):
+        free = self._free_with_default(free)
         valid, msg = self.validate_folded(folded_val, validate_value)
         if not valid:
             raise ValueError(msg)
@@ -172,7 +179,8 @@ class SimplexArrayPattern(Pattern):
             array_shape=tuple(json_dict['array_shape']),
             default_validate=json_dict['default_validate'])
 
-    def flat_indices(self, folded_bool, free):
+    def flat_indices(self, folded_bool, free=None):
+        free = self._free_with_default(free)
         shape_ok, err_msg = self._validate_folded_shape(folded_bool)
         if not shape_ok:
             raise ValueError(err_msg)

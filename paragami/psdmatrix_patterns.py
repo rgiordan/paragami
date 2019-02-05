@@ -178,17 +178,20 @@ class PSDSymmetricMatrixPattern(Pattern):
         Whether or not the matrix is automatically checked for symmetry
         positive-definiteness, and the diagonal lower bound.
     """
-    def __init__(self, size, diag_lb=0.0, default_validate=True):
+    def __init__(self, size, diag_lb=0.0, default_validate=True,
+                 free_default=None):
         """
         Parameters
         --------------
-        size: int
+        size: `int`
             The length of one side of the square matrix.
-        diag_lb: float
+        diag_lb: `float`
             A lower bound for the diagonal entries.  Must be >= 0.
-        default_validate: bool
+        default_validate: `bool`, optional
             Whether or not to check for legal (i.e., symmetric
             positive-definite) folded values by default.
+        free_default: `bool`, optional
+            Default setting for free.
         """
         self.__size = int(size)
         self.__diag_lb = diag_lb
@@ -197,7 +200,8 @@ class PSDSymmetricMatrixPattern(Pattern):
             raise ValueError(
                 'The diagonal lower bound diag_lb must be >-= 0.')
 
-        super().__init__(self.__size ** 2, int(size * (size + 1) / 2))
+        super().__init__(self.__size ** 2, int(size * (size + 1) / 2),
+                         free_default=free_default)
 
     def __str__(self):
         return 'PDMatrix {}x{} (diag_lb = {})'.format(
@@ -284,7 +288,8 @@ class PSDSymmetricMatrixPattern(Pattern):
 
         return True, ''
 
-    def flatten(self, folded_val, free, validate_value=None):
+    def flatten(self, folded_val, free=None, validate_value=None):
+        free = self._free_with_default(free)
         valid, msg = self.validate_folded(folded_val, validate_value)
         if not valid:
             raise ValueError(msg)
@@ -293,7 +298,8 @@ class PSDSymmetricMatrixPattern(Pattern):
         else:
             return folded_val.flatten()
 
-    def fold(self, flat_val, free, validate_value=None):
+    def fold(self, flat_val, free=None, validate_value=None):
+        free = self._free_with_default(free)
         flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
@@ -309,7 +315,8 @@ class PSDSymmetricMatrixPattern(Pattern):
                 raise ValueError(msg)
             return folded_val
 
-    def flat_indices(self, folded_bool, free):
+    def flat_indices(self, folded_bool, free=None):
+        free = self._free_with_default(free)
         shape_ok, err_msg = self._validate_folded_shape(folded_bool)
         if not shape_ok:
             raise ValueError(err_msg)

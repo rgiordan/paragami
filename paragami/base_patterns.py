@@ -9,7 +9,7 @@ class Pattern(ABC):
 
     See derived classes for examples.
     """
-    def __init__(self, flat_length, free_flat_length):
+    def __init__(self, flat_length, free_flat_length, free_default=None):
         """
         Parameters
         -----------
@@ -23,6 +23,8 @@ class Pattern(ABC):
 
         self._freeing_jacobian = autograd.jacobian(self._freeing_transform)
         self._unfreeing_jacobian = autograd.jacobian(self._unfreeing_transform)
+
+        self.free_default = free_default
 
     # Abstract methods that must be implemented by subclasses.
 
@@ -45,16 +47,17 @@ class Pattern(ABC):
         pass
 
     @abstractmethod
-    def fold(self, flat_val, free, validate_value=None):
+    def fold(self, flat_val, free=None, validate_value=None):
         """Fold a flat value into a parameter.
 
         Parameters
         -----------
         flat_val : `numpy.ndarray`, (N, )
             The flattened value.
-        free : `bool`
+        free : `bool`, optional.
             Whether or not the flattened value is a free parameterization.
-        validate_value : `bool`
+            If not specified, the attribute ``free_default`` is used.
+        validate_value : `bool`, optional.
             Whether to check that the folded value is valid.  If ``None``,
             the pattern will employ a default behavior.
 
@@ -66,16 +69,17 @@ class Pattern(ABC):
         pass
 
     @abstractmethod
-    def flatten(self, folded_val, free, validate_value=None):
+    def flatten(self, folded_val, free=None, validate_value=None):
         """Flatten a folded value into a flat vector.
 
         Parameters
         -----------
         folded_val : Folded value
             The parameter in its original folded shape.
-        free : `bool`
+        free : `bool`, optional
             Whether or not the flattened value is to be in a free
-            parameterization.
+            parameterization.  If not specified, the attribute
+            ``free_default`` is used.
         validate_value : `bool`
             Whether to check that the folded value is valid.  If ``None``,
             the pattern will employ a default behavior.
@@ -124,7 +128,7 @@ class Pattern(ABC):
         pass
 
     @abstractmethod
-    def flat_indices(self, folded_bool, free):
+    def flat_indices(self, folded_bool, free=None):
         """Get which flattened indices correspond to which folded values.
 
         Parameters
@@ -135,7 +139,8 @@ class Pattern(ABC):
             the flat indices.
         free : `bool`
             Whether or not the flattened value is to be in a free
-            parameterization.
+            parameterization.  If not specified, the attribute
+            ``free_default`` is used.
 
         Returns
         --------
@@ -148,6 +153,20 @@ class Pattern(ABC):
 
     ##################################################
     # Methods that are standard for all patterns.
+
+    def _free_with_default(self, free):
+        """Check whether to use ``free_default`` and return the appropriate
+        boolean.
+        """
+        if free is not None:
+            return free
+        else:
+            if self.free_default is None:
+                raise ValueError(
+                    ('If ``free_default`` is ``None``, ``free`` ' +
+                    'must be specified.'))
+            else:
+                return self.free_default
 
     def __eq__(self, other):
         if type(other) != type(self):
@@ -168,20 +187,21 @@ class Pattern(ABC):
         """
         return self.flatten(self.fold(free_flat_val, free=True), free=False)
 
-    def flat_length(self, free):
+    def flat_length(self, free=None):
         """Return the length of the pattern's flattened value.
 
         Parameters
         -----------
-        free : `bool`
+        free : `bool`, optional
             Whether or not the flattened value is to be in a free
-            parameterization.
+            parameterization.  If not specified, ``free_default`` is used.
 
         Returns
         ---------
         length : `int`
             The length of the pattern's flattened value.
         """
+        free = self._free_with_default(free)
         if free:
             return self._free_flat_length
         else:
