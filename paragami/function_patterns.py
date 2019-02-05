@@ -225,10 +225,9 @@ class TransformFunctionOutput:
                             self._fun.__name__, self._retnums))
                 raise ValueError(err_msg)
             if self._original_is_flat:
-                return self._patterns[0].fold(rets, free=self.free[i])
+                return self._patterns[0].fold(rets, free=self.free[0])
             else:
-                return \
-                    self._patterns[i].flatten(rets, free=self.free[i])
+                return self._patterns[0].flatten(rets, free=self.free[0])
 
         # rets is a tuple containing multiple return values.
         new_rets = ()
