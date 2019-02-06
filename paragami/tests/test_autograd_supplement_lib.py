@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-
 import autograd
 import autograd.numpy as np
 import autograd.numpy.random as npr
 from autograd.test_util import check_grads
 from paragami import autograd_supplement_lib
-import scipy as sp
+import autograd.scipy as sp
+import scipy as osp
 import unittest
 
 npr.seed(1)
@@ -13,6 +13,7 @@ npr.seed(1)
 def rand_psd(D):
     mat = npr.randn(D, D)
     return np.dot(mat, mat.T)
+
 
 
 class TestAutogradSupplement(unittest.TestCase):
@@ -95,12 +96,22 @@ class TestAutogradSupplement(unittest.TestCase):
         fun = lambda A: np.linalg.solve(A, B)
         check_grads(fun)(A)
 
+    def test_gammaln_functions(self):
+        for x in np.linspace(2.5, 3.5, 10):
+            check_grads(sp.special.digamma)(x)
+            check_grads(sp.special.psi)(x)
+            check_grads(sp.special.gamma)(x)
+            check_grads(sp.special.gammaln)(x)
+            check_grads(sp.special.rgamma)(x)
+            for n in range(4):
+                check_grads(lambda x: sp.special.polygamma(int(n), x))(x)
+
 
 class TestSparseMatrixMultiplication(unittest.TestCase):
     def test_get_sparse_product(self):
         z_dense = np.random.random((10, 2))
-        z_mat = sp.sparse.coo_matrix(z_dense)
-        self.assertTrue(sp.sparse.issparse(z_mat))
+        z_mat = osp.sparse.coo_matrix(z_dense)
+        self.assertTrue(osp.sparse.issparse(z_mat))
 
         mu = np.random.random(z_mat.shape[1])
 

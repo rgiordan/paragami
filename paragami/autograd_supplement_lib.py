@@ -12,6 +12,23 @@ from autograd.core import primitive, defvjp, defjvp
 from autograd.numpy.linalg import slogdet, solve, inv
 from functools import partial
 
+
+
+defjvp(sp.special.gammasgn, None)
+defjvp(sp.special.polygamma,
+    None, lambda g, ans, n, x: g * sp.special.polygamma(n + 1, x))
+defjvp(sp.special.psi,       lambda g, ans, x: g * sp.special.polygamma(1, x))
+defjvp(sp.special.digamma,   lambda g, ans, x: g * sp.special.polygamma(1, x))
+defjvp(sp.special.gamma,     lambda g, ans, x: g * ans * sp.special.psi(x))
+defjvp(sp.special.gammaln,   lambda g, ans, x: g * sp.special.psi(x))
+defjvp(sp.special.rgamma,
+    lambda g, ans, x: g * sp.special.psi(x) / -sp.special.gamma(x))
+# defjvp(sp.special.multigammaln,
+#        lambda g, ans, a, d:
+#         g * np.sum(sp.special.digamma(np.expand_dims(a, -1) - np.arange(d)/2.), -1),
+#        None)
+
+
 # transpose by swapping last two dimensions
 def T(x): return np.swapaxes(x, -1, -2)
 
