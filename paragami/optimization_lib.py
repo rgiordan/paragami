@@ -48,6 +48,42 @@ def _get_sym_matrix_inv_sqrt(mat, ev_min=None, ev_max=None):
            np.array(mat_corrected)
 
 
+
+def truncate_eigenvalues(evals, ev_min=None, ev_max=None):
+    eig_val_trunc = copy.deepcopy(evals)
+    if not ev_min is None:
+        if not np.isreal(ev_min):
+            raise ValueError('ev_min must be real-valued.')
+        ev_min = float(ev_min)
+        eig_val_trunc[np.real(eig_val_trunc) <= ev_min] = ev_min
+    if not ev_max is None:
+        if not np.isreal(ev_max):
+            raise ValueError('ev_max must be real-valued.')
+        ev_max = float(ev_max)
+        eig_val_trunc[np.real(eig_val_trunc) >= ev_max] = ev_max
+    return eig_val_trunc
+
+
+def transform_eigenspace(eigvecs, eigvals, transform_function):
+    """Transform the eigenspace with ``transform_function``.
+    Directions not in eigvecs are left unchanged.
+    """
+
+    assert eigvecs.ndim == 2
+    assert eigvals.ndim == 1
+
+    new_eigvals = transform_function(eigvals)
+
+    def a_mult(vec):
+        vec_loadings = eigvecs.T @ vec
+        # Equivalent to the more transparent:
+        # vec_perp = vec - eigvecs @ vec_loadings
+        # return vec_perp + eigvecs @ (new_eigvals * vec_loadings)
+        return vec + eigvecs @ ((new_eigvals - 1) * vec_loadings)
+
+    return a_mult
+
+
 class PreconditionedFunction():
     """
     Get a function whose input has been preconditioned.

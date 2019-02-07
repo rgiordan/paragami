@@ -11,8 +11,63 @@ import scipy as sp
 from test_utils import QuadraticModel, captured_output
 import unittest
 
+from paragami.optimization_lib import transform_eigenspace
+from paragami.optimization_lib import truncate_eigenvalues
 
 class TestPreconditionedFunction(unittest.TestCase):
+    def test_transform_eigenspace(self):
+        dim = 6
+        a = np.random.random((dim, dim))
+        a = 0.5 * (a.T + a) + np.eye(dim)
+        eigvals, eigvecs = np.linalg.eigh(a)
+        vec = np.random.random(dim)
+
+        # Test basic transforms.
+        a_mult = transform_eigenspace(eigvecs, eigvals, lambda x: x)
+        assert_array_almost_equal(a @ vec, a_mult(vec))
+
+        a_inv_mult = transform_eigenspace(eigvecs, eigvals, lambda x: 1 / x)
+        assert_array_almost_equal(np.linalg.solve(a, vec), a_inv_mult(vec))
+
+        a_sqrt_mult = transform_eigenspace(eigvecs, eigvals, np.sqrt)
+
+        for i in range(dim):
+            vec2 = np.zeros(dim)
+            vec2[i] = 1
+            assert_array_almost_equal(
+                vec2.T @ a @ vec, a_sqrt_mult(vec2).T @ a_sqrt_mult(vec))
+
+        # Test a transform with an incomplete eigenspace.
+        trans_ind = 2
+        a_trans = transform_eigenspace(
+            eigvecs[:, 0:trans_ind], eigvals[0:trans_ind], lambda x: 10)
+        for i in range(trans_ind):
+            vec = eigvecs[:, i]
+            assert_array_almost_equal(10 * vec, a_trans(vec))
+
+        for i in range(trans_ind + 1, dim):
+            vec = eigvecs[:, i]
+            assert_array_almost_equal(vec, a_trans(vec))
+
+        # Test eigenvalue truncation.
+        eigvals = np.linspace(0, dim, dim) + 1
+        a2 = eigvecs @ np.diag(eigvals) @ eigvecs.T
+        ev_min = 2.5
+        ev_max = 5.5
+        a_trans = transform_eigenspace(
+            eigvecs, eigvals,
+            lambda x: truncate_eigenvalues(x, ev_min=ev_min, ev_max=ev_max))
+
+        for i in range(dim):
+            vec = eigvecs[:, i]
+            if eigvals[i] <= ev_min:
+                assert_array_almost_equal(ev_min * vec, a_trans(vec))
+            elif eigvals[i] >= ev_max:
+                assert_array_almost_equal(ev_max * vec, a_trans(vec))
+            else:
+                assert_array_almost_equal(a2 @ vec, a_trans(vec))
+
+
     def test_preconditioned_function(self):
         model = QuadraticModel(dim=3)
 
