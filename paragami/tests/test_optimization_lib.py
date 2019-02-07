@@ -42,6 +42,9 @@ class TestPreconditionedFunction(unittest.TestCase):
             assert_array_almost_equal(
                 a @ f_hessian(theta) @ a.T, f_c_hessian(a_inv @ theta))
 
+        # Check that the default is the identity.
+        test_f_c_values(np.eye(dim))
+
         # Test with an ordinary matrix.
         a = 2 * np.eye(dim) + np.full((dim, dim), 0.1)
         f_c.set_preconditioner_matrix(a)
