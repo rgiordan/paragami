@@ -217,8 +217,6 @@ class TestPreconditionedFunction(unittest.TestCase):
         dim = mat.shape[0]
         id_mat = np.eye(mat.shape[0])
         eig_vals = np.linalg.eigvals(mat)
-        print('mat', mat)
-        print('orig evs', eig_vals)
         ev_min = np.min(eig_vals)
         ev_max = np.max(eig_vals)
         ev0 = np.real(ev_min + (ev_max - ev_min) / 3)
@@ -226,7 +224,6 @@ class TestPreconditionedFunction(unittest.TestCase):
 
         for test_ev_min in [None, ev0]:
             for test_ev_max in [None, ev1]:
-                print('Test ev bounds ', test_ev_min, test_ev_max)
                 h_sqrt_mult, h_inv_sqrt_mult = \
                     paragami.optimization_lib._get_sym_matrix_inv_sqrt_funcs(
                         mat, ev_min=test_ev_min, ev_max=test_ev_max)
@@ -235,12 +232,10 @@ class TestPreconditionedFunction(unittest.TestCase):
 
                 assert_array_almost_equal(id_mat, h_inv_sqrt @ h_sqrt)
                 h = h_sqrt @ h_sqrt.T
-                print('h', h)
                 assert_array_almost_equal(
                     id_mat, h_inv_sqrt @ h @ h_inv_sqrt.T)
                 eig_vals_test = np.linalg.eigvals(h)
                 eig_vals_test = np.array([np.real(v) for v in eig_vals_test])
-                print('test evs', eig_vals_test)
                 if test_ev_min is not None:
                     self.assertTrue(np.min(eig_vals_test) >=
                                     test_ev_min - 1e-8)

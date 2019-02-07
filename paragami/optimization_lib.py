@@ -107,8 +107,6 @@ def _get_sym_matrix_inv_sqrt_funcs(mat, ev_min=None, ev_max=None):
     eig_val, eig_vec = np.linalg.eigh(mat_sym)
 
     eig_val_trunc = truncate_eigenvalues(eig_val, ev_min=ev_min, ev_max=ev_max)
-    print(' in func, mat', mat)
-    print('old, new ', eig_val, eig_val_trunc)
 
     mult_mat_sqrt = \
         transform_eigenspace(eig_vec, eig_val_trunc, np.sqrt)
