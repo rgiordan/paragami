@@ -11,45 +11,22 @@ from .autograd_supplement_lib import get_sparse_product
 ###############################
 
 
-def _get_sym_matrix_inv_sqrt(mat, ev_min=None, ev_max=None):
-    """
-    Get the inverse square root of a symmetric matrix with thresholds for the
-    eigenvalues.
-
-    This is particularly useful for calculating preconditioners.
-    """
-    mat = np.atleast_2d(mat)
-
-    # Symmetrize for numerical stability.
-    mat_sym = 0.5 * (mat + mat.T)
-    eig_val, eig_vec = np.linalg.eigh(mat_sym)
-
-    if not ev_min is None:
-        if not np.isreal(ev_min):
-            raise ValueError('ev_min must be real-valued.')
-        eig_val[np.real(eig_val) <= ev_min] = ev_min
-    if not ev_max is None:
-        if not np.isreal(ev_max):
-            raise ValueError('ev_max must be real-valued.')
-        eig_val[np.real(eig_val) >= ev_max] = ev_max
-
-    mat_corrected = np.matmul(eig_vec,
-                               np.matmul(np.diag(eig_val), eig_vec.T))
-    mat_sqrt = \
-        np.matmul(eig_vec,
-                  np.matmul(np.diag(np.sqrt(eig_val)), eig_vec.T))
-
-    mat_inv_sqrt = \
-        np.matmul(eig_vec,
-                  np.matmul(np.diag(1 / np.sqrt(eig_val)), eig_vec.T))
-
-    return np.array(mat_inv_sqrt), \
-           np.array(mat_sqrt), \
-           np.array(mat_corrected)
-
-
-
 def truncate_eigenvalues(evals, ev_min=None, ev_max=None):
+    """Truncate the vector ``evals`` so that values lower than
+    ``ev_min`` are replaced with ``ev_min`` and values larger than
+    ``ev_max`` are replaced with ``ev_max``.
+
+    Parameters
+    ------------
+    evals: `np.ndarray` (N, )
+    ev_min: `float`
+    ev_max: `float`
+
+    Returns
+    ---------
+    eig_val_trunc
+        A truncated version of ``evals``.
+    """
     eig_val_trunc = copy.deepcopy(evals)
     if not ev_min is None:
         if not np.isreal(ev_min):
@@ -65,12 +42,42 @@ def truncate_eigenvalues(evals, ev_min=None, ev_max=None):
 
 
 def transform_eigenspace(eigvecs, eigvals, transform_function):
-    """Transform the eigenspace with ``transform_function``.
-    Directions not in eigvecs are left unchanged.
+    """Return a function that multiplies a vector by a matrix with
+    transformed eigenvalues.
+
+    Let ``eigvecs`` and ``eigvals`` be selected eigenvectors and
+    eigenvalues.  The columns of ``eigvecs``
+    are the eigenvectors associated with the corresponding entry of
+    ``eigvals``.  A function, ``a_mult``, is returned.  This function
+    is the identity for all directions orthogonal to ``eigvecs``,
+    and has eigenvalues ``transform_function(eigvals)`` in the
+    space spanned by ``eigvecs``.
+
+    Parameters
+    ------------
+    eigvecs: `numpy.ndarray` (N, K)
+        The eigenvectors.
+    eigvals: `numpy.ndarray` (K,)
+        The eigenvalues
+    transform_function: callable
+        A function from ``eigvals`` to a vector of the same length.
+        The output of ``transform_function(eigvals)`` will be the new
+        eigenvalues.
+
+    Returns
+    -----------
+    a_mult: callable
+        A linear function from a length-``K`` numpy vector to another
+        length-``K`` vector with the above-described eigendecomposition.
     """
 
-    assert eigvecs.ndim == 2
-    assert eigvals.ndim == 1
+    if eigvecs.ndim != 2:
+        raise ValueError('``eigvecs`` must be 2d.')
+    if eigvals.ndim != 1:
+        raise ValueError('``eigvals`` must be 1d.')
+    if eigvecs.shape[1] != len(eigvals):
+        raise ValueError(
+            'The columns of ``eigvecs`` and length of ``eigvals`` must match.')
 
     new_eigvals = transform_function(eigvals)
 
@@ -82,6 +89,30 @@ def transform_eigenspace(eigvecs, eigvals, transform_function):
         return vec + eigvecs @ ((new_eigvals - 1) * vec_loadings)
 
     return a_mult
+
+
+def _get_sym_matrix_inv_sqrt_funcs(mat, ev_min=None, ev_max=None):
+    """
+    Get the inverse square root of a symmetric matrix with thresholds for the
+    eigenvalues.
+
+    This is useful for calculating preconditioners.
+    """
+    mat = np.atleast_2d(mat)
+
+    # Symmetrize for numerical stability.
+    mat_sym = 0.5 * (mat + mat.T)
+    eig_val, eig_vec = np.linalg.eigh(mat_sym)
+
+    eig_val_trunc = truncate_eigenvalues(eig_val, ev_min=ev_min, ev_max=ev_max)
+
+    mult_mat_sqrt = \
+        transform_eigenspace(eig_vec, eig_val_trunc, np.sqrt)
+
+    mult_mat_inv_sqrt = \
+        transform_eigenspace(eig_vec, eig_val_trunc, lambda x: 1. / np.sqrt(x))
+
+    return mult_mat_sqrt, mult_mat_inv_sqrt
 
 
 class PreconditionedFunction():
@@ -217,11 +248,13 @@ class PreconditionedFunction():
             get_original_fun_hessian = autograd.hessian(self._original_fun)
             hessian = get_original_fun_hessian(x)
 
-        hess_inv_sqrt, hess_sqrt, hess_corrected = \
-            _get_sym_matrix_inv_sqrt(hessian, ev_min, ev_max)
-        self.set_preconditioner_matrix(hess_inv_sqrt, hess_sqrt)
-
-        return hess_corrected
+        mult_hess_sqrt, mult_hess_inv_sqrt = \
+            _get_sym_matrix_inv_sqrt_funcs(
+                hessian, ev_min=ev_min, ev_max=ev_max)
+        self.set_preconditioner_functions(mult_hess_inv_sqrt, mult_hess_sqrt)
+        # hess_inv_sqrt, hess_sqrt, hess_corrected = \
+        #     _get_sym_matrix_inv_sqrt(hessian, ev_min, ev_max)
+        # self.set_preconditioner_matrix(hess_inv_sqrt, hess_sqrt)
 
     def precondition(self, x):
         """

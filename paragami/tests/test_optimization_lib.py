@@ -14,7 +14,28 @@ import unittest
 from paragami.optimization_lib import transform_eigenspace
 from paragami.optimization_lib import truncate_eigenvalues
 
+
+# For testing, it is useful to get an actual matrix out of
+# a multiplication function.
+def get_matrix_from_operator(mult_fun, dim):
+    mat = []
+    for i in range(dim):
+        vec = np.zeros(dim)
+        vec[i] = 1.0
+        mat.append(mult_fun(vec))
+    return np.vstack(mat).T
+
+
 class TestPreconditionedFunction(unittest.TestCase):
+    def test_get_matrix_from_operator(self):
+        dim = 3
+        a = np.random.random((dim, dim))
+        def a_mult(vec):
+            return a @ vec
+
+        a_test = get_matrix_from_operator(a_mult, dim)
+        assert_array_almost_equal(a, a_test)
+
     def test_transform_eigenspace(self):
         dim = 6
         a = np.random.random((dim, dim))
@@ -127,14 +148,18 @@ class TestPreconditionedFunction(unittest.TestCase):
 
         for ev_min in [None, 0.01]:
             for ev_max in [None, 10.0]:
-                h_inv_sqrt, h_sqrt, h = \
-                    paragami.optimization_lib._get_sym_matrix_inv_sqrt(
+                h_sqrt_mult, h_inv_sqrt_mult = \
+                    paragami.optimization_lib._get_sym_matrix_inv_sqrt_funcs(
                         hess, ev_min=ev_min, ev_max=ev_max)
 
+                h_inv_sqrt = get_matrix_from_operator(
+                    h_inv_sqrt_mult, len(theta))
                 f_c.set_preconditioner_with_hessian(
                     x=theta, ev_min=ev_min, ev_max=ev_max)
                 test_f_c_values(h_inv_sqrt)
 
+                h_sqrt = get_matrix_from_operator(h_sqrt_mult, len(theta))
+                h = h_sqrt.T @ h_sqrt
                 f_c.set_preconditioner_with_hessian(
                     hessian=h, ev_min=ev_min, ev_max=ev_max)
                 test_f_c_values(h_inv_sqrt)
@@ -170,6 +195,7 @@ class TestPreconditionedFunction(unittest.TestCase):
 
 
     def _test_matrix_sqrt(self, mat):
+        dim = mat.shape[0]
         id_mat = np.eye(mat.shape[0])
         eig_vals = np.linalg.eigvals(mat)
         ev_min = np.min(eig_vals)
@@ -179,13 +205,17 @@ class TestPreconditionedFunction(unittest.TestCase):
 
         for test_ev_min in [None, ev0]:
             for test_ev_max in [None, ev1]:
-                h_inv_sqrt, h_sqrt, h = \
-                    paragami.optimization_lib._get_sym_matrix_inv_sqrt(
+                h_inv_sqrt_mult, h_sqrt_mult = \
+                    paragami.optimization_lib._get_sym_matrix_inv_sqrt_funcs(
                         mat, test_ev_min, test_ev_max)
+                h_inv_sqrt = get_matrix_from_operator(h_inv_sqrt_mult, dim)
+                h_sqrt = get_matrix_from_operator(h_sqrt_mult, dim)
                 assert_array_almost_equal(id_mat, h_inv_sqrt @ h_sqrt)
+                h = h_sqrt.T @ h_sqrt
                 assert_array_almost_equal(
                     id_mat, h_inv_sqrt @ h @ h_inv_sqrt.T)
                 eig_vals_test = np.linalg.eigvals(h)
+                eig_vals_test = np.array([np.real(v) for v in eig_vals_test])
                 if test_ev_min is not None:
                     self.assertTrue(np.min(eig_vals_test) >=
                                     test_ev_min - 1e-8)
