@@ -50,6 +50,15 @@ class TestPreconditionedFunction(unittest.TestCase):
         f_c.set_preconditioner_matrix(a, np.linalg.inv(a))
         test_f_c_values(a)
 
+        a_sp = sp.sparse.csc_matrix(a)
+        a_inv = np.linalg.inv(a)
+        a_inv_sp = sp.sparse.csc_matrix(a_inv)
+        f_c.set_preconditioner_matrix(a_sp)
+        test_f_c_values(a)
+
+        f_c.set_preconditioner_matrix(a_sp, a_inv_sp)
+        test_f_c_values(a)
+
         # Test with an incorrect inverse.
         f_c.set_preconditioner_matrix(a, np.linalg.inv(a) + 2)
         with self.assertRaises(ValueError):

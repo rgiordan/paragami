@@ -4,6 +4,8 @@ import copy
 import scipy as osp
 import warnings
 
+from .autograd_supplement_lib import get_sparse_product
+
 ###############################
 # Preconditioned objectives.  #
 ###############################
@@ -98,23 +100,28 @@ class PreconditionedFunction():
     def set_preconditioner_matrix(self, a, a_inv=None):
         """Set the preconditioner with a matrix.
         """
-        def a_times(vec):
-            return a @ vec
-
-        if a_inv is None:
-            # On one hand, this is a numerically instable way to solve a linear
-            # system.  On the other hand, the inverse is readily available from
-            # the eigenvalue decomposition and the Cholesky factorization
-            # is not AFAIK.
-            if osp.sparse.issparse(a):
+        if osp.sparse.issparse(a):
+            if a_inv is None:
                 a_inv = osp.sparse.linalg.inv(a)
-            else:
+            a_times, _ = get_sparse_product(a)
+            a_inv_times, _ = get_sparse_product(a_inv)
+            self.set_preconditioner_functions(a_times, a_inv_times)
+
+        else:
+            def a_times(vec):
+                return a @ vec
+
+            if a_inv is None:
+                # On one hand, this is a numerically instable way to solve a
+                # linear system.  On the other hand, the inverse is
+                # readily available from the eigenvalue decomposition
+                # and the Cholesky factorization is not AFAIK.
                 a_inv = np.linalg.inv(a)
 
-        def a_inv_times(vec):
-            return a_inv @ vec
+            def a_inv_times(vec):
+                return a_inv @ vec
 
-        self.set_preconditioner_functions(a_times, a_inv_times)
+            self.set_preconditioner_functions(a_times, a_inv_times)
 
     def set_preconditioner_functions(self, a_times, a_inv_times):
         """Set the preconditioner with a functions that perform matrix
