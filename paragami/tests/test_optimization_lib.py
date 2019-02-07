@@ -29,12 +29,9 @@ class TestPreconditionedFunction(unittest.TestCase):
         dim = model.theta_pattern.shape()[0]
         theta = np.arange(0, dim) / 5.0
 
-        # Raise an error if we have not set the preconditioner.
-        with self.assertRaises(ValueError):
-            f_c(theta)
-
         def test_f_c_values(a):
             a_inv = np.linalg.inv(a)
+            f_c.check_preconditioner(theta)
             assert_array_almost_equal(
                 a_inv @ theta, f_c.precondition(theta))
             assert_array_almost_equal(
@@ -44,16 +41,19 @@ class TestPreconditionedFunction(unittest.TestCase):
                 a @ f_grad(theta), f_c_grad(a_inv @ theta))
             assert_array_almost_equal(
                 a @ f_hessian(theta) @ a.T, f_c_hessian(a_inv @ theta))
-            assert_array_almost_equal(a, f_c.get_preconditioner())
-            assert_array_almost_equal(a_inv, f_c.get_preconditioner_inv())
 
         # Test with an ordinary matrix.
         a = 2 * np.eye(dim) + np.full((dim, dim), 0.1)
-        f_c.set_preconditioner(a)
+        f_c.set_preconditioner_matrix(a)
         test_f_c_values(a)
 
-        f_c.set_preconditioner(a, np.linalg.inv(a))
+        f_c.set_preconditioner_matrix(a, np.linalg.inv(a))
         test_f_c_values(a)
+
+        # Test with an incorrect inverse.
+        f_c.set_preconditioner_matrix(a, np.linalg.inv(a) + 2)
+        with self.assertRaises(ValueError):
+            f_c.check_preconditioner(theta)
 
         # Test with the Hessian.
         hess = f_hessian(theta)
@@ -100,9 +100,6 @@ class TestPreconditionedFunction(unittest.TestCase):
         theta_c_opt = opt_result_c.x
         f_c.set_preconditioner_with_hessian(x=theta_opt)
         assert_array_almost_equal(np.eye(dim), f_c_hessian(theta_c_opt))
-
-
-
 
 
     def _test_matrix_sqrt(self, mat):
