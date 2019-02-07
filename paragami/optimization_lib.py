@@ -19,8 +19,10 @@ def truncate_eigenvalues(evals, ev_min=None, ev_max=None):
     Parameters
     ------------
     evals: `np.ndarray` (N, )
-    ev_min: `float`
-    ev_max: `float`
+    ev_min: `float`, optional
+        If ``None``, no lower truncation is done.
+    ev_max: `float`, optional
+        If ``None``, no upper truncation is done.
 
     Returns
     ---------

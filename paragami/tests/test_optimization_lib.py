@@ -36,6 +36,25 @@ class TestPreconditionedFunction(unittest.TestCase):
         a_test = get_matrix_from_operator(a_mult, dim)
         assert_array_almost_equal(a, a_test)
 
+    def test_truncate_eigenvalues(self):
+        dim = 10
+        evs = np.linspace(1.5, 10.5, dim)
+
+        evs_trunc = truncate_eigenvalues(evs, None, None)
+        assert_array_almost_equal(evs, evs_trunc)
+
+        evs_trunc = truncate_eigenvalues(evs, 2.5, None)
+        trunc = evs <= 2.5
+        not_trunc = evs > 2.5
+        assert_array_almost_equal(2.5, evs_trunc[trunc])
+        assert_array_almost_equal(evs[not_trunc], evs_trunc[not_trunc])
+
+        evs_trunc = truncate_eigenvalues(evs, None, 5.5)
+        trunc = evs >= 5.5
+        not_trunc = evs < 5.5
+        assert_array_almost_equal(5.5, evs_trunc[trunc])
+        assert_array_almost_equal(evs[not_trunc], evs_trunc[not_trunc])
+
     def test_transform_eigenspace(self):
         dim = 6
         a = np.random.random((dim, dim))
@@ -198,6 +217,8 @@ class TestPreconditionedFunction(unittest.TestCase):
         dim = mat.shape[0]
         id_mat = np.eye(mat.shape[0])
         eig_vals = np.linalg.eigvals(mat)
+        print('mat', mat)
+        print('orig evs', eig_vals)
         ev_min = np.min(eig_vals)
         ev_max = np.max(eig_vals)
         ev0 = np.real(ev_min + (ev_max - ev_min) / 3)
@@ -205,17 +226,21 @@ class TestPreconditionedFunction(unittest.TestCase):
 
         for test_ev_min in [None, ev0]:
             for test_ev_max in [None, ev1]:
+                print('Test ev bounds ', test_ev_min, test_ev_max)
                 h_inv_sqrt_mult, h_sqrt_mult = \
                     paragami.optimization_lib._get_sym_matrix_inv_sqrt_funcs(
-                        mat, test_ev_min, test_ev_max)
+                        mat, ev_min=test_ev_min, ev_max=test_ev_max)
                 h_inv_sqrt = get_matrix_from_operator(h_inv_sqrt_mult, dim)
                 h_sqrt = get_matrix_from_operator(h_sqrt_mult, dim)
+
                 assert_array_almost_equal(id_mat, h_inv_sqrt @ h_sqrt)
-                h = h_sqrt.T @ h_sqrt
+                h = h_sqrt @ h_sqrt.T
+                print('h', h)
                 assert_array_almost_equal(
                     id_mat, h_inv_sqrt @ h @ h_inv_sqrt.T)
                 eig_vals_test = np.linalg.eigvals(h)
                 eig_vals_test = np.array([np.real(v) for v in eig_vals_test])
+                print('test evs', eig_vals_test)
                 if test_ev_min is not None:
                     self.assertTrue(np.min(eig_vals_test) >=
                                     test_ev_min - 1e-8)
