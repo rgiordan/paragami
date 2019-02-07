@@ -227,7 +227,7 @@ class TestPreconditionedFunction(unittest.TestCase):
         for test_ev_min in [None, ev0]:
             for test_ev_max in [None, ev1]:
                 print('Test ev bounds ', test_ev_min, test_ev_max)
-                h_inv_sqrt_mult, h_sqrt_mult = \
+                h_sqrt_mult, h_inv_sqrt_mult = \
                     paragami.optimization_lib._get_sym_matrix_inv_sqrt_funcs(
                         mat, ev_min=test_ev_min, ev_max=test_ev_max)
                 h_inv_sqrt = get_matrix_from_operator(h_inv_sqrt_mult, dim)
