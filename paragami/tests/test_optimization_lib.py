@@ -11,8 +11,103 @@ import scipy as sp
 from test_utils import QuadraticModel, captured_output
 import unittest
 
+from paragami.optimization_lib import transform_eigenspace
+from paragami.optimization_lib import truncate_eigenvalues
+
+
+# For testing, it is useful to get an actual matrix out of
+# a multiplication function.
+def get_matrix_from_operator(mult_fun, dim):
+    mat = []
+    for i in range(dim):
+        vec = np.zeros(dim)
+        vec[i] = 1.0
+        mat.append(mult_fun(vec))
+    return np.vstack(mat).T
+
 
 class TestPreconditionedFunction(unittest.TestCase):
+    def test_get_matrix_from_operator(self):
+        dim = 3
+        a = np.random.random((dim, dim))
+        def a_mult(vec):
+            return a @ vec
+
+        a_test = get_matrix_from_operator(a_mult, dim)
+        assert_array_almost_equal(a, a_test)
+
+    def test_truncate_eigenvalues(self):
+        dim = 10
+        evs = np.linspace(1.5, 10.5, dim)
+
+        evs_trunc = truncate_eigenvalues(evs, None, None)
+        assert_array_almost_equal(evs, evs_trunc)
+
+        evs_trunc = truncate_eigenvalues(evs, 2.5, None)
+        trunc = evs <= 2.5
+        not_trunc = evs > 2.5
+        assert_array_almost_equal(2.5, evs_trunc[trunc])
+        assert_array_almost_equal(evs[not_trunc], evs_trunc[not_trunc])
+
+        evs_trunc = truncate_eigenvalues(evs, None, 5.5)
+        trunc = evs >= 5.5
+        not_trunc = evs < 5.5
+        assert_array_almost_equal(5.5, evs_trunc[trunc])
+        assert_array_almost_equal(evs[not_trunc], evs_trunc[not_trunc])
+
+    def test_transform_eigenspace(self):
+        dim = 6
+        a = np.random.random((dim, dim))
+        a = 0.5 * (a.T + a) + np.eye(dim)
+        eigvals, eigvecs = np.linalg.eigh(a)
+        vec = np.random.random(dim)
+
+        # Test basic transforms.
+        a_mult = transform_eigenspace(eigvecs, eigvals, lambda x: x)
+        assert_array_almost_equal(a @ vec, a_mult(vec))
+
+        a_inv_mult = transform_eigenspace(eigvecs, eigvals, lambda x: 1 / x)
+        assert_array_almost_equal(np.linalg.solve(a, vec), a_inv_mult(vec))
+
+        a_sqrt_mult = transform_eigenspace(eigvecs, eigvals, np.sqrt)
+
+        for i in range(dim):
+            vec2 = np.zeros(dim)
+            vec2[i] = 1
+            assert_array_almost_equal(
+                vec2.T @ a @ vec, a_sqrt_mult(vec2).T @ a_sqrt_mult(vec))
+
+        # Test a transform with an incomplete eigenspace.
+        trans_ind = 2
+        a_trans = transform_eigenspace(
+            eigvecs[:, 0:trans_ind], eigvals[0:trans_ind], lambda x: 10)
+        for i in range(trans_ind):
+            vec = eigvecs[:, i]
+            assert_array_almost_equal(10 * vec, a_trans(vec))
+
+        for i in range(trans_ind + 1, dim):
+            vec = eigvecs[:, i]
+            assert_array_almost_equal(vec, a_trans(vec))
+
+        # Test eigenvalue truncation.
+        eigvals = np.linspace(0, dim, dim) + 1
+        a2 = eigvecs @ np.diag(eigvals) @ eigvecs.T
+        ev_min = 2.5
+        ev_max = 5.5
+        a_trans = transform_eigenspace(
+            eigvecs, eigvals,
+            lambda x: truncate_eigenvalues(x, ev_min=ev_min, ev_max=ev_max))
+
+        for i in range(dim):
+            vec = eigvecs[:, i]
+            if eigvals[i] <= ev_min:
+                assert_array_almost_equal(ev_min * vec, a_trans(vec))
+            elif eigvals[i] >= ev_max:
+                assert_array_almost_equal(ev_max * vec, a_trans(vec))
+            else:
+                assert_array_almost_equal(a2 @ vec, a_trans(vec))
+
+
     def test_preconditioned_function(self):
         model = QuadraticModel(dim=3)
 
@@ -29,12 +124,9 @@ class TestPreconditionedFunction(unittest.TestCase):
         dim = model.theta_pattern.shape()[0]
         theta = np.arange(0, dim) / 5.0
 
-        # Raise an error if we have not set the preconditioner.
-        with self.assertRaises(ValueError):
-            f_c(theta)
-
         def test_f_c_values(a):
             a_inv = np.linalg.inv(a)
+            f_c.check_preconditioner(theta)
             assert_array_almost_equal(
                 a_inv @ theta, f_c.precondition(theta))
             assert_array_almost_equal(
@@ -44,30 +136,49 @@ class TestPreconditionedFunction(unittest.TestCase):
                 a @ f_grad(theta), f_c_grad(a_inv @ theta))
             assert_array_almost_equal(
                 a @ f_hessian(theta) @ a.T, f_c_hessian(a_inv @ theta))
-            assert_array_almost_equal(a, f_c.get_preconditioner())
-            assert_array_almost_equal(a_inv, f_c.get_preconditioner_inv())
+
+        # Check that the default is the identity.
+        test_f_c_values(np.eye(dim))
 
         # Test with an ordinary matrix.
         a = 2 * np.eye(dim) + np.full((dim, dim), 0.1)
-        f_c.set_preconditioner(a)
+        f_c.set_preconditioner_matrix(a)
         test_f_c_values(a)
 
-        f_c.set_preconditioner(a, np.linalg.inv(a))
+        f_c.set_preconditioner_matrix(a, np.linalg.inv(a))
         test_f_c_values(a)
+
+        a_sp = sp.sparse.csc_matrix(a)
+        a_inv = np.linalg.inv(a)
+        a_inv_sp = sp.sparse.csc_matrix(a_inv)
+        f_c.set_preconditioner_matrix(a_sp)
+        test_f_c_values(a)
+
+        f_c.set_preconditioner_matrix(a_sp, a_inv_sp)
+        test_f_c_values(a)
+
+        # Test with an incorrect inverse.
+        f_c.set_preconditioner_matrix(a, np.linalg.inv(a) + 2)
+        with self.assertRaises(ValueError):
+            f_c.check_preconditioner(theta)
 
         # Test with the Hessian.
         hess = f_hessian(theta)
 
         for ev_min in [None, 0.01]:
             for ev_max in [None, 10.0]:
-                h_inv_sqrt, h_sqrt, h = \
-                    paragami.optimization_lib._get_sym_matrix_inv_sqrt(
+                h_sqrt_mult, h_inv_sqrt_mult = \
+                    paragami.optimization_lib._get_sym_matrix_inv_sqrt_funcs(
                         hess, ev_min=ev_min, ev_max=ev_max)
 
+                h_inv_sqrt = get_matrix_from_operator(
+                    h_inv_sqrt_mult, len(theta))
                 f_c.set_preconditioner_with_hessian(
                     x=theta, ev_min=ev_min, ev_max=ev_max)
                 test_f_c_values(h_inv_sqrt)
 
+                h_sqrt = get_matrix_from_operator(h_sqrt_mult, len(theta))
+                h = h_sqrt.T @ h_sqrt
                 f_c.set_preconditioner_with_hessian(
                     hessian=h, ev_min=ev_min, ev_max=ev_max)
                 test_f_c_values(h_inv_sqrt)
@@ -102,10 +213,8 @@ class TestPreconditionedFunction(unittest.TestCase):
         assert_array_almost_equal(np.eye(dim), f_c_hessian(theta_c_opt))
 
 
-
-
-
     def _test_matrix_sqrt(self, mat):
+        dim = mat.shape[0]
         id_mat = np.eye(mat.shape[0])
         eig_vals = np.linalg.eigvals(mat)
         ev_min = np.min(eig_vals)
@@ -115,13 +224,18 @@ class TestPreconditionedFunction(unittest.TestCase):
 
         for test_ev_min in [None, ev0]:
             for test_ev_max in [None, ev1]:
-                h_inv_sqrt, h_sqrt, h = \
-                    paragami.optimization_lib._get_sym_matrix_inv_sqrt(
-                        mat, test_ev_min, test_ev_max)
+                h_sqrt_mult, h_inv_sqrt_mult = \
+                    paragami.optimization_lib._get_sym_matrix_inv_sqrt_funcs(
+                        mat, ev_min=test_ev_min, ev_max=test_ev_max)
+                h_inv_sqrt = get_matrix_from_operator(h_inv_sqrt_mult, dim)
+                h_sqrt = get_matrix_from_operator(h_sqrt_mult, dim)
+
                 assert_array_almost_equal(id_mat, h_inv_sqrt @ h_sqrt)
+                h = h_sqrt @ h_sqrt.T
                 assert_array_almost_equal(
                     id_mat, h_inv_sqrt @ h @ h_inv_sqrt.T)
                 eig_vals_test = np.linalg.eigvals(h)
+                eig_vals_test = np.array([np.real(v) for v in eig_vals_test])
                 if test_ev_min is not None:
                     self.assertTrue(np.min(eig_vals_test) >=
                                     test_ev_min - 1e-8)

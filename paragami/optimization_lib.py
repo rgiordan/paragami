@@ -2,18 +2,103 @@ import autograd
 import autograd.numpy as np
 import copy
 import scipy as osp
+import warnings
+
+from .autograd_supplement_lib import get_sparse_product
 
 ###############################
 # Preconditioned objectives.  #
 ###############################
 
 
-def _get_sym_matrix_inv_sqrt(mat, ev_min=None, ev_max=None):
+def truncate_eigenvalues(evals, ev_min=None, ev_max=None):
+    """Truncate the vector ``evals`` so that values lower than
+    ``ev_min`` are replaced with ``ev_min`` and values larger than
+    ``ev_max`` are replaced with ``ev_max``.
+
+    Parameters
+    ------------
+    evals: `np.ndarray` (N, )
+    ev_min: `float`, optional
+        If ``None``, no lower truncation is done.
+    ev_max: `float`, optional
+        If ``None``, no upper truncation is done.
+
+    Returns
+    ---------
+    eig_val_trunc
+        A truncated version of ``evals``.
+    """
+    eig_val_trunc = copy.deepcopy(evals)
+    if not ev_min is None:
+        if not np.isreal(ev_min):
+            raise ValueError('ev_min must be real-valued.')
+        ev_min = float(ev_min)
+        eig_val_trunc[np.real(eig_val_trunc) <= ev_min] = ev_min
+    if not ev_max is None:
+        if not np.isreal(ev_max):
+            raise ValueError('ev_max must be real-valued.')
+        ev_max = float(ev_max)
+        eig_val_trunc[np.real(eig_val_trunc) >= ev_max] = ev_max
+    return eig_val_trunc
+
+
+def transform_eigenspace(eigvecs, eigvals, transform_function):
+    """Return a function that multiplies a vector by a matrix with
+    transformed eigenvalues.
+
+    Let ``eigvecs`` and ``eigvals`` be selected eigenvectors and
+    eigenvalues.  The columns of ``eigvecs``
+    are the eigenvectors associated with the corresponding entry of
+    ``eigvals``.  A function, ``a_mult``, is returned.  This function
+    is the identity for all directions orthogonal to ``eigvecs``,
+    and has eigenvalues ``transform_function(eigvals)`` in the
+    space spanned by ``eigvecs``.
+
+    Parameters
+    ------------
+    eigvecs: `numpy.ndarray` (N, K)
+        The eigenvectors.
+    eigvals: `numpy.ndarray` (K,)
+        The eigenvalues
+    transform_function: callable
+        A function from ``eigvals`` to a vector of the same length.
+        The output of ``transform_function(eigvals)`` will be the new
+        eigenvalues.
+
+    Returns
+    -----------
+    a_mult: callable
+        A linear function from a length-``K`` numpy vector to another
+        length-``K`` vector with the above-described eigendecomposition.
+    """
+
+    if eigvecs.ndim != 2:
+        raise ValueError('``eigvecs`` must be 2d.')
+    if eigvals.ndim != 1:
+        raise ValueError('``eigvals`` must be 1d.')
+    if eigvecs.shape[1] != len(eigvals):
+        raise ValueError(
+            'The columns of ``eigvecs`` and length of ``eigvals`` must match.')
+
+    new_eigvals = transform_function(eigvals)
+
+    def a_mult(vec):
+        vec_loadings = eigvecs.T @ vec
+        # Equivalent to the more transparent:
+        # vec_perp = vec - eigvecs @ vec_loadings
+        # return vec_perp + eigvecs @ (new_eigvals * vec_loadings)
+        return vec + eigvecs @ ((new_eigvals - 1) * vec_loadings)
+
+    return a_mult
+
+
+def _get_sym_matrix_inv_sqrt_funcs(mat, ev_min=None, ev_max=None):
     """
     Get the inverse square root of a symmetric matrix with thresholds for the
     eigenvalues.
 
-    This is particularly useful for calculating preconditioners.
+    This is useful for calculating preconditioners.
     """
     mat = np.atleast_2d(mat)
 
@@ -21,28 +106,15 @@ def _get_sym_matrix_inv_sqrt(mat, ev_min=None, ev_max=None):
     mat_sym = 0.5 * (mat + mat.T)
     eig_val, eig_vec = np.linalg.eigh(mat_sym)
 
-    if not ev_min is None:
-        if not np.isreal(ev_min):
-            raise ValueError('ev_min must be real-valued.')
-        eig_val[np.real(eig_val) <= ev_min] = ev_min
-    if not ev_max is None:
-        if not np.isreal(ev_max):
-            raise ValueError('ev_max must be real-valued.')
-        eig_val[np.real(eig_val) >= ev_max] = ev_max
+    eig_val_trunc = truncate_eigenvalues(eig_val, ev_min=ev_min, ev_max=ev_max)
 
-    mat_corrected = np.matmul(eig_vec,
-                               np.matmul(np.diag(eig_val), eig_vec.T))
-    mat_sqrt = \
-        np.matmul(eig_vec,
-                  np.matmul(np.diag(np.sqrt(eig_val)), eig_vec.T))
+    mult_mat_sqrt = \
+        transform_eigenspace(eig_vec, eig_val_trunc, np.sqrt)
 
-    mat_inv_sqrt = \
-        np.matmul(eig_vec,
-                  np.matmul(np.diag(1 / np.sqrt(eig_val)), eig_vec.T))
+    mult_mat_inv_sqrt = \
+        transform_eigenspace(eig_vec, eig_val_trunc, lambda x: 1. / np.sqrt(x))
 
-    return np.array(mat_inv_sqrt), \
-           np.array(mat_sqrt), \
-           np.array(mat_corrected)
+    return mult_mat_sqrt, mult_mat_inv_sqrt
 
 
 class PreconditionedFunction():
@@ -73,18 +145,12 @@ class PreconditionedFunction():
     set_preconditioner_with_hessian:
         Set the preconditioner based on the Hessian of the objective
         at a point in the orginal domain.
-    get_preconditioner:
-        Return a copy of the current preconditioner.
-    get_preconditioner_inv:
-        Return a copy of the current inverse preconditioner.
     precondition:
         Convert from the original domain to the preconditioned domain.
     unprecondition:
         Convert from the preconditioned domain to the original domain.
     """
-    def __init__(self, original_fun,
-                 preconditioner=None,
-                 preconditioner_inv=None):
+    def __init__(self, original_fun):
         """
         Parameters
         -------------
@@ -96,29 +162,56 @@ class PreconditionedFunction():
             The inverse of the initial preconditioner.
         """
         self._original_fun = original_fun
-        self._original_fun_hessian = autograd.hessian(self._original_fun)
-        if (preconditioner is None) and (preconditioner_inv is not None):
-            raise ValueError(
-                'If you specify preconditioner_inv, you must' +
-                'also specify preconditioner. ')
-        if preconditioner is not None:
-            self.set_preconditioner(preconditioner, preconditioner_inv)
+
+        # Initialize to the identity preconditioner.
+        self.set_preconditioner_functions(lambda x: x, lambda x: x)
+
+    def set_preconditioner_matrix(self, a, a_inv=None):
+        """Set the preconditioner with a matrix.
+        """
+        if osp.sparse.issparse(a):
+            if a_inv is None:
+                a_inv = osp.sparse.linalg.inv(a)
+            a_times, _ = get_sparse_product(a)
+            a_inv_times, _ = get_sparse_product(a_inv)
+            self.set_preconditioner_functions(a_times, a_inv_times)
+
         else:
-            self._preconditioner = None
-            self._preconditioner_inv = None
+            def a_times(vec):
+                return a @ vec
 
-    def get_preconditioner(self):
-        return copy.copy(self._preconditioner)
+            if a_inv is None:
+                # On one hand, this is a numerically instable way to solve a
+                # linear system.  On the other hand, the inverse is
+                # readily available from the eigenvalue decomposition
+                # and the Cholesky factorization is not AFAIK.
+                a_inv = np.linalg.inv(a)
 
-    def get_preconditioner_inv(self):
-        return copy.copy(self._preconditioner_inv)
+            def a_inv_times(vec):
+                return a_inv @ vec
+
+            self.set_preconditioner_functions(a_times, a_inv_times)
+
+    def set_preconditioner_functions(self, a_times, a_inv_times):
+        """Set the preconditioner with a functions that perform matrix
+        multiplication.
+        """
+        self._a_times = a_times
+        self._a_inv_times = a_inv_times
+
+    def check_preconditioner(self, vec, tol=1e-8):
+        err = np.linalg.norm(vec - self._a_times(self._a_inv_times(vec)))
+        if err > tol:
+            raise ValueError(
+                ('``a_times`` does not invert ``a_inv_times``.  ' +
+                'Error {} > tol {}').format(err, tol))
 
     def set_preconditioner(self, preconditioner, preconditioner_inv=None):
-        self._preconditioner = preconditioner
-        if preconditioner_inv is None:
-            self._preconditioner_inv = np.linalg.inv(self._preconditioner)
-        else:
-            self._preconditioner_inv = preconditioner_inv
+        warnings.warn(
+            'This method is deprecated.  Please use ' +
+            '``set_preconditioner_matrix``',
+            DeprecationWarning)
+        self.set_preconditioner_matrix(preconditioner, preconditioner_inv)
 
     def set_preconditioner_with_hessian(self, x=None, hessian=None,
                                         ev_min=None, ev_max=None):
@@ -154,13 +247,16 @@ class PreconditionedFunction():
             raise ValueError('You must specify either x or hessian.')
         if hessian is None:
             # We now know x is not None.
-            hessian = self._original_fun_hessian(x)
+            get_original_fun_hessian = autograd.hessian(self._original_fun)
+            hessian = get_original_fun_hessian(x)
 
-        hess_inv_sqrt, hess_sqrt, hess_corrected = \
-            _get_sym_matrix_inv_sqrt(hessian, ev_min, ev_max)
-        self.set_preconditioner(hess_inv_sqrt, hess_sqrt)
-
-        return hess_corrected
+        mult_hess_sqrt, mult_hess_inv_sqrt = \
+            _get_sym_matrix_inv_sqrt_funcs(
+                hessian, ev_min=ev_min, ev_max=ev_max)
+        self.set_preconditioner_functions(mult_hess_inv_sqrt, mult_hess_sqrt)
+        # hess_inv_sqrt, hess_sqrt, hess_corrected = \
+        #     _get_sym_matrix_inv_sqrt(hessian, ev_min, ev_max)
+        # self.set_preconditioner_matrix(hess_inv_sqrt, hess_sqrt)
 
     def precondition(self, x):
         """
@@ -171,13 +267,7 @@ class PreconditionedFunction():
         This function is provided for convenience, but it is more numerically
         stable to use np.linalg.solve(preconditioner, x).
         """
-        # On one hand, this is a numerically instable way to solve a linear
-        # system.  On the other hand, the inverse is readily available from
-        # the eigenvalue decomposition and the Cholesky factorization
-        # is not AFAIK.
-        if self._preconditioner_inv is None:
-            raise ValueError('You must set the preconditioner.')
-        return self._preconditioner_inv @ x
+        return self._a_inv_times(x)
 
     def unprecondition(self, x_c):
         """
@@ -185,9 +275,7 @@ class PreconditionedFunction():
         :math:`x_c` in the preconditioned domain to :math:`x` in the
         original domain.
         """
-        if self._preconditioner is None:
-            raise ValueError('You must set the preconditioner.')
-        return self._preconditioner @ x_c
+        return self._a_times(x_c)
 
     def __call__(self, x_c):
         """
