@@ -19,10 +19,11 @@ from paragami.optimization_lib import truncate_eigenvalues
 # a multiplication function.
 def get_matrix_from_operator(mult_fun, dim):
     mat = []
+    vec = np.zeros(dim)
     for i in range(dim):
-        vec = np.zeros(dim)
         vec[i] = 1.0
         mat.append(mult_fun(vec))
+        vec[i] = 0.0
     return np.vstack(mat).T
 
 

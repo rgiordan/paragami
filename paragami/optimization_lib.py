@@ -208,7 +208,7 @@ class PreconditionedFunction():
 
     def set_preconditioner(self, preconditioner, preconditioner_inv=None):
         warnings.warn(
-            'This method is deprecated.  Please use ' +
+            '``set_preconditioner`` is deprecated.  Please use ' +
             '``set_preconditioner_matrix``',
             DeprecationWarning)
         self.set_preconditioner_matrix(preconditioner, preconditioner_inv)
