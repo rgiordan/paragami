@@ -117,6 +117,29 @@ def _get_sym_matrix_inv_sqrt_funcs(mat, ev_min=None, ev_max=None):
     return mult_mat_sqrt, mult_mat_inv_sqrt
 
 
+def _get_matrix_from_operator(mult_fun, dim):
+    """Get a matrix representation of a linear operator on vectors.
+
+    Parameters
+    -------------
+    mult_fun: `callable`
+        A function linearly that maps vectors to vectors.
+    dim: `int`
+        The dimension of the input to ``mult_fun``.
+
+    Returns
+    ----------
+    A matrix representation of the operator ``mult_fun``.
+    """
+    mat = []
+    for i in range(dim):
+        # Re-instantiate to make sure that mult_fun is not returning a reference.
+        vec = np.zeros(dim)
+        vec[i] = 1.0
+        mat.append(mult_fun(vec))
+    return np.vstack(mat).T
+
+
 class PreconditionedFunction():
     """
     Get a function whose input has been preconditioned.
@@ -254,9 +277,6 @@ class PreconditionedFunction():
             _get_sym_matrix_inv_sqrt_funcs(
                 hessian, ev_min=ev_min, ev_max=ev_max)
         self.set_preconditioner_functions(mult_hess_inv_sqrt, mult_hess_sqrt)
-        # hess_inv_sqrt, hess_sqrt, hess_corrected = \
-        #     _get_sym_matrix_inv_sqrt(hessian, ev_min, ev_max)
-        # self.set_preconditioner_matrix(hess_inv_sqrt, hess_sqrt)
 
     def precondition(self, x):
         """
@@ -276,6 +296,18 @@ class PreconditionedFunction():
         original domain.
         """
         return self._a_times(x_c)
+
+    def get_preconditioner(self, dim):
+        """Return a matrix representation of the preconditioner.  This may
+        be expensive.
+        """
+        return _get_matrix_from_operator(self._a_times, dim)
+
+    def get_preconditioner_inv(self, dim):
+        """Return a matrix representation of the preconditioner.  This may
+        be expensive.
+        """
+        return _get_matrix_from_operator(self._a_inv_times, dim)
 
     def __call__(self, x_c):
         """
