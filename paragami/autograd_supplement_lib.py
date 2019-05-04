@@ -44,7 +44,6 @@ def jvp_solve(argnum, g, ans, a, b):
             np.matmul(a, b) if b.ndim == a.ndim \
             else np.matmul(a, b[..., None])[..., 0]
     if argnum == 0:
-        foo = np.linalg.solve(a, g)
         return -broadcast_matmul(np.linalg.solve(a, g), ans)
     else:
         return np.linalg.solve(a, g)
