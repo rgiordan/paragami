@@ -5,7 +5,9 @@ import autograd.numpy.random as npr
 from autograd.test_util import check_grads
 from paragami import autograd_supplement_lib
 import autograd.scipy as sp
+from numpy.testing import assert_array_almost_equal
 import scipy as osp
+import scipy.sparse
 import unittest
 
 npr.seed(1)
@@ -107,7 +109,7 @@ class TestAutogradSupplement(unittest.TestCase):
                 check_grads(lambda x: sp.special.polygamma(int(n), x))(x)
 
 
-class TestSparseMatrixMultiplication(unittest.TestCase):
+class TestSparseMatrixTools(unittest.TestCase):
     def test_get_sparse_product(self):
         z_dense = np.random.random((10, 2))
         z_mat = osp.sparse.coo_matrix(z_dense)
@@ -136,6 +138,30 @@ class TestSparseMatrixMultiplication(unittest.TestCase):
         self.assertRaises(
             ValueError,
             lambda: autograd_supplement_lib.get_sparse_product(z_dense_1d))
+
+    def test_get_differentiable_solver(self):
+        dim = 5
+        z = np.eye(dim)
+        z[0, 1] = 0.2
+        z[1, 0] = 0.2
+        z[0, dim - 1] = 0.1
+        z[dim - 1, 0] = 0.1
+
+        z_sp = osp.sparse.csc_matrix(z)
+
+        a = np.random.random(dim)
+
+        z_solve, zt_solve = autograd_supplement_lib.get_differentiable_solver(
+            lambda b: osp.sparse.linalg.spsolve(z_sp, b),
+            lambda b: osp.sparse.linalg.spsolve(z_sp.T, b))
+
+        assert_array_almost_equal(
+            osp.sparse.linalg.spsolve(z_sp, a), z_solve(a))
+        assert_array_almost_equal(
+            osp.sparse.linalg.spsolve(z_sp.T, a), zt_solve(a))
+
+        check_grads(z_solve)(a)
+        check_grads(zt_solve)(a)
 
 
 if __name__ == '__main__':
