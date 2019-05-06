@@ -8,12 +8,40 @@ import itertools
 from numpy.testing import assert_array_almost_equal
 import paragami
 import scipy as sp
+from scikits.sparse.cholmod import cholesky
 from test_utils import QuadraticModel, captured_output
 import unittest
 
 from paragami.optimization_lib import transform_eigenspace
 from paragami.optimization_lib import truncate_eigenvalues
 from paragami.optimization_lib import _get_matrix_from_operator
+from paragami.optimization_lib import _get_cholesky_sqrt_mat
+
+import warnings
+
+def assert_sp_array_almost_equal(x, y):
+    x_test = x.todense() if sp.sparse.issparse(x) else x
+    y_test = y.todense() if sp.sparse.issparse(y) else y
+    assert_array_almost_equal(x_test, y_test)
+
+
+class TestSparseMatrixTools(unittest.TestCase):
+    def test_choleksy_sqrt(self):
+        dim = 5
+        mat = np.eye(dim)
+        mat[0, 1] = 0.2
+        mat[1, 0] = 0.2
+        mat[0, dim - 1] = 0.1
+        mat[dim - 1, 0] = 0.1
+
+        mat_sp = sp.sparse.csc_matrix(mat)
+        mat_chol = cholesky(mat_sp)
+
+        # Make sure that we are testing the fill-reducing permutation.
+        assert(not np.all(mat_chol.P() == np.arange(dim)))
+
+        mat_sqrt = _get_cholesky_sqrt_mat(mat_sp)
+        assert_sp_array_almost_equal(mat_sqrt @ mat_sqrt.T, mat_sp)
 
 
 class TestPreconditionedFunction(unittest.TestCase):
@@ -115,7 +143,10 @@ class TestPreconditionedFunction(unittest.TestCase):
         theta = np.arange(0, dim) / 5.0
 
         def test_f_c_values(a):
-            a_inv = np.linalg.inv(a)
+            if sp.sparse.issparse(a):
+                a_inv = sp.sparse.linalg.inv(a)
+            else:
+                a_inv = np.linalg.inv(a)
             f_c.check_preconditioner(theta)
 
             assert_array_almost_equal(
@@ -183,6 +214,18 @@ class TestPreconditionedFunction(unittest.TestCase):
                 f_c.set_preconditioner_with_hessian(
                     hessian=h, ev_min=ev_min, ev_max=ev_max)
                 test_f_c_values(h_inv_sqrt)
+
+        # Test with a sparse matrix.
+        hess_sp = sp.sparse.csc_matrix(hess)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            f_c.set_preconditioner_with_hessian(hessian=hess_sp)
+
+        with self.assertRaises(ValueError):
+            f_c.set_preconditioner_with_hessian(hessian=hess_sp, ev_min=1.0)
+
+        with self.assertRaises(ValueError):
+            f_c.set_preconditioner_with_hessian(hessian=hess_sp, ev_max=1.0)
 
         # Check that optimizing the two functions is equivalent.
         opt_result = sp.optimize.minimize(

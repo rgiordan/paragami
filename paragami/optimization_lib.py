@@ -2,9 +2,12 @@ import autograd
 import autograd.numpy as np
 import copy
 import scipy as osp
+import scipy.sparse
+from scikits.sparse.cholmod import cholesky
 import warnings
 
-from .autograd_supplement_lib import get_sparse_product
+from .autograd_supplement_lib import \
+    get_sparse_product, get_differentiable_solver
 
 ###############################
 # Preconditioned objectives.  #
@@ -140,6 +143,15 @@ def _get_matrix_from_operator(mult_fun, dim):
     return np.vstack(mat).T
 
 
+# For sparse preconditioners.
+def _get_cholesky_sqrt_mat(mat):
+    """Extract the actual Cholesky square root from a decomposition provided
+    by scikits.sparse.cholmod.cholesky.
+    """
+    mat_chol = cholesky(mat)
+    return mat_chol.apply_Pt(mat_chol.L())
+
+
 class PreconditionedFunction():
     """
     Get a function whose input has been preconditioned.
@@ -273,9 +285,27 @@ class PreconditionedFunction():
             get_original_fun_hessian = autograd.hessian(self._original_fun)
             hessian = get_original_fun_hessian(x)
 
-        mult_hess_sqrt, mult_hess_inv_sqrt = \
-            _get_sym_matrix_inv_sqrt_funcs(
-                hessian, ev_min=ev_min, ev_max=ev_max)
+        if osp.sparse.issparse(hessian):
+            # Use the Cholesky square root.
+            if not ((ev_min is None) and (ev_max is None)):
+                raise ValueError(
+                    'Enforcing eigenvalue bounds with sparse matrices is ' +
+                    'not supported.')
+            hess_sqrt = _get_cholesky_sqrt_mat(hessian)
+            _, mult_hess_sqrt_t_ad = get_sparse_product(hess_sqrt)
+
+            # To avoid the sparse efficiency warning.
+            hess_sqrt_t = osp.sparse.csc_matrix(hess_sqrt.T)
+            _, solve_hess_sqrt_t_ad = \
+                get_differentiable_solver(
+                    osp.sparse.linalg.factorized(hess_sqrt),
+                    osp.sparse.linalg.factorized(hess_sqrt_t))
+            mult_hess_inv_sqrt = solve_hess_sqrt_t_ad
+            mult_hess_sqrt = mult_hess_sqrt_t_ad
+        else:
+            mult_hess_sqrt, mult_hess_inv_sqrt = \
+                _get_sym_matrix_inv_sqrt_funcs(
+                    hessian, ev_min=ev_min, ev_max=ev_max)
         self.set_preconditioner_functions(mult_hess_inv_sqrt, mult_hess_sqrt)
 
     def precondition(self, x):

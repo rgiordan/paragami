@@ -10,8 +10,6 @@ import scipy as osp
 import scipy.sparse
 import unittest
 
-# from scikits.sparse.cholmod import cholesky
-
 npr.seed(1)
 
 def rand_psd(D):
