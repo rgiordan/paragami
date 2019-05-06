@@ -199,6 +199,9 @@ class PreconditionedFunction():
         self._original_fun = original_fun
 
         # Initialize to the identity preconditioner.
+        self.set_identitity_preconditioner()
+
+    def set_identitity_preconditioner(self):
         self.set_preconditioner_functions(lambda x: x, lambda x: x)
 
     def set_preconditioner_matrix(self, a, a_inv=None):
@@ -287,6 +290,10 @@ class PreconditionedFunction():
 
         if osp.sparse.issparse(hessian):
             # Use the Cholesky square root.
+            # TODO: this needs to have some accomodation for non-positive
+            # definite Hessians.  Maybe you want to separate the square
+            # root finding from the setting so that users can regularize
+            # themselves.
             if not ((ev_min is None) and (ev_max is None)):
                 raise ValueError(
                     'Enforcing eigenvalue bounds with sparse matrices is ' +
