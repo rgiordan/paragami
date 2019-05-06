@@ -150,16 +150,15 @@ def get_differentiable_solver(z_solve, zt_solve):
     @primitive
     def zt_solve_ad(b):
         return zt_solve(b)
-        #return sp.sparse.linalg.spsolve(z_mat.T, b)
 
     def get_grad_funs(z_solve_ad, zt_solve_ad):
         # Reverse mode
         def vjp_solve(ans, b):
-            return lambda g: z_solve_ad(g)
+            return lambda g: zt_solve_ad(g)
 
         # Forward mode
         def jvp_solve(g, ans, b):
-            return zt_solve_ad(g)
+            return z_solve_ad(g)
 
         return vjp_solve, jvp_solve
 

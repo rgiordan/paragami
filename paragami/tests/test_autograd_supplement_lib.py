@@ -151,7 +151,7 @@ class TestSparseMatrixTools(unittest.TestCase):
         z = np.eye(dim)
         z[0, 1] = 0.2
         z[1, 0] = 0.2
-        z[0, dim - 1] = 0.1
+        z[0, dim - 1] = 0.05
         z[dim - 1, 0] = 0.1
 
         z_sp = osp.sparse.csc_matrix(z)
