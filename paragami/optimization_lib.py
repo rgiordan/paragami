@@ -144,12 +144,30 @@ def _get_matrix_from_operator(mult_fun, dim):
 
 
 # For sparse preconditioners.
-def _get_cholesky_sqrt_mat(mat):
+def _get_cholesky_sqrt_mat(mat_chol):
     """Extract the actual Cholesky square root from a decomposition provided
-    by scikits.sparse.cholmod.cholesky.
+    by ``scikits.sparse.cholmod.cholesky``.
     """
-    mat_chol = cholesky(mat)
     return mat_chol.apply_Pt(mat_chol.L())
+
+
+def _get_sparse_square_root_operators(mat_chol):
+    """Get preconditioners from a sparse matrix.  The argument should be the
+    output of ``scikits.sparse.cholmod.cholesky``
+    """
+    mat_sqrt = _get_cholesky_sqrt_mat(mat_chol)
+
+    # To avoid the sparse efficiency warning.
+    mat_sqrt_t = osp.sparse.csc_matrix(mat_sqrt.T)
+
+    _, mult_mat_sqrt_t_ad = get_sparse_product(mat_sqrt)
+    _, solve_mat_sqrt_t_ad = \
+        get_differentiable_solver(
+            osp.sparse.linalg.factorized(mat_sqrt),
+            osp.sparse.linalg.factorized(mat_sqrt_t))
+
+    return solve_mat_sqrt_t_ad, mult_mat_sqrt_t_ad
+
 
 
 class PreconditionedFunction():
@@ -290,25 +308,13 @@ class PreconditionedFunction():
 
         if osp.sparse.issparse(hessian):
             # Use the Cholesky square root.
-            # TODO: this needs to have some accomodation for non-positive
-            # definite Hessians.  Maybe you want to separate the square
-            # root finding from the setting so that users can regularize
-            # themselves.
             if not ((ev_min is None) and (ev_max is None)):
                 raise ValueError(
                     'Enforcing eigenvalue bounds with sparse matrices is ' +
                     'not supported.')
-            hess_sqrt = _get_cholesky_sqrt_mat(hessian)
-            _, mult_hess_sqrt_t_ad = get_sparse_product(hess_sqrt)
-
-            # To avoid the sparse efficiency warning.
-            hess_sqrt_t = osp.sparse.csc_matrix(hess_sqrt.T)
-            _, solve_hess_sqrt_t_ad = \
-                get_differentiable_solver(
-                    osp.sparse.linalg.factorized(hess_sqrt),
-                    osp.sparse.linalg.factorized(hess_sqrt_t))
-            mult_hess_inv_sqrt = solve_hess_sqrt_t_ad
-            mult_hess_sqrt = mult_hess_sqrt_t_ad
+            hessian_chol = cholesky(hessian)
+            mult_hess_inv_sqrt, mult_hess_sqrt = \
+                _get_sparse_square_root_operators(hessian_chol)
         else:
             mult_hess_sqrt, mult_hess_inv_sqrt = \
                 _get_sym_matrix_inv_sqrt_funcs(

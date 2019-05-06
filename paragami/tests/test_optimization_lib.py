@@ -40,7 +40,7 @@ class TestSparseMatrixTools(unittest.TestCase):
         # Make sure that we are testing the fill-reducing permutation.
         assert(not np.all(mat_chol.P() == np.arange(dim)))
 
-        mat_sqrt = _get_cholesky_sqrt_mat(mat_sp)
+        mat_sqrt = _get_cholesky_sqrt_mat(mat_chol)
         assert_sp_array_almost_equal(mat_sqrt @ mat_sqrt.T, mat_sp)
 
 
