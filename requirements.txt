@@ -2,3 +2,4 @@
 autograd
 numpy
 scipy
+scikits.sparse
