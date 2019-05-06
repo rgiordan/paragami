@@ -10,12 +10,19 @@ import scipy as osp
 import scipy.sparse
 import unittest
 
+# from scikits.sparse.cholmod import cholesky
+
 npr.seed(1)
 
 def rand_psd(D):
     mat = npr.randn(D, D)
     return np.dot(mat, mat.T)
 
+
+def assert_sp_array_almost_equal(x, y):
+    x_test = x.todense() if sp.sparse.issparse(x) else x
+    y_test = y.todense() if sp.sparse.issparse(y) else y
+    assert_array_almost_equal(x_test, y_test)
 
 
 class TestAutogradSupplement(unittest.TestCase):
@@ -151,6 +158,7 @@ class TestSparseMatrixTools(unittest.TestCase):
 
         a = np.random.random(dim)
 
+        # Check with simple lambda functions.
         z_solve, zt_solve = autograd_supplement_lib.get_differentiable_solver(
             lambda b: osp.sparse.linalg.spsolve(z_sp, b),
             lambda b: osp.sparse.linalg.spsolve(z_sp.T, b))
@@ -162,6 +170,40 @@ class TestSparseMatrixTools(unittest.TestCase):
 
         check_grads(z_solve)(a)
         check_grads(zt_solve)(a)
+
+        # Check with factorized matrices.
+        z_factorized = osp.sparse.linalg.factorized(z_sp)
+        zt_factorized = osp.sparse.linalg.factorized(z_sp.T)
+        z_solve_fac, zt_solve_fac = \
+            autograd_supplement_lib.get_differentiable_solver(
+                z_factorized, zt_factorized)
+
+        assert_array_almost_equal(z_factorized(a), z_solve_fac(a))
+        assert_array_almost_equal(zt_factorized(a), zt_solve_fac(a))
+
+        check_grads(z_solve_fac)(a)
+        check_grads(zt_solve_fac)(a)
+
+        # # Test with a Cholesky decomposition.
+        # z_chol = cholesky(z_sp)
+        # zt_chol = cholesky(z_sp.T)
+        #
+        # # Make sure that we are testing the fill-reducing permutation.
+        # self.assertTrue(not np.all(z_chol.P() == np.arange(dim)))
+        # z_solve_chol, zt_solve_chol = \
+        #     autograd_supplement_lib.get_differentiable_solver(
+        #         z_chol, zt_chol)
+        #
+        # # TODO(why is Cholesky not working?)
+        # # For some reason, ``z_chol(a)`` doesn't work unless ``a``
+        # # is the same (square) dimension as ``z``.  This appears to be
+        # # a problem with the Cholesky decomposition, not the sparse solver.
+        # z_chol(a) # Fails
+        # assert_array_almost_equal(z_chol(a), z_solve_chol(a))
+        # assert_array_almost_equal(zt_chol(a), zt_solve_chol(a))
+        #
+        # check_grads(z_solve_chol)(a)
+        # check_grads(zt_solve_chol)(a)
 
 
 if __name__ == '__main__':
