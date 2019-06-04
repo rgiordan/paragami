@@ -4,6 +4,15 @@ import sys
 import versioneer
 
 
+try:
+    import numpy
+except ImportError:
+    error = """
+paragami requires ``numpy`` to be installed before installation
+due to https://github.com/scikit-sparse/scikit-sparse/issues/55.
+"""
+    sys.exit(error)
+
 # NOTE: This file must remain Python 2 compatible for the foreseeable future,
 # to ensure that we error out properly for people with outdated setuptools
 # and/or pip.
