@@ -2,4 +2,4 @@
 autograd
 numpy
 scipy
-scikits.sparse
+scikit-sparse
