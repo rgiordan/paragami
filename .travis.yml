@@ -23,6 +23,7 @@ notifications:
 
 install:
   # Install this package and the packages listed in requirements.txt.
+  - apt-get install libsuitesparse-dev
   - pip install numpy # Needed for https://github.com/scikit-sparse/scikit-sparse/issues/55
   - pip install .
   # Install extra requirements for running tests and building docs.
