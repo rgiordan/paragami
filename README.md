@@ -45,6 +45,16 @@ To install the latest tagged version, install with `pip`:
 Note that `paragami` is under rapid development, so you may want to
 clone the respository and use the master branch instead.
 
+**Note**: due to a dependence on
+[``scikit-sparse``](https://github.com/scikit-sparse/scikit-sparse/),
+``pip`` installation of ``paragami`` requires ``numpy``, ``wheel``, and
+(on Debian / Ubuntu systems) ``libsuitesparse-dev``.  See the
+[``scikit-sparse`` requirements](https://scikit-sparse.readthedocs.io/en/latest/overview.html#requirements)
+for more details.
+
+**Note**: due to a dependence on a currently unreleased bug fix in ``autograd``, ``paragami`` requries ``pip`` version 19 or greater to install.
+
+
 ### Documentation and Examples.
 
 For examples and API documentation, see

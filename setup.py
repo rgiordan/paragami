@@ -1,8 +1,18 @@
 from os import path
+import re
 from setuptools import setup, find_packages
 import sys
 import versioneer
 
+
+try:
+    import numpy
+except ImportError:
+    error = """
+paragami requires ``numpy`` to be installed before installation
+due to https://github.com/scikit-sparse/scikit-sparse/issues/55.
+"""
+    sys.exit(error)
 
 # NOTE: This file must remain Python 2 compatible for the foreseeable future,
 # to ensure that we error out properly for people with outdated setuptools
@@ -21,25 +31,38 @@ pip install --upgrade pip
 """.format(3, 5)
     sys.exit(error)
 
+import pip
+pip_version_match = re.search(r'^[0-9]*', pip.__version__)
+if pip_version_match:
+    if int(pip_version_match.group(0)) < 19:
+        sys.exit('Install requires pip version 19 or greater.  ' +
+                 'Run pip install --upgrade pip.')
+else:
+    sys.exit('There was an error getting the pip version number.')
+
+
 here = path.abspath(path.dirname(__file__))
 
 with open(path.join(here, 'README.md'), encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
 # Parse requirements.txt, ignoring any commented-out or git lines.
-with open(path.join(here, 'requirements.txt')) as requirements_file:
-    requirements_lines = requirements_file.read().splitlines()
-
-requirements = [line for line in requirements_lines
-                if not (line.startswith('#') or line.startswith('git'))]
-
-git_requirements = [line for line in requirements_lines
-                     if line.startswith('git')]
-
-# git repos also need to be listed in the requirements.
-for git_req in git_requirements:
-    loc = git_requirements[0].find('egg=') + 4
-    requirements += [ git_requirements[0][loc:] ]
+# with open(path.join(here, 'requirements.txt')) as requirements_file:
+#     requirements_lines = requirements_file.read().splitlines()
+#
+# requirements = [line for line in requirements_lines
+#                 if not (line.startswith('#') or line.startswith('git'))]
+#
+# git_requirements = [line for line in requirements_lines
+#                      if line.startswith('git')]
+#
+# # git repos also need to be listed in the requirements.
+# for git_req in git_requirements:
+#     print('---------------\n', git_req, requirements)
+#     # loc = git_requirements[0].find('egg=') + 4
+#     # requirements += [ git_requirements[0][loc:] ]
+#     loc = git_requirements[0].find('egg=') + 4
+#     requirements += [ git_requirements[0][loc:] ]
 
 
 setup(
@@ -65,8 +88,12 @@ setup(
             # 'path/to/data_file',
             ]
         },
-    install_requires=requirements,
-    dependency_links=git_requirements,
+    # The latest autograd on pypi is 1.2.  Force the git commit with a larger
+    # version number.
+    # Old style (pip < 19)
+    #install_requires=['numpy', 'scipy', 'scikit-sparse', 'autograd>1.2'],
+    #dependency_links=['git+https://github.com/HIPS/autograd@815a0b97ada3c0c4b854c961706cc56cca8b7834#egg=autograd-1.2.1'],
+    install_requires=['numpy', 'scipy', 'scikit-sparse', 'autograd @ git+https://github.com/HIPS/autograd@815a0b97ada3c0c4b854c961706cc56cca8b7834#egg=autograd'],
     classifiers=[
         'Programming Language :: Python :: 3',
         'Natural Language :: English',

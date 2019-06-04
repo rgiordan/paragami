@@ -44,7 +44,6 @@ def jvp_solve(argnum, g, ans, a, b):
             np.matmul(a, b) if b.ndim == a.ndim \
             else np.matmul(a, b[..., None])[..., 0]
     if argnum == 0:
-        foo = np.linalg.solve(a, g)
         return -broadcast_matmul(np.linalg.solve(a, g), ans)
     else:
         return np.linalg.solve(a, g)
@@ -120,3 +119,55 @@ def get_sparse_product(z_mat):
     defvjp(zt_mult, zt_mult_vjp)
 
     return z_mult, zt_mult
+
+
+def get_differentiable_solver(z_solve, zt_solve):
+    """
+    Return an autograd-compatible function that calculates
+    ``z_solve(b) = z^{-1} b`` where the solver may not be natively
+    differentiable by autograd.
+
+    Parameters
+    ------------
+    z_solve, zt_solve:
+        Functions that take a vector input ``b`` and return ``z^{-1} b`` and
+        ``(z^T)^{-1} b``, respectively.
+
+    Returns
+    -----------
+    z_solve_ad, zt_solve_ad:
+        Respective versions of ``z_solve`` and ``zt_solve`` that can be
+        differentiated by autograd.
+
+    This is particularly useful for differentiating the solutions of systems
+    where the matrix ``z`` is sparse.
+    """
+
+    @primitive
+    def z_solve_ad(b):
+        return z_solve(b)
+
+    @primitive
+    def zt_solve_ad(b):
+        return zt_solve(b)
+
+    def get_grad_funs(z_solve_ad, zt_solve_ad):
+        # Reverse mode
+        def vjp_solve(ans, b):
+            return lambda g: zt_solve_ad(g)
+
+        # Forward mode
+        def jvp_solve(g, ans, b):
+            return z_solve_ad(g)
+
+        return vjp_solve, jvp_solve
+
+    vjp_solve, jvp_solve = get_grad_funs(z_solve_ad, zt_solve_ad)
+    vjp_t_solve, jvp_t_solve = get_grad_funs(zt_solve_ad, z_solve_ad)
+
+    defjvp(z_solve_ad, jvp_solve)
+    defjvp(zt_solve_ad, jvp_t_solve)
+    defvjp(z_solve_ad, vjp_solve)
+    defvjp(zt_solve_ad, vjp_t_solve)
+
+    return z_solve_ad, zt_solve_ad
