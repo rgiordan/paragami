@@ -146,14 +146,14 @@ def _get_matrix_from_operator(mult_fun, dim):
 # For sparse preconditioners.
 def _get_cholesky_sqrt_mat(mat_chol):
     """Extract the actual Cholesky square root from a decomposition provided
-    by ``scikits.sparse.cholmod.cholesky``.
+    by ``sksparse.cholmod.cholesky``.
     """
     return mat_chol.apply_Pt(mat_chol.L())
 
 
 def _get_sparse_square_root_operators(mat_chol):
     """Get preconditioners from a sparse matrix.  The argument should be the
-    output of ``scikits.sparse.cholmod.cholesky``
+    output of ``sksparse.cholmod.cholesky``
     """
     mat_sqrt = _get_cholesky_sqrt_mat(mat_chol)
 

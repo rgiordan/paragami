@@ -15,11 +15,6 @@ from paragami.simplex_patterns import SimplexArrayPattern
 from paragami.optimization_lib import \
     PreconditionedFunction, \
     OptimizationObjective
-from paragami.sensitivity_lib import \
-    HyperparameterSensitivityLinearApproximation, \
-    ParametricSensitivityTaylorExpansion, \
-    LinearResponseCovariances, \
-    SparseBlockHessian
 import paragami.autograd_supplement_lib
 
 from ._version import get_versions
