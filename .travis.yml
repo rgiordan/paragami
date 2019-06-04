@@ -27,7 +27,7 @@ before_install:
 
 install:
   # Install this package and the packages listed in requirements.txt.
-  - pip install .
+  - pip install . --process-dependency-links
   # Install extra requirements for running tests and building docs.
   - pip install -r requirements-dev.txt
 

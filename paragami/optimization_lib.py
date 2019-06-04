@@ -3,7 +3,7 @@ import autograd.numpy as np
 import copy
 import scipy as osp
 import scipy.sparse
-from scikits.sparse.cholmod import cholesky
+from sksparse.cholmod import cholesky
 import warnings
 
 from .autograd_supplement_lib import \
