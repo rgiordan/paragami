@@ -23,7 +23,7 @@ notifications:
 
 before_install:
   - sudo apt-get install -y libsuitesparse-dev
-  - pip install --upgrade pip
+  - pip install --upgrade pip>19
   - pip install numpy # Needed for https://github.com/scikit-sparse/scikit-sparse/issues/55
 
 install:
