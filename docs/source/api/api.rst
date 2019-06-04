@@ -9,5 +9,4 @@ API
    numeric_patterns
    container_patterns
    function_wrappers
-   sensitivity_functions
    json
