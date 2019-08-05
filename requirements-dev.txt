@@ -1,4 +1,4 @@
-# This is required only for 
+# This is required only for sparse_preconditioners_lib.py.
 scikit-sparse
 
 # These are required for developing the package (running the tests, building
