@@ -102,12 +102,12 @@ class NumericArrayPattern(Pattern):
         # Cache arrays of indices for flat_indices
         # TODO: not sure this is a good idea or much of a speedup.
         self.__free_folded_indices = self.fold(
-            np.arange(self.flat_length(True)),
-            validate_value=False, free=True)
+            np.arange(self.flat_length(free=True), dtype=int),
+            validate_value=False, free=False)
 
         self.__nonfree_folded_indices = self.fold(
-            np.arange(self.flat_length(True)),
-            validate_value=False, free=True)
+            np.arange(self.flat_length(free=False), dtype=int),
+            validate_value=False, free=False)
 
     def __str__(self):
         return 'NumericArrayPattern {} (lb={}, ub={})'.format(
@@ -206,7 +206,7 @@ class NumericArrayPattern(Pattern):
     def flat_indices(self, folded_bool, free=None):
         # If no indices are specified, save time and return an empty array.
         if not np.any(folded_bool):
-            return np.array([])
+            return np.array([], dtype=int)
 
         free = self._free_with_default(free)
         folded_bool = np.atleast_1d(folded_bool)
@@ -217,10 +217,6 @@ class NumericArrayPattern(Pattern):
             return self.__free_folded_indices[folded_bool]
         else:
             return self.__nonfree_folded_indices[folded_bool]
-        # folded_indices = self.fold(
-        #     np.arange(self.flat_length(free)),
-        #     validate_value=False, free=False)
-        #return folded_indices[folded_bool]
 
 
 

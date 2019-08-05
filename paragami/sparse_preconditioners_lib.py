@@ -41,7 +41,7 @@ def _get_sparse_square_root_operators(mat_chol):
     return solve_mat_sqrt_t_ad, mult_mat_sqrt_t_ad
 
 
-def get_preconditioner_functions_from_sparse_hessian(hessian):
+def get_sym_matrix_inv_sqrt_funcs(hessian):
     """Get preconditioning functions from a sparse representation of a Hessian.
 
     Parameters
@@ -67,4 +67,4 @@ def get_preconditioner_functions_from_sparse_hessian(hessian):
     hessian_chol = cholesky(hessian)
     mult_hess_inv_sqrt, mult_hess_sqrt = \
         _get_sparse_square_root_operators(hessian_chol)
-    return mult_hess_inv_sqrt, mult_hess_sqrt
+    return mult_hess_sqrt, mult_hess_inv_sqrt

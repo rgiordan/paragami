@@ -46,12 +46,17 @@ def _test_array_flat_indices(testcase, pattern):
     flat_len = pattern.flat_length(free=False)
     manual_jac = np.zeros((free_len, flat_len))
 
+    print('------------- Testing _test_array_flat_indices')
+    print(pattern)
+
     for ind in range(flat_len):
+        print(ind)
         bool_vec = np.full(flat_len, False, dtype='bool')
         bool_vec[ind] = True
         x_bool = pattern.fold(bool_vec, free=False, validate_value=False)
         flat_ind = pattern.flat_indices(x_bool, free=False)
         free_ind = pattern.flat_indices(x_bool, free=True)
+        print(flat_ind, free_ind, flat_ind.dtype, free_ind.dtype)
         manual_jac[np.ix_(free_ind, flat_ind)] = 1
 
     flat_to_free_jac = pattern.freeing_jacobian(

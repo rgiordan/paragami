@@ -389,7 +389,7 @@ class PatternDict(Pattern):
         if len(indices) > 0:
             return np.hstack(indices)
         else:
-            return np.array([])
+            return np.array([], dtype=int)
 
 
 ##########################
@@ -635,7 +635,7 @@ class PatternArray(Pattern):
         if len(indices) > 0:
             return np.hstack(indices)
         else:
-            return np.array([])
+            return np.array([], dtype=int)
 
 
 register_pattern_json(PatternDict)
