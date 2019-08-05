@@ -52,9 +52,10 @@ def get_sym_matrix_inv_sqrt_funcs(hessian):
 
     Returns
     -----------
-    mult_hess_inv_sqrt, mult_hess_sqrt: Callable functions
-        Functions that multiply a vector argument by the inverse square root
-        and square root of the ``hessian`` argument, respectively.  These
+    mult_hess_sqrt mult_hess_inv_sqrt: Callable functions
+        ``mult_hess_sqrt`` is linear function that multiplies a vector argument
+        by a square root of the ``hessian`` argument, and ``mult_hess_inv_sqrt``
+        is the inverse of ``mult_hess_sqrt``.  These functions
         can be passed to the ``set_preconditioner_functions`` method of
         an ``optimization_lib.PreconditionedFunction`` class to use a sparse
         preconditioner.

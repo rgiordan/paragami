@@ -49,17 +49,27 @@ class TestSparseMatrixTools(unittest.TestCase):
         hess = dim * np.eye(dim) + hess @ hess.T
         sp_hess = sp.sparse.csc_matrix(hess)
 
-        # This function is already tested in ``test_optimzation_lib``, so we
-        # can just check that the sparse version matches.
-        h_sqrt_mult, h_inv_sqrt_mult = \
-            paragami.optimization_lib._get_sym_matrix_inv_sqrt_funcs(hess)
+        # Check that it fails with a dense matrix.
+        with self.assertRaises(ValueError):
+            get_sym_matrix_inv_sqrt_funcs(hess)
 
         sp_h_sqrt_mult, sp_h_inv_sqrt_mult = \
             get_sym_matrix_inv_sqrt_funcs(sp_hess)
 
-        v = np.random.random(dim)
-        assert_array_almost_equal(h_sqrt_mult(v), sp_h_sqrt_mult(v))
-        assert_array_almost_equal(h_inv_sqrt_mult(v), sp_h_inv_sqrt_mult(v))
+        h_sqrt = _get_matrix_from_operator(sp_h_sqrt_mult, dim)
+        h_inv_sqrt = _get_matrix_from_operator(sp_h_inv_sqrt_mult, dim)
+
+        # Test with a few random vectors.
+        for n in range(100):
+            v = np.random.random(dim)
+
+            assert_array_almost_equal(sp_h_inv_sqrt_mult(sp_h_sqrt_mult(v)), v)
+
+            assert_array_almost_equal(h_sqrt @ v, sp_h_sqrt_mult(v))
+            assert_array_almost_equal(h_inv_sqrt @ v, sp_h_inv_sqrt_mult(v))
+
+            assert_array_almost_equal(h_inv_sqrt @ h_sqrt, np.eye(dim))
+            assert_array_almost_equal(h_sqrt.T @ h_sqrt, hess)
 
 
 if __name__ == '__main__':

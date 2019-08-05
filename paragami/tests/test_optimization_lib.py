@@ -117,6 +117,8 @@ class TestPreconditionedFunction(unittest.TestCase):
         theta = np.arange(0, dim) / 5.0
 
         def test_f_c_values(a):
+            """Test that f_c has its preconditioner set to the matrix ``a``.
+            """
             if sp.sparse.issparse(a):
                 a_inv = sp.sparse.linalg.inv(a)
             else:
