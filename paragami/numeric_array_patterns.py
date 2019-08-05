@@ -99,6 +99,16 @@ class NumericArrayPattern(Pattern):
         super().__init__(flat_length, free_flat_length,
                          free_default=free_default)
 
+        # Cache arrays of indices for flat_indices
+        # TODO: not sure this is a good idea or much of a speedup.
+        self.__free_folded_indices = self.fold(
+            np.arange(self.flat_length(True)),
+            validate_value=False, free=True)
+
+        self.__nonfree_folded_indices = self.fold(
+            np.arange(self.flat_length(True)),
+            validate_value=False, free=True)
+
     def __str__(self):
         return 'NumericArrayPattern {} (lb={}, ub={})'.format(
             self._shape, self._lb, self._ub)
@@ -194,15 +204,23 @@ class NumericArrayPattern(Pattern):
             return self._flat_length
 
     def flat_indices(self, folded_bool, free=None):
+        # If no indices are specified, save time and return an empty array.
+        if not np.any(folded_bool):
+            return np.array([])
+
         free = self._free_with_default(free)
         folded_bool = np.atleast_1d(folded_bool)
         shape_ok, err_msg = self._validate_folded_shape(folded_bool)
         if not shape_ok:
             raise ValueError(err_msg)
-        folded_indices = self.fold(
-            np.arange(self.flat_length(free)),
-            validate_value=False, free=False)
-        return folded_indices[folded_bool]
+        if free:
+            return self.__free_folded_indices[folded_bool]
+        else:
+            return self.__nonfree_folded_indices[folded_bool]
+        # folded_indices = self.fold(
+        #     np.arange(self.flat_length(free)),
+        #     validate_value=False, free=False)
+        #return folded_indices[folded_bool]
 
 
 

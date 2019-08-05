@@ -316,6 +316,10 @@ class PSDSymmetricMatrixPattern(Pattern):
             return folded_val
 
     def flat_indices(self, folded_bool, free=None):
+        # If no indices are specified, save time and return an empty array.
+        if not np.any(folded_bool):
+            return np.array([])
+
         free = self._free_with_default(free)
         shape_ok, err_msg = self._validate_folded_shape(folded_bool)
         if not shape_ok:

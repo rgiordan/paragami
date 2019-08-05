@@ -626,10 +626,11 @@ class PatternArray(Pattern):
         pattern_flat_length = self.__base_pattern.flat_length(free=free)
         offset = 0
         for item in itertools.product(*self.__array_ranges):
-            pattern_indices = self.__base_pattern.flat_indices(
-                folded_bool[item], free=free)
-            if len(pattern_indices) > 0:
-                indices.append(pattern_indices + offset)
+            if np.any(folded_bool[item]):
+                pattern_indices = self.__base_pattern.flat_indices(
+                    folded_bool[item], free=free)
+                if len(pattern_indices) > 0:
+                    indices.append(pattern_indices + offset)
             offset += pattern_flat_length
         if len(indices) > 0:
             return np.hstack(indices)

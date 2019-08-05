@@ -2,4 +2,3 @@
 git+https://github.com/HIPS/autograd@815a0b97ada3c0c4b854c961706cc56cca8b7834
 numpy
 scipy
-scikit-sparse
