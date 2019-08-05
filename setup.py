@@ -3,6 +3,9 @@ import re
 from setuptools import setup, find_packages
 import sys
 import versioneer
+
+# This used to be necessary before I removed sckit-sparse from the base
+# dependencies.
 #import numpy
 
 # try:
@@ -47,23 +50,10 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
 # Parse requirements.txt, ignoring any commented-out or git lines.
-# with open(path.join(here, 'requirements.txt')) as requirements_file:
-#     requirements_lines = requirements_file.read().splitlines()
-#
-# requirements = [line for line in requirements_lines
-#                 if not (line.startswith('#') or line.startswith('git'))]
-#
-# git_requirements = [line for line in requirements_lines
-#                      if line.startswith('git')]
-#
-# # git repos also need to be listed in the requirements.
-# for git_req in git_requirements:
-#     print('---------------\n', git_req, requirements)
-#     # loc = git_requirements[0].find('egg=') + 4
-#     # requirements += [ git_requirements[0][loc:] ]
-#     loc = git_requirements[0].find('egg=') + 4
-#     requirements += [ git_requirements[0][loc:] ]
+with open(path.join(here, 'requirements.txt')) as requirements_file:
+    requirements_lines = requirements_file.read().splitlines()
 
+requirements = [line for line in requirements_lines if not line.startswith('#')]
 
 setup(
     name='paragami',
@@ -88,12 +78,7 @@ setup(
             # 'path/to/data_file',
             ]
         },
-    # The latest autograd on pypi is 1.2.  Force the git commit with a larger
-    # version number.
-    # Old style (pip < 19)
-    #install_requires=['numpy', 'scipy', 'scikit-sparse', 'autograd>1.2'],
-    #dependency_links=['git+https://github.com/HIPS/autograd@815a0b97ada3c0c4b854c961706cc56cca8b7834#egg=autograd-1.2.1'],
-    install_requires=['numpy', 'scipy', 'scikit-sparse', 'autograd @ git+https://github.com/HIPS/autograd@815a0b97ada3c0c4b854c961706cc56cca8b7834#egg=autograd'],
+    install_requires=requirements,
     classifiers=[
         'Programming Language :: Python :: 3',
         'Natural Language :: English',
