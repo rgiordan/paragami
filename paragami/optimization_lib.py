@@ -3,7 +3,6 @@ import autograd.numpy as np
 import copy
 import scipy as osp
 import scipy.sparse
-from sksparse.cholmod import cholesky
 import warnings
 
 from .autograd_supplement_lib import \
@@ -143,33 +142,6 @@ def _get_matrix_from_operator(mult_fun, dim):
     return np.vstack(mat).T
 
 
-# For sparse preconditioners.
-def _get_cholesky_sqrt_mat(mat_chol):
-    """Extract the actual Cholesky square root from a decomposition provided
-    by ``sksparse.cholmod.cholesky``.
-    """
-    return mat_chol.apply_Pt(mat_chol.L())
-
-
-def _get_sparse_square_root_operators(mat_chol):
-    """Get preconditioners from a sparse matrix.  The argument should be the
-    output of ``sksparse.cholmod.cholesky``
-    """
-    mat_sqrt = _get_cholesky_sqrt_mat(mat_chol)
-
-    # To avoid the sparse efficiency warning.
-    mat_sqrt_t = osp.sparse.csc_matrix(mat_sqrt.T)
-
-    _, mult_mat_sqrt_t_ad = get_sparse_product(mat_sqrt)
-    _, solve_mat_sqrt_t_ad = \
-        get_differentiable_solver(
-            osp.sparse.linalg.factorized(mat_sqrt),
-            osp.sparse.linalg.factorized(mat_sqrt_t))
-
-    return solve_mat_sqrt_t_ad, mult_mat_sqrt_t_ad
-
-
-
 class PreconditionedFunction():
     """
     Get a function whose input has been preconditioned.
@@ -272,7 +244,7 @@ class PreconditionedFunction():
     def set_preconditioner_with_hessian(self, x=None, hessian=None,
                                         ev_min=None, ev_max=None):
         """
-        Set the precoditioner to the inverse square root of the Hessian of
+        Set the preconditioner to the inverse square root of the Hessian of
         the original objective (or an approximation thereof).
 
         Parameters
@@ -307,14 +279,11 @@ class PreconditionedFunction():
             hessian = get_original_fun_hessian(x)
 
         if osp.sparse.issparse(hessian):
-            # Use the Cholesky square root.
-            if not ((ev_min is None) and (ev_max is None)):
-                raise ValueError(
-                    'Enforcing eigenvalue bounds with sparse matrices is ' +
-                    'not supported.')
-            hessian_chol = cholesky(hessian)
-            mult_hess_inv_sqrt, mult_hess_sqrt = \
-                _get_sparse_square_root_operators(hessian_chol)
+            raise NotImplementedError(
+                '``set_preconditioner_with_hessian`` no longer works with ' +
+                'sparse Hessians directly.  Instead, ' +
+                'use ``sparse_preconditioners_lib.' +
+                'get_preconditioner_functions_from_sparse_hessian``.')
         else:
             mult_hess_sqrt, mult_hess_inv_sqrt = \
                 _get_sym_matrix_inv_sqrt_funcs(
@@ -342,13 +311,13 @@ class PreconditionedFunction():
 
     def get_preconditioner(self, dim):
         """Return a matrix representation of the preconditioner.  This may
-        be expensive.
+        be expensive and is intended for testing only.
         """
         return _get_matrix_from_operator(self._a_times, dim)
 
     def get_preconditioner_inv(self, dim):
         """Return a matrix representation of the preconditioner.  This may
-        be expensive.
+        be expensive and is intended for testing only.
         """
         return _get_matrix_from_operator(self._a_inv_times, dim)
 

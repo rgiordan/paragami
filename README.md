@@ -42,18 +42,16 @@ To install the latest tagged version, install with `pip`:
 
 `python3 -m pip install paragami`.
 
-Note that `paragami` is under rapid development, so you may want to
+The `paragami` package is under rapid development, so you may want to
 clone the respository and use the master branch instead.
 
-**Note**: due to a dependence on
+**Note**: In order to use the functions in
+`sparse_preconditioners_lib`, you must additionally manually install
 [``scikit-sparse``](https://github.com/scikit-sparse/scikit-sparse/),
-``pip`` installation of ``paragami`` requires ``numpy``, ``wheel``, and
-(on Debian / Ubuntu systems) ``libsuitesparse-dev``.  See the
+which requires the C++ libraries in ``libsuitesparse-dev``.
+Most users will not require this functionality so `scikit-sparse` is not installed by default with `paragami` for simplicity.  See the
 [``scikit-sparse`` requirements](https://scikit-sparse.readthedocs.io/en/latest/overview.html#requirements)
-for more details.
-
-**Note**: due to a dependence on a currently unreleased bug fix in ``autograd``, ``paragami`` requries ``pip`` version 19 or greater to install.
-
+for more details on installation.
 
 ### Documentation and Examples.
 

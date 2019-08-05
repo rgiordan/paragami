@@ -180,13 +180,17 @@ class SimplexArrayPattern(Pattern):
             default_validate=json_dict['default_validate'])
 
     def flat_indices(self, folded_bool, free=None):
+        # If no indices are specified, save time and return an empty array.
+        if not np.any(folded_bool):
+            return np.array([], dtype=int)
+
         free = self._free_with_default(free)
         shape_ok, err_msg = self._validate_folded_shape(folded_bool)
         if not shape_ok:
             raise ValueError(err_msg)
         if not free:
             folded_indices = self.fold(
-                np.arange(self.flat_length(False)),
+                np.arange(self.flat_length(False), dtype=int),
                 validate_value=False, free=False)
             return folded_indices[folded_bool]
         else:
@@ -202,7 +206,8 @@ class SimplexArrayPattern(Pattern):
                 if np.any(folded_bool[ind]):
                     free_inds = np.arange(
                         offset * free_simplex_length,
-                        (offset + 1) * free_simplex_length)
+                        (offset + 1) * free_simplex_length,
+                        dtype=int)
                     indices.append(free_inds)
                 offset += 1
             if len(indices) > 0:
