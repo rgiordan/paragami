@@ -3,7 +3,7 @@ import re
 from setuptools import setup, find_packages
 import sys
 import versioneer
-import numpy
+#import numpy
 
 # try:
 #     import numpy

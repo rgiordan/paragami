@@ -8,7 +8,6 @@ import itertools
 from numpy.testing import assert_array_almost_equal
 import paragami
 import scipy as sp
-from sksparse.cholmod import cholesky
 from test_utils import QuadraticModel, captured_output
 import unittest
 

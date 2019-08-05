@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 
-#import autograd
+try:
+    from sksparse.cholmod import cholesky
+    from paragami.sparse_preconditioners_lib import _get_cholesky_sqrt_mat
+    from paragami.sparse_preconditioners_lib import get_sym_matrix_inv_sqrt_funcs
+    skip_test = False
+except ImportError:
+    import warnings
+    skip_test = True
+
 import numpy as np
-#import autograd.numpy as np
 from autograd.test_util import check_grads
-#import copy
-#import itertools
 from numpy.testing import assert_array_almost_equal
 import paragami
 import scipy as sp
-from sksparse.cholmod import cholesky
-#from test_utils import QuadraticModel
 import unittest
 
 from paragami.optimization_lib import _get_matrix_from_operator
-from paragami.sparse_preconditioners_lib import _get_cholesky_sqrt_mat
-from paragami.sparse_preconditioners_lib import get_sym_matrix_inv_sqrt_funcs
 
 
 def assert_sp_array_almost_equal(x, y):
@@ -24,9 +25,19 @@ def assert_sp_array_almost_equal(x, y):
     assert_array_almost_equal(x_test, y_test)
 
 
-
 class TestSparseMatrixTools(unittest.TestCase):
+    def test_skip_test(self):
+        if skip_test:
+            warnings.warn(
+                'sksparse.cholmod is not installed, so skipping ' +
+                'test_sparse_preconditioners_lib.py.')
+        else:
+            print('scikit-sparse found; running tests.')
+
     def test_choleksy_sqrt(self):
+        if skip_test:
+            return
+
         dim = 5
         mat = np.eye(dim)
         mat[0, 1] = 0.2
@@ -44,6 +55,9 @@ class TestSparseMatrixTools(unittest.TestCase):
         assert_sp_array_almost_equal(mat_sqrt @ mat_sqrt.T, mat_sp)
 
     def test_sparse_preconditioners(self):
+        if skip_test:
+            return
+
         dim = 5
         hess = np.random.random((dim, dim))
         hess = dim * np.eye(dim) + hess @ hess.T
@@ -73,4 +87,8 @@ class TestSparseMatrixTools(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    print('+++++++++++++++ OH HAI')
+    if not skip_test:
+        print('run_test: ', run_test)
+        unittest.main()
+    print('not running because run_test: ', run_test)
