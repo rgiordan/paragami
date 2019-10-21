@@ -3,6 +3,8 @@ from .pattern_containers import register_pattern_json
 import autograd.numpy as np
 import copy
 import json
+import scipy as osp
+from scipy import sparse
 
 
 def _unconstrain_array(array, lb, ub):
@@ -20,6 +22,21 @@ def _unconstrain_array(array, lb, ub):
             return -1 * np.log(ub - array)
         else:
             return np.log(array - lb) - np.log(ub - array)
+
+
+def _unconstrain_array_jacobian(array, lb, ub):
+    # The Jacobian of the unconstraining mapping in the same shape as
+    # the original array.
+    if ub == float("inf"):
+        if lb == -float("inf"):
+            return np.ones_like(array)
+        else:
+            return 1.0 / (array - lb)
+    else:  # the upper bound is finite
+        if lb == -float("inf"):
+            return 1.0 / (ub - array)
+        else:
+            return 1 / (array - lb) + 1 / (ub - array)
 
 
 def _constrain_array(free_array, lb, ub):
@@ -40,6 +57,25 @@ def _constrain_array(free_array, lb, ub):
             return (ub - lb) * exp_vec / (1 + exp_vec) + lb
 
 
+def _constrain_array_jacobian(free_array, lb, ub):
+    # The Jacobian of the constraining mapping in the same shape as the
+    # original array.
+    if ub == float("inf"):
+        if lb == -float("inf"):
+            return np.ones_like(free_array)
+        else:
+            return np.exp(free_array)
+    else:  # the upper bound is finite
+        if lb == -float("inf"):
+            return np.exp(-1 * free_array)
+        else:
+            # d/dx exp(x) / (1 + exp(x)) =
+            #    exp(x) / (1 + exp(x)) - exp(x) ** 2 / (1 + exp(x)) ** 2
+            exp_vec = np.exp(free_array)
+            ratio = exp_vec / (1 + exp_vec)
+            return (ub - lb) * ratio * (1 - ratio)
+
+
 def _get_inbounds_value(lb, ub):
     assert lb < ub
     if lb > -float('inf') and ub < float('inf'):
@@ -54,6 +90,24 @@ def _get_inbounds_value(lb, ub):
         else:
             # Both are infinite.
             return 0.0
+
+
+def _constrain_array(free_array, lb, ub):
+    # Assume that lb < ub, which is checked in the pattern.
+    if ub == float("inf"):
+        if lb == -float("inf"):
+            # For consistency, never return a reference.
+            #return copy.deepcopy(free_array)
+            #return free_array
+            return copy.copy(free_array)
+        else:
+            return np.exp(free_array) + lb
+    else:  # the upper bound is finite
+        if lb == -float("inf"):
+            return ub - np.exp(-1 * free_array)
+        else:
+            exp_vec = np.exp(free_array)
+            return (ub - lb) * exp_vec / (1 + exp_vec) + lb
 
 
 class NumericArrayPattern(Pattern):
@@ -218,6 +272,23 @@ class NumericArrayPattern(Pattern):
         else:
             return self.__nonfree_folded_indices[folded_bool]
 
+    def freeing_jacobian(self, folded_val, sparse=True):
+        jac_array = \
+            _unconstrain_array_jacobian(folded_val, self._lb, self._ub)
+        if sparse:
+            return osp.sparse.diags(jac_array.flatten())
+        else:
+            return np.diag(jac_array)
+
+    def unfreeing_jacobian(self, folded_val, sparse=True):
+        jac_array = \
+            _constrain_array_jacobian(
+                _unconstrain_array(folded_val, self._lb, self._ub),
+                self._lb, self._ub)
+        if sparse:
+            return osp.sparse.diags(jac_array.flatten())
+        else:
+            return np.diag(jac_array)
 
 
 class NumericVectorPattern(NumericArrayPattern):
