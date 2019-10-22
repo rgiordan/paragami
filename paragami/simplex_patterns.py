@@ -4,6 +4,7 @@ from .pattern_containers import register_pattern_json
 
 import autograd.numpy as np
 import autograd.scipy as sp
+from scipy.sparse import coo_matrix, block_diag
 
 import itertools
 
@@ -182,12 +183,31 @@ class SimplexArrayPattern(Pattern):
         else:
             return folded_val.flatten()
 
-    # def freeing_jacobian(self, folded_val, sparse=True):
-    #     assert False
+    def freeing_jacobian(self, folded_val, sparse=True):
+        array_ranges = [ range(i) for i in self.__array_shape ]
+        jacobians = []
+        for item in itertools.product(*array_ranges):
+            jac = _unconstrain_simplex_jacobian(folded_val[item][:])
+            jacobians.append(jac)
+        sp_jac = block_diag(jacobians, format='coo')
+
+        if sparse:
+            return sp_jac
+        else:
+            return sp_jac.todense()
 
     def unfreeing_jacobian(self, folded_val, sparse=True):
-        jac = _unconstrain_simplex_matrix_jacobian(folded_val)
+        array_ranges = [ range(i) for i in self.__array_shape ]
+        jacobians = []
+        for item in itertools.product(*array_ranges):
+            jac = _constrain_simplex_jacobian(folded_val[item][:])
+            jacobians.append(jac)
+        sp_jac = block_diag(jacobians, format='coo')
 
+        if sparse:
+            return sp_jac
+        else:
+            return sp_jac.todense()
 
     @classmethod
     def from_json(cls, json_string):
