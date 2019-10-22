@@ -4,6 +4,7 @@ from .pattern_containers import register_pattern_json
 
 import autograd.numpy as np
 import autograd.scipy as sp
+from scipy.sparse import coo_matrix, block_diag
 
 import itertools
 
@@ -16,7 +17,7 @@ def logsumexp(mat, axis):
     """
     if not type(axis) is int:
         raise ValueError(
-            'This version of logsumexp is only designed for exactly one axis.')
+            'This version of logsumexp is designed for only one axis.')
     mat_max = np.max(mat, axis=axis, keepdims=True)
     exp_mat_norm = np.exp(mat - mat_max)
     return np.log(np.sum(exp_mat_norm, axis=axis, keepdims=True)) + mat_max
@@ -35,9 +36,24 @@ def _constrain_simplex_matrix(free_mat):
     return np.exp(free_mat_aug - log_norm)
 
 
-def _unconstrain_simplex_matrix(simplex_mat):
-    return np.log(simplex_mat[..., 1:]) - \
-           np.expand_dims(np.log(simplex_mat[..., 0]), axis=-1)
+def _constrain_simplex_jacobian(simplex_vec):
+    jac = \
+        -1 * np.outer(simplex_vec, simplex_vec) + \
+        np.diag(simplex_vec)
+    return jac[:, 1:]
+
+
+def _unconstrain_simplex_matrix(simplex_array):
+    return np.log(simplex_array[..., 1:]) - \
+           np.expand_dims(np.log(simplex_array[..., 0]), axis=-1)
+
+
+def _unconstrain_simplex_jacobian(simplex_vec):
+    """Get the unconstraining Jacobian for a single simplex vector.
+    """
+    return np.hstack(
+        [ np.full(len(simplex_vec) - 1, -1 / simplex_vec[0])[:, None],
+          np.diag(1 / simplex_vec[1: ]) ])
 
 
 class SimplexArrayPattern(Pattern):
@@ -48,7 +64,7 @@ class SimplexArrayPattern(Pattern):
     if `array_shape=(2, 3)` and `simplex_size=4`, then the pattern is
     for a 2x3 array of 4d simplexes.  If such value of the simplex
     array is given by `val`, then `val.shape = (2, 3, 4)` and
-    `val[i, j, :]` is the `i,j`th of the six simplicial vectors, i.e,
+    `val[i, j, :]` is the `i,j`th of the six simplicial vectors, e.g,
     `np.sum(val[i, j, :])` equals 1 for each `i` and `j`.
 
     Attributes
@@ -166,6 +182,32 @@ class SimplexArrayPattern(Pattern):
             return _unconstrain_simplex_matrix(folded_val).flatten()
         else:
             return folded_val.flatten()
+
+    def freeing_jacobian(self, folded_val, sparse=True):
+        array_ranges = [ range(i) for i in self.__array_shape ]
+        jacobians = []
+        for item in itertools.product(*array_ranges):
+            jac = _unconstrain_simplex_jacobian(folded_val[item][:])
+            jacobians.append(jac)
+        sp_jac = block_diag(jacobians, format='coo')
+
+        if sparse:
+            return sp_jac
+        else:
+            return sp_jac.todense()
+
+    def unfreeing_jacobian(self, folded_val, sparse=True):
+        array_ranges = [ range(i) for i in self.__array_shape ]
+        jacobians = []
+        for item in itertools.product(*array_ranges):
+            jac = _constrain_simplex_jacobian(folded_val[item][:])
+            jacobians.append(jac)
+        sp_jac = block_diag(jacobians, format='coo')
+
+        if sparse:
+            return sp_jac
+        else:
+            return sp_jac.todense()
 
     @classmethod
     def from_json(cls, json_string):

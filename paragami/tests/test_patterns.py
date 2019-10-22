@@ -187,6 +187,25 @@ def _test_pattern(testcase, pattern, valid_value,
 
 
 class TestBasicPatterns(unittest.TestCase):
+    def test_simplex_jacobian(self):
+        dim = 5
+        simplex = np.random.random(dim)
+        simplex = simplex / np.sum(simplex)
+
+        jac_ad = \
+            autograd.jacobian(
+                paragami.simplex_patterns._unconstrain_simplex_matrix)(simplex)
+        jac = paragami.simplex_patterns._unconstrain_simplex_jacobian(simplex)
+        assert_array_almost_equal(jac_ad, jac)
+
+        simplex_free = \
+            paragami.simplex_patterns._unconstrain_simplex_matrix(simplex)
+        jac_ad = autograd.jacobian(
+            paragami.simplex_patterns._constrain_simplex_matrix)(simplex_free)
+        jac = paragami.simplex_patterns._constrain_simplex_jacobian(simplex)
+        assert_array_almost_equal(jac_ad, jac)
+
+
     def test_simplex_array_patterns(self):
         def test_shape_and_size(simplex_size, array_shape):
             shape = array_shape + (simplex_size, )
