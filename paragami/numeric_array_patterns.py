@@ -275,8 +275,9 @@ class NumericArrayPattern(Pattern):
     def freeing_jacobian(self, folded_val, sparse=True):
         jac_array = \
             _unconstrain_array_jacobian(folded_val, self._lb, self._ub)
+        jac_array = np.atleast_1d(jac_array).flatten()
         if sparse:
-            return osp.sparse.diags(jac_array.flatten())
+            return osp.sparse.diags(jac_array)
         else:
             return np.diag(jac_array)
 
@@ -285,8 +286,9 @@ class NumericArrayPattern(Pattern):
             _constrain_array_jacobian(
                 _unconstrain_array(folded_val, self._lb, self._ub),
                 self._lb, self._ub)
+        jac_array = np.atleast_1d(jac_array).flatten()
         if sparse:
-            return osp.sparse.diags(jac_array.flatten())
+            return osp.sparse.diags(jac_array)
         else:
             return np.diag(jac_array)
 
