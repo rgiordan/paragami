@@ -192,12 +192,17 @@ class TestBasicPatterns(unittest.TestCase):
         simplex = np.random.random(dim)
         simplex = simplex / np.sum(simplex)
 
-        get_unconstrain_jac_ad = autograd.jacobian(
-            paragami.simplex_patterns._unconstrain_simplex_matrix)
+        jac_ad = \
+            autograd.jacobian(
+                paragami.simplex_patterns._unconstrain_simplex_matrix)(simplex)
+        jac = paragami.simplex_patterns._unconstrain_simplex_jacobian(simplex)
+        assert_array_almost_equal(jac_ad, jac)
 
-        jac_ad = get_unconstrain_jac_ad(simplex)
-        jac = paragami.simplex_patterns._unconstrain_simplex_matrix_jacobian(simplex)
-
+        simplex_free = \
+            paragami.simplex_patterns._unconstrain_simplex_matrix(simplex)
+        jac_ad = autograd.jacobian(
+            paragami.simplex_patterns._constrain_simplex_matrix)(simplex_free)
+        jac = paragami.simplex_patterns._constrain_simplex_jacobian(simplex)
         assert_array_almost_equal(jac_ad, jac)
 
 

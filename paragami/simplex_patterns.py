@@ -35,8 +35,11 @@ def _constrain_simplex_matrix(free_mat):
     return np.exp(free_mat_aug - log_norm)
 
 
-def _constrain_simplex_matrix_jacobian(free_mat):
-    pass
+def _constrain_simplex_jacobian(simplex_vec):
+    jac = \
+        -1 * np.outer(simplex_vec, simplex_vec) + \
+        np.diag(simplex_vec)
+    return jac[:, 1:]
 
 
 def _unconstrain_simplex_matrix(simplex_array):
@@ -44,7 +47,7 @@ def _unconstrain_simplex_matrix(simplex_array):
            np.expand_dims(np.log(simplex_array[..., 0]), axis=-1)
 
 
-def _unconstrain_simplex_matrix_jacobian(simplex_vec):
+def _unconstrain_simplex_jacobian(simplex_vec):
     """Get the unconstraining Jacobian for a single simplex vector.
     """
     return np.hstack(
