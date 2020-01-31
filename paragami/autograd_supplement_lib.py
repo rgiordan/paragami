@@ -180,35 +180,34 @@ def get_differentiable_solver(z_solve, zt_solve):
     return z_solve_ad, zt_solve_ad
 
 
-# Use the sparse product to define a differentiable grouped sum.  Alternatively
-# one could implement the same thing for np.bincount.
-def get_grouped_aggregator(groups, num_groups=None):
-    """
-    Return an autograd-compatible function that calculates a grouped sum of
-    a 1d or 2d array.
+@primitive
+def grouped_sum(x, groups, num_groups=None):
+    """Sum the array `x` by its first index according to indices in `groups`.
 
     Parameters
     ------------
+    x: numpy.ndarray
+        An array of dimension (N, D1, ..., DK)
     groups:
-        A vector of zero-indexed integers mapping rows to groups.
+        A length-N vector of zero-indexed integers mapping the first index
+        of x to groups.
     num_groups:
         Optional, the total number of groups.  If unspecified, one plus the
         largest element of `groups` is used.
 
     Returns
     -----------
-    get_grouped_sum:
-        A autograd-differentiable function that aggregates the rows of the
-        argument by `group`.  If the argument has dimensions D1 x D2,
-        you must have D1 == len(groups), and the output will be
-        `num_groups` x D2.
+    A (num_groups, D1, ..., DK) dimensional vector, where entry [g, ...]
+    contains the sum of the entries `x[n, :]`` where `groups[n] == g`.
     """
-
+    x = np.atleast_1d(x)
     groups = np.atleast_1d(groups).astype('int64')
     if (groups.ndim > 1):
         raise ValueError('groups must be a vector.')
 
     n_obs = len(groups)
+    if x.shape[0] != n_obs:
+        raise ValueError('The first dimension of x must match the length of groups')
     max_group = np.max(groups)
     if num_groups is None:
         num_groups = max_group + 1
@@ -217,13 +216,76 @@ def get_grouped_aggregator(groups, num_groups=None):
             raise ValueError(
                 'The largest group is >= the number of groups.')
 
-    # Build a sparse matrix to represent the aggregation.
-    cols = np.arange(0, n_obs)
-    data = np.ones(n_obs)
-    rows = groups
-    grouping_mat = osp.sparse.csr_matrix(
-        (data, (rows, cols)), (np.max(groups) + 1, n_obs))
+    result = np.zeros((num_groups, ) + x.shape[1:])
+    for n in range(n_obs):
+        if x.ndim > 1:
+            result[groups[n], :] += x[n, :]
+        else:
+            result[groups[n]] += x[n]
+    return result
 
-    get_grouped_sum, _ = get_sparse_product(grouping_mat)
+def _ungroup(v, groups):
+    if v.ndim > 1:
+        return v[groups, :]
+    else:
+        return v[groups]
 
-    return get_grouped_sum
+def grouped_sum_vjp(ans, x, groups, num_groups=None):
+    def vjp(v):
+        return _ungroup(v, groups)
+    return vjp
+defvjp(grouped_sum, grouped_sum_vjp)
+
+def grouped_sum_jvp(v, ans, x, groups, num_groups=None):
+    return grouped_sum(v, groups, num_groups=num_groups)
+defjvp(grouped_sum, grouped_sum_jvp)
+#
+#
+#
+# # Use the sparse product to define a differentiable grouped sum.  Alternatively
+# # one could implement the same thing for np.bincount.
+# def get_grouped_aggregator(groups, num_groups=None):
+#     """
+#     Return an autograd-compatible function that calculates a grouped sum of
+#     a 1d or 2d array.
+#
+#     Parameters
+#     ------------
+#     groups:
+#         A vector of zero-indexed integers mapping rows to groups.
+#     num_groups:
+#         Optional, the total number of groups.  If unspecified, one plus the
+#         largest element of `groups` is used.
+#
+#     Returns
+#     -----------
+#     get_grouped_sum:
+#         A autograd-differentiable function that aggregates the rows of the
+#         argument by `group`.  If the argument has dimensions D1 x D2,
+#         you must have D1 == len(groups), and the output will be
+#         `num_groups` x D2.
+#     """
+#
+#     groups = np.atleast_1d(groups).astype('int64')
+#     if (groups.ndim > 1):
+#         raise ValueError('groups must be a vector.')
+#
+#     n_obs = len(groups)
+#     max_group = np.max(groups)
+#     if num_groups is None:
+#         num_groups = max_group + 1
+#     else:
+#         if max_group >= num_groups:
+#             raise ValueError(
+#                 'The largest group is >= the number of groups.')
+#
+#     # Build a sparse matrix to represent the aggregation.
+#     cols = np.arange(0, n_obs)
+#     data = np.ones(n_obs)
+#     rows = groups
+#     grouping_mat = osp.sparse.csr_matrix(
+#         (data, (rows, cols)), (np.max(groups) + 1, n_obs))
+#
+#     get_grouped_sum, _ = get_sparse_product(grouping_mat)
+#
+#     return get_grouped_sum

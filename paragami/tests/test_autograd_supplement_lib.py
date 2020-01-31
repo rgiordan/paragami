@@ -218,5 +218,26 @@ class TestSparseMatrixTools(unittest.TestCase):
         # check_grads(zt_solve_chol)(a)
 
 
+class TestGroupedSum(unittest.TestCase):
+    def test_grouped_sum(self):
+        grouped_sum = autograd_supplement_lib.grouped_sum
+        n_groups = 10
+        n_per_group = 2
+        n_obs = n_groups * n_per_group
+
+        groups = np.repeat(np.arange(0, n_groups), n_per_group)
+
+        def check(x):
+            if x.ndim == 1:
+                assert_array_almost_equal(
+                    grouped_sum(x, groups),
+                    np.bincount(groups, x))
+            check_grads(grouped_sum)(x, groups)
+            check_grads(grouped_sum)(x, groups, num_groups=n_groups + 4)
+
+        check(np.random.random(n_obs))
+        check(np.random.random((n_obs, 3)))
+        check(np.random.random((n_obs, 3, 2)))
+
 if __name__ == '__main__':
     unittest.main()
