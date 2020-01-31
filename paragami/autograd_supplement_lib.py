@@ -7,6 +7,8 @@
 import autograd
 import autograd.numpy as np
 import autograd.scipy as sp
+import scipy as osp
+from scipy import sparse
 from autograd.core import primitive, defvjp, defjvp
 
 from autograd.numpy.linalg import slogdet, solve, inv
@@ -182,22 +184,46 @@ def get_differentiable_solver(z_solve, zt_solve):
 # one could implement the same thing for np.bincount.
 def get_grouped_aggregator(groups, num_groups=None):
     """
-    Return an autograd-compatible function that calculates
-    ``z_solve(b) = z^{-1} b`` where the solver may not be natively
-    differentiable by autograd.
+    Return an autograd-compatible function that calculates a grouped sum of
+    a 1d or 2d array.
 
     Parameters
     ------------
-    z_solve, zt_solve:
-        Functions that take a vector input ``b`` and return ``z^{-1} b`` and
-        ``(z^T)^{-1} b``, respectively.
+    groups:
+        A vector of zero-indexed integers mapping rows to groups.
+    num_groups:
+        Optional, the total number of groups.  If unspecified, one plus the
+        largest element of `groups` is used.
 
     Returns
     -----------
-    z_solve_ad, zt_solve_ad:
-        Respective versions of ``z_solve`` and ``zt_solve`` that can be
-        differentiated by autograd.
-
-    This is particularly useful for differentiating the solutions of systems
-    where the matrix ``z`` is sparse.
+    get_grouped_sum:
+        A autograd-differentiable function that aggregates the rows of the
+        argument by `group`.  If the argument has dimensions D1 x D2,
+        you must have D1 == len(groups), and the output will be
+        `num_groups` x D2.
     """
+
+    groups = np.atleast_1d(groups).astype('int64')
+    if (groups.ndim > 1):
+        raise ValueError('groups must be a vector.')
+
+    n_obs = len(groups)
+    max_group = np.max(groups)
+    if num_groups is None:
+        num_groups = max_group + 1
+    else:
+        if max_group >= num_groups:
+            raise ValueError(
+                'The largest group is >= the number of groups.')
+
+    # Build a sparse matrix to represent the aggregation.
+    cols = np.arange(0, n_obs)
+    data = np.ones(n_obs)
+    rows = groups
+    grouping_mat = osp.sparse.csr_matrix(
+        (data, (rows, cols)), (np.max(groups) + 1, n_obs))
+
+    get_grouped_sum, _ = get_sparse_product(grouping_mat)
+
+    return get_grouped_sum
