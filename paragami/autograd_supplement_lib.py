@@ -89,22 +89,27 @@ def get_sparse_product(z_mat):
         raise ValueError(
             'get_sparse_product can only be used with 2d arrays.')
 
+    def check_b(b):
+        b = np.atleast_1d(b)
+        if (b.ndim > 2):
+            raise ValueError('The argument must be at most two dimensional.')
+        return b
+
     @primitive
     def z_mult(b):
-        return z_mat @ b
+        return z_mat @ check_b(b)
 
     @primitive
     def zt_mult(b):
-        return z_mat.T @ b
+        return z_mat.T @ check_b(b)
 
     def z_mult_jvp(g, ans, b):
         return z_mult(g) # z_mat @ g
-
     defjvp(z_mult, z_mult_jvp)
 
     def z_mult_vjp(ans, b):
         def vjp(g):
-            return zt_mult(g).T # g.T @ z_mat
+            return zt_mult(g) # z_mat.T @ g
         return vjp
     defvjp(z_mult, z_mult_vjp)
 
@@ -114,7 +119,7 @@ def get_sparse_product(z_mat):
 
     def zt_mult_vjp(ans, b):
         def vjp(g):
-            return z_mult(g).T # g.T @ z_mat.T
+            return z_mult(g) # (z_mat.T).T @ g
         return vjp
     defvjp(zt_mult, zt_mult_vjp)
 
@@ -171,3 +176,28 @@ def get_differentiable_solver(z_solve, zt_solve):
     defvjp(zt_solve_ad, vjp_t_solve)
 
     return z_solve_ad, zt_solve_ad
+
+
+# Use the sparse product to define a differentiable grouped sum.  Alternatively
+# one could implement the same thing for np.bincount.
+def get_grouped_aggregator(groups, num_groups=None):
+    """
+    Return an autograd-compatible function that calculates
+    ``z_solve(b) = z^{-1} b`` where the solver may not be natively
+    differentiable by autograd.
+
+    Parameters
+    ------------
+    z_solve, zt_solve:
+        Functions that take a vector input ``b`` and return ``z^{-1} b`` and
+        ``(z^T)^{-1} b``, respectively.
+
+    Returns
+    -----------
+    z_solve_ad, zt_solve_ad:
+        Respective versions of ``z_solve`` and ``zt_solve`` that can be
+        differentiated by autograd.
+
+    This is particularly useful for differentiating the solutions of systems
+    where the matrix ``z`` is sparse.
+    """

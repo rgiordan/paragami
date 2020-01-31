@@ -120,20 +120,24 @@ class TestSparseMatrixTools(unittest.TestCase):
         z_mat = osp.sparse.coo_matrix(z_dense)
         self.assertTrue(osp.sparse.issparse(z_mat))
 
-        mu = np.random.random(z_mat.shape[1])
+        for mu_dim in [1, 2]:
+            if mu_dim == 1:
+                mu = np.random.random(z_mat.shape[1])
+            else:
+                mu = np.random.random((z_mat.shape[1], 3))
 
-        z_mult, zt_mult = \
-            autograd_supplement_lib.get_sparse_product(z_mat)
-        check_grads(z_mult, modes=['rev', 'fwd'], order=4)(mu)
+            z_mult, zt_mult = \
+                autograd_supplement_lib.get_sparse_product(z_mat)
+            check_grads(z_mult, modes=['rev', 'fwd'], order=4)(mu)
 
-        z_mult2, zt_mult2 = \
-            autograd_supplement_lib.get_sparse_product(2 * z_mat)
-        check_grads(z_mult2, modes=['rev', 'fwd'], order=4)(mu)
+            z_mult2, zt_mult2 = \
+                autograd_supplement_lib.get_sparse_product(2 * z_mat)
+            check_grads(z_mult2, modes=['rev', 'fwd'], order=4)(mu)
 
-        assert np.linalg.norm(z_mult(mu) - z_mat @ mu) < 1e-12
-        assert np.linalg.norm(z_mult2(mu) - 2 * z_mat @ mu) < 1e-12
+            assert_array_almost_equal(z_mult(mu), z_mat @ mu)
+            assert_array_almost_equal(z_mult2(mu), 2 * z_mat @ mu)
 
-        # Check that an error is raised with a non-2d array.
+        # Check that errors are raised if the sparse matrix is not 2d
         z_dense_3d = np.random.random((2, 2, 2))
         self.assertRaises(
             ValueError,
@@ -143,6 +147,16 @@ class TestSparseMatrixTools(unittest.TestCase):
         self.assertRaises(
             ValueError,
             lambda: autograd_supplement_lib.get_sparse_product(z_dense_1d))
+
+        # Check that errors are raised if the argument is more than 2d
+        z_mult, zt_mult = \
+            autograd_supplement_lib.get_sparse_product(z_mat)
+
+        mu_bad = np.random.random((z_mat.shape[1], 3, 3))
+        mut_bad = np.random.random((z_mat.shape[0], 3, 3))
+        self.assertRaises(ValueError, lambda: z_mult(mu_bad))
+        self.assertRaises(ValueError, lambda: zt_mult(mu_bad))
+
 
     def test_get_differentiable_solver(self):
         dim = 5

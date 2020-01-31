@@ -1,7 +1,7 @@
 # Only this library depends on scikit-sparse, and scikit-sparse depends on
 # a C++ library.  So for easy of installation, this library is only imported
 # if the user needs it, and scikit-sparse is inlucded in requirements-dev
-# but not in requirements. 
+# but not in requirements.
 
 try:
     from sksparse.cholmod import cholesky
