@@ -7,6 +7,8 @@
 import autograd
 import autograd.numpy as np
 import autograd.scipy as sp
+import scipy as osp
+from scipy import sparse
 from autograd.core import primitive, defvjp, defjvp
 
 from autograd.numpy.linalg import slogdet, solve, inv
@@ -89,22 +91,27 @@ def get_sparse_product(z_mat):
         raise ValueError(
             'get_sparse_product can only be used with 2d arrays.')
 
+    def check_b(b):
+        b = np.atleast_1d(b)
+        if (b.ndim > 2):
+            raise ValueError('The argument must be at most two dimensional.')
+        return b
+
     @primitive
     def z_mult(b):
-        return z_mat @ b
+        return z_mat @ check_b(b)
 
     @primitive
     def zt_mult(b):
-        return z_mat.T @ b
+        return z_mat.T @ check_b(b)
 
     def z_mult_jvp(g, ans, b):
         return z_mult(g) # z_mat @ g
-
     defjvp(z_mult, z_mult_jvp)
 
     def z_mult_vjp(ans, b):
         def vjp(g):
-            return zt_mult(g).T # g.T @ z_mat
+            return zt_mult(g) # z_mat.T @ g
         return vjp
     defvjp(z_mult, z_mult_vjp)
 
@@ -114,7 +121,7 @@ def get_sparse_product(z_mat):
 
     def zt_mult_vjp(ans, b):
         def vjp(g):
-            return z_mult(g).T # g.T @ z_mat.T
+            return z_mult(g) # (z_mat.T).T @ g
         return vjp
     defvjp(zt_mult, zt_mult_vjp)
 
@@ -171,3 +178,64 @@ def get_differentiable_solver(z_solve, zt_solve):
     defvjp(zt_solve_ad, vjp_t_solve)
 
     return z_solve_ad, zt_solve_ad
+
+
+@primitive
+def grouped_sum(x, groups, num_groups=None):
+    """Sum the array `x` by its first index according to indices in `groups`.
+
+    Parameters
+    ------------
+    x: numpy.ndarray
+        An array of dimension (N, D1, ..., DK)
+    groups:
+        A length-N vector of zero-indexed integers mapping the first index
+        of x to groups.
+    num_groups:
+        Optional, the total number of groups.  If unspecified, one plus the
+        largest element of `groups` is used.
+
+    Returns
+    -----------
+    A (num_groups, D1, ..., DK) dimensional vector, where entry [g, ...]
+    contains the sum of the entries `x[n, :]`` where `groups[n] == g`.
+    """
+    x = np.atleast_1d(x)
+    groups = np.atleast_1d(groups).astype('int64')
+    if (groups.ndim > 1):
+        raise ValueError('groups must be a vector.')
+
+    n_obs = len(groups)
+    if x.shape[0] != n_obs:
+        raise ValueError('The first dimension of x must match the length of groups')
+    max_group = np.max(groups)
+    if num_groups is None:
+        num_groups = max_group + 1
+    else:
+        if max_group >= num_groups:
+            raise ValueError(
+                'The largest group is >= the number of groups.')
+
+    result = np.zeros((num_groups, ) + x.shape[1:])
+    for n in range(n_obs):
+        if x.ndim > 1:
+            result[groups[n], :] += x[n, :]
+        else:
+            result[groups[n]] += x[n]
+    return result
+
+def _ungroup(v, groups):
+    if v.ndim > 1:
+        return v[groups, :]
+    else:
+        return v[groups]
+
+def grouped_sum_vjp(ans, x, groups, num_groups=None):
+    def vjp(v):
+        return _ungroup(v, groups)
+    return vjp
+defvjp(grouped_sum, grouped_sum_vjp)
+
+def grouped_sum_jvp(v, ans, x, groups, num_groups=None):
+    return grouped_sum(v, groups, num_groups=num_groups)
+defjvp(grouped_sum, grouped_sum_jvp)
