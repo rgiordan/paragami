@@ -21,6 +21,8 @@ class Pattern(ABC):
         self._flat_length = flat_length
         self._free_flat_length = free_flat_length
 
+        # In practice you'll probably want to implement custom versions
+        # of these Jacboians.
         self._freeing_jacobian = autograd.jacobian(self._freeing_transform)
         self._unfreeing_jacobian = autograd.jacobian(self._unfreeing_transform)
 
@@ -309,6 +311,54 @@ class Pattern(ABC):
             return coo_matrix(jac)
         else:
             return jac
+
+    def log_abs_det_freeing_jacobian(self, folded_val):
+        """Return the log absolute determinant of the freeing Jacobian.
+
+        See ``freeing_jacobian`` for more details.  Because the output is not
+        in the form of a matrix, this function should be both efficient and
+        differentiable.  If the dimension of the free and unfree parameters
+        are different, the extra dimensions are ignored.
+
+        Parameters
+        -------------
+        folded_val : Folded value
+            The folded value at which the Jacobian is to be evaluated.
+
+        Returns
+        -------------
+        log_abs_det_jac : `float`
+            The log absolute determinant of the freeing Jacobian.
+
+        See also
+        ------------
+        Pattern.freeing_jacobian
+        """
+        raise NotImplementedError('Still thinking about the default.')
+
+    def log_abs_det_unfreeing_jacobian(self, folded_val):
+        """Return the log absolute determinant of the unfreeing Jacobian.
+
+        See ``unfreeing_jacobian`` for more details.  Because the output is not
+        in the form of a matrix, this function should be both efficient and
+        differentiable.  If the dimension of the free and unfree parameters
+        are different, the extra dimensions are ignored.
+
+        Parameters
+        -------------
+        folded_val : Folded value
+            The folded value at which the Jacobian is to be evaluated.
+
+        Returns
+        -------------
+        log_abs_det_jac : `float`
+            The log absolute determinant of the unfreeing Jacobian.
+
+        See also
+        ------------
+        Pattern.unfreeing_jacobian
+        """
+        raise NotImplementedError('Still thinking about the default.')
 
     def to_json(self):
         """Return a JSON representation of the pattern.

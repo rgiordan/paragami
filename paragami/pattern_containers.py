@@ -352,6 +352,20 @@ class PatternDict(Pattern):
         else:
             return np.array(sp_jac.todense())
 
+    def log_abs_det_freeing_jacobian(self, folded_val):
+        log_abs_det = 0.0
+        for pattern_name, pattern in self.__pattern_dict.items():
+            log_abs_det += pattern.log_abs_det_freeing_jacobian(
+                folded_val[pattern_name])
+        return log_abs_det
+
+    def log_abs_det_unfreeing_jacobian(self, folded_val):
+        log_abs_det = 0.0
+        for pattern_name, pattern in self.__pattern_dict.items():
+            log_abs_det += pattern.log_abs_det_unfreeing_jacobian(
+                folded_val[pattern_name])
+        return log_abs_det
+
     @classmethod
     def from_json(cls, json_string):
         json_dict = json.loads(json_string)

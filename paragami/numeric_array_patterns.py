@@ -292,6 +292,18 @@ class NumericArrayPattern(Pattern):
         else:
             return np.diag(jac_array)
 
+    def log_abs_det_freeing_jacobian(self, folded_val):
+        jac_array = \
+            _unconstrain_array_jacobian(folded_val, self._lb, self._ub)
+        return np.sum(np.log(np.abs(jac_array)))
+
+    def log_abs_det_unfreeing_jacobian(self, folded_val):
+        jac_array = \
+            _constrain_array_jacobian(
+                _unconstrain_array(folded_val, self._lb, self._ub),
+                self._lb, self._ub)
+        return np.sum(np.log(np.abs(jac_array)))
+
 
 class NumericVectorPattern(NumericArrayPattern):
     """A pattern for a (optionally bounded) numeric vector.
