@@ -405,6 +405,17 @@ class PatternDict(Pattern):
         else:
             return np.array([], dtype=int)
 
+    def flat_names(self, free, delim='_'):
+        flat_names_list = []
+        for pattern_name, pattern in self.__pattern_dict.items():
+            pattern_flat_names = pattern.flat_names(free)
+            # TODO: only append the delimiter for containers
+            pattern_flat_names = \
+                [ pattern_name + delim + t for t in pattern_flat_names]
+            flat_names_list.append(pattern_flat_names)
+        return np.hstack(flat_names_list)
+
+
 
 ##########################
 # An array of a pattern.

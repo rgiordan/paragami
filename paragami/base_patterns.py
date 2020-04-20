@@ -369,6 +369,11 @@ class Pattern(ABC):
         """
         return json.dumps(self.as_dict())
 
+    def flat_names(self, free):
+        """Return a tidy named vector for the flat values.
+        """
+        return [ str(i) for i in range(self.flat_length(free)) ]
+
     @classmethod
     def _validate_json_dict_type(cls, json_dict):
         if json_dict['pattern'] != cls.json_typename():

@@ -24,6 +24,27 @@ def assert_sp_array_almost_equal(x, y):
 
 
 class TestAutogradSupplement(unittest.TestCase):
+    def test_replace(self):
+        dim = 10
+        x = np.random.random(dim)
+        x_orig = deepcopy(x)
+
+        inds = [1, 3, 5]
+        x_sub = np.random.random(len(inds))
+
+        non_inds = np.setdiff1d(np.arange(dim), inds)
+        x_new = autograd_supplement_lib.replace(x_sub, x, inds)
+        assert_array_almost_equal(x_new[inds], x_sub)
+        assert_array_almost_equal(x_new[non_inds], x[non_inds])
+        assert_array_almost_equal(x, x_orig)
+        assert len(x_new) == len(x)
+
+        # Apparnetly check grads doesn't check all the arguments?
+        check_grads(
+            lambda x_sub: autograd_supplement_lib.replace(x_sub, x, inds))(x_sub)
+        check_grads(
+            lambda x: autograd_supplement_lib.replace(x_sub, x, inds))(x)
+
     def test_inv(self):
         def fun(x):
             return np.linalg.inv(x)

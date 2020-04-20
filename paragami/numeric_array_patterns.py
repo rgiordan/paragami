@@ -2,6 +2,7 @@ from .base_patterns import Pattern
 from .pattern_containers import register_pattern_json
 import autograd.numpy as np
 import copy
+import itertools
 import json
 import scipy as osp
 from scipy import sparse
@@ -303,6 +304,14 @@ class NumericArrayPattern(Pattern):
                 _unconstrain_array(folded_val, self._lb, self._ub),
                 self._lb, self._ub)
         return np.sum(np.log(np.abs(jac_array)))
+
+    def flat_names(self, free):
+        # Free is ignored for numeric arrays.
+        array_ranges = [range(0, t) for t in self._shape]
+        flat_name_list = []
+        for item in itertools.product(*array_ranges):
+            flat_name_list.append('[' + ','.join([str(i) for i in item]) + ']')
+        return flat_name_list
 
 
 class NumericVectorPattern(NumericArrayPattern):
