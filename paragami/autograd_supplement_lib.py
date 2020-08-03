@@ -239,3 +239,37 @@ defvjp(grouped_sum, grouped_sum_vjp)
 def grouped_sum_jvp(v, ans, x, groups, num_groups=None):
     return grouped_sum(v, groups, num_groups=num_groups)
 defjvp(grouped_sum, grouped_sum_jvp)
+
+
+
+@primitive
+def replace(x_sub, x, inds):
+    """Differentiably replace elements of `x[inds]` with `x_sub` by making a copy.
+
+    Parameters
+    ------------
+    x_sub: numpy.ndarray[D]
+        A numeric array with replacement values.
+    x: numpy.ndarray[N]
+        A numeric array with values to be replaced.
+    num_groups: numpy.ndarray[D]
+        The indices to replace.  We will set x[inds] = x_sub.
+
+    Returns
+    -----------
+    A new value of x, with the values in inds replaced with x_sub.
+    """
+    x_new = np.full(x.shape, float('nan'))
+    x_new[:] = x
+    x_new[inds] = x_sub
+    return x_new
+
+defvjp(replace,
+       lambda ans, x_sub, x, inds: lambda g: g[inds],
+       lambda ans, x_sub, x, inds: lambda g: replace(0, g, inds),
+       None)
+
+defjvp(replace,
+       lambda g, ans, x_sub, x, inds: replace(g, np.zeros(len(x)), inds),
+       lambda g, ans, x_sub, x, inds: replace(0, g, inds),
+       None)
