@@ -3,7 +3,7 @@ import itertools
 
 import json
 from scipy.sparse import coo_matrix, block_diag
-import autograd.numpy as np
+import jax.numpy as np
 
 from .base_patterns import Pattern
 
@@ -467,9 +467,11 @@ class PatternArray(Pattern):
             # >>> bar = np.array([foo for i in range(3)])
             # >>> print(bar[0]['a']) # Gives an index error.
             #
-            raise NotImplementedError(
-                'PatternArray does not support patterns whose folded ' +
-                'values are not numpy.ndarray types.')
+
+            pass
+            # raise NotImplementedError(
+            #     'PatternArray does not support patterns whose folded ' +
+            #     'values are not numpy.ndarray types.')
 
         self.__shape = tuple(self.__array_shape) + empty_pattern.shape
 

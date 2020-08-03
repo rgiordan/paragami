@@ -1,6 +1,6 @@
 from .base_patterns import Pattern
 from .pattern_containers import register_pattern_json
-import autograd.numpy as np
+import jax.numpy as np
 import copy
 import itertools
 import json
@@ -14,7 +14,7 @@ def _unconstrain_array(array, lb, ub):
     if ub == float("inf"):
         if lb == -float("inf"):
             # For consistent behavior, never return a reference.
-            # Note that deepcopy will cause autograd to fail.
+            # Note that deepcopy will cause jax to fail.
             return copy.copy(array)
         else:
             return np.log(array - lb)

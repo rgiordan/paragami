@@ -1,11 +1,12 @@
 from .base_patterns import Pattern
 from .pattern_containers import register_pattern_json
 
-import autograd.numpy as np
+import jax
+import jax.numpy as np
 
 import math
 
-from autograd.core import primitive, defvjp, defjvp
+#from jax import custom_jvp
 
 
 def _sym_index(k1, k2):
@@ -63,7 +64,8 @@ def _vectorize_ld_matrix(mat):
     return mat[np.tril_indices(nrow)]
 
 
-@primitive
+
+
 def _unvectorize_ld_matrix(vec):
     """
     Invert the mapping of `_vectorize_ld_matrix`.
@@ -92,56 +94,54 @@ def _unvectorize_ld_matrix(vec):
     mat_size = int(0.5 * (math.sqrt(1 + 8 * vec.size) - 1))
     if mat_size * (mat_size + 1) / 2 != vec.size:
         raise ValueError('Vector is an impossible size')
-    mat = np.zeros((mat_size, mat_size))
-    for k1 in range(mat_size):
-        for k2 in range(k1 + 1):
-            mat[k1, k2] = vec[_sym_index(k1, k2)]
-    return mat
 
-# Because we cannot use autograd with array assignment, define the
+    mat = np.zeros((mat_size, mat_size))
+    inds = np.tril_indices(mat_size)
+    return(jax.ops.index_update(mat, inds, vec))
+
+# Because we cannot use jax with array assignment, define the
 # vector jacobian product and jacobian vector products of
 # _unvectorize_ld_matrix.
 
 
-def _unvectorize_ld_matrix_vjp(g):
-    assert g.shape[0] == g.shape[1]
-    return _vectorize_ld_matrix(g)
+# def _unvectorize_ld_matrix_vjp(g):
+#     assert g.shape[0] == g.shape[1]
+#     return _vectorize_ld_matrix(g)
 
 
-defvjp(_unvectorize_ld_matrix,
-       lambda ans, vec: lambda g: _unvectorize_ld_matrix_vjp(g))
+# defvjp(_unvectorize_ld_matrix,
+#        lambda ans, vec: lambda g: _unvectorize_ld_matrix_vjp(g))
 
+# def _unvectorize_ld_matrix_jvp(g):
+#     return _unvectorize_ld_matrix(g)
+#
+# _unvectorize_ld_matrix.defjvps(
+#     lambda g, ans, x: _unvectorize_ld_matrix_jvp(g))
 
-def _unvectorize_ld_matrix_jvp(g):
-    return _unvectorize_ld_matrix(g)
-
-
-defjvp(_unvectorize_ld_matrix,
-       lambda g, ans, x: _unvectorize_ld_matrix_jvp(g))
+# defjvp(_unvectorize_ld_matrix,
+#        lambda g, ans, x: _unvectorize_ld_matrix_jvp(g))
 
 
 def _exp_matrix_diagonal(mat):
     assert mat.shape[0] == mat.shape[1]
-    # NB: make_diagonal() is only defined in the autograd version of numpy
-    mat_exp_diag = np.make_diagonal(
-        np.exp(np.diag(mat)), offset=0, axis1=-1, axis2=-2)
-    mat_diag = np.make_diagonal(np.diag(mat), offset=0, axis1=-1, axis2=-2)
-    return mat_exp_diag + mat - mat_diag
-
+    dim = mat.shape[0]
+    diag_inds = (np.arange(dim), np.arange(dim))
+    exp_diags = np.exp(np.diag(mat))
+    return(jax.ops.index_update(mat, diag_inds, exp_diags))
 
 def _log_matrix_diagonal(mat):
     assert mat.shape[0] == mat.shape[1]
-    # NB: make_diagonal() is only defined in the autograd version of numpy
-    mat_log_diag = np.make_diagonal(
-        np.log(np.diag(mat)), offset=0, axis1=-1, axis2=-2)
-    mat_diag = np.make_diagonal(np.diag(mat), offset=0, axis1=-1, axis2=-2)
-    return mat_log_diag + mat - mat_diag
+    dim = mat.shape[0]
+    diag_inds = (np.arange(dim), np.arange(dim))
+    log_diags = np.log(np.diag(mat))
+    return(jax.ops.index_update(mat, diag_inds, log_diags))
 
 
 def _pack_posdef_matrix(mat, diag_lb=0.0):
     k = mat.shape[0]
-    mat_lb = mat - np.make_diagonal(
-        np.full(k, diag_lb), offset=0, axis1=-1, axis2=-2)
+    # mat_lb = mat - np.make_diagonal(
+    #     np.full(k, diag_lb), offset=0, axis1=-1, axis2=-2)
+    mat_lb = mat - np.diag(np.full(k, diag_lb))
     return _vectorize_ld_matrix(
         _log_matrix_diagonal(np.linalg.cholesky(mat_lb)))
 
@@ -150,8 +150,9 @@ def _unpack_posdef_matrix(free_vec, diag_lb=0.0):
     mat_chol = _exp_matrix_diagonal(_unvectorize_ld_matrix(free_vec))
     mat = np.matmul(mat_chol, mat_chol.T)
     k = mat.shape[0]
-    return mat + np.make_diagonal(
-        np.full(k, diag_lb), offset=0, axis1=-1, axis2=-2)
+    return mat + np.diag(np.full(k, diag_lb))
+    # return mat + np.make_diagonal(
+    #     np.full(k, diag_lb), offset=0, axis1=-1, axis2=-2)
 
 
 # Convert a vector containing the lower diagonal portion of a symmetric
@@ -163,9 +164,11 @@ def _unvectorize_symmetric_matrix(vec_val):
     mat_val = ld_mat + ld_mat.transpose()
     # We have double counted the diagonal.  For some reason the autograd
     # diagonal functions require axis1=-1 and axis2=-2
-    mat_val = mat_val - \
-        np.make_diagonal(np.diagonal(ld_mat, axis1=-1, axis2=-2),
-                         axis1=-1, axis2=-2)
+    # mat_val = mat_val - \
+    #     np.make_diagonal(np.diagonal(ld_mat, axis1=-1, axis2=-2),
+    #                      axis1=-1, axis2=-2)
+    mat_val = mat_val - np.diag(np.diagonal(ld_mat))
+
     return mat_val
 
 

@@ -1,5 +1,5 @@
-import autograd
-import autograd.numpy as np
+import jax
+import jax.numpy as np
 import copy
 import scipy as osp
 import scipy.sparse
@@ -275,7 +275,7 @@ class PreconditionedFunction():
             raise ValueError('You must specify either x or hessian.')
         if hessian is None:
             # We now know x is not None.
-            get_original_fun_hessian = autograd.hessian(self._original_fun)
+            get_original_fun_hessian = jax.hessian(self._original_fun)
             hessian = get_original_fun_hessian(x)
 
         if osp.sparse.issparse(hessian):
@@ -377,10 +377,10 @@ class OptimizationObjective():
         """
 
         self._objective_fun = objective_fun
-        self.grad = autograd.grad(self._objective_fun)
-        self.hessian = autograd.hessian(self._objective_fun)
+        self.grad = jax.grad(self._objective_fun)
+        self.hessian = jax.hessian(self._objective_fun)
         self.hessian_vector_product = \
-            autograd.hessian_vector_product(self._objective_fun)
+            jax.hessian_vector_product(self._objective_fun)
 
         self.set_print_every(print_every)
         self.set_log_every(log_every)

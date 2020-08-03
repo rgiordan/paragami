@@ -2,8 +2,8 @@
 from .base_patterns import Pattern
 from .pattern_containers import register_pattern_json
 
-import autograd.numpy as np
-import autograd.scipy as sp
+import jax.numpy as np
+import jax.scipy as sp
 from scipy.sparse import coo_matrix, block_diag
 
 import itertools
@@ -29,9 +29,9 @@ def _constrain_simplex_matrix(free_mat):
     reference_col = np.expand_dims(np.full(free_mat.shape[0:-1], 0), axis=-1)
     free_mat_aug = np.concatenate([reference_col, free_mat], axis=-1)
 
-    # Note that autograd needs to update their logsumexp to be in special
+    # Note that jax needs to update their logsumexp to be in special
     # not misc before this can be changed.  Furthermore, logsumexp is
-    # not even available in the pypi version of autograd.
+    # not even available in the pypi version of jax.
     log_norm = logsumexp(free_mat_aug, axis=-1)
     return np.exp(free_mat_aug - log_norm)
 

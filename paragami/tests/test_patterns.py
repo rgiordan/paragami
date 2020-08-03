@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import autograd
+import jax
 import copy
 import unittest
 from numpy.testing import assert_array_almost_equal
@@ -12,7 +12,8 @@ import collections
 
 import paragami
 
-from autograd.test_util import check_grads
+#from autograd.test_util import check_grads
+from jax.test_util import check_grads
 
 # A pattern that matches no actual types for causing errors to test.
 class BadTestPattern(paragami.base_patterns.Pattern):
@@ -617,7 +618,8 @@ class TestHelperFunctions(unittest.TestCase):
 
         check_grads(
             paragami.simplex_patterns.logsumexp,
-            modes=['fwd', 'rev'], order=3)(mat, axis)
+            (mat, axis),
+            modes=['fwd', 'rev'], order=3)
 
         assert_array_almost_equal(
             logsumexp_simple(mat, axis),
@@ -633,10 +635,12 @@ class TestHelperFunctions(unittest.TestCase):
 
         check_grads(
             paragami.psdmatrix_patterns._vectorize_ld_matrix,
-            modes=['fwd', 'rev'], order=3)(x_mat)
+            x_mat,
+            modes=['fwd', 'rev'], order=3)
         check_grads(
             paragami.psdmatrix_patterns._unvectorize_ld_matrix,
-            modes=['fwd', 'rev'], order=3)(x_vec)
+            x_vec,
+            modes=['fwd', 'rev'], order=3)
 
 
 if __name__ == '__main__':

@@ -2,3 +2,5 @@ autograd
 numpy
 pytest
 scipy
+jax>=0.1.75
+jaxlib>=0.1.52

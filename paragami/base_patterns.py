@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-import autograd
+import jax
 import json
 import numpy as np
 from scipy.sparse import coo_matrix
@@ -22,9 +22,9 @@ class Pattern(ABC):
         self._free_flat_length = free_flat_length
 
         # In practice you'll probably want to implement custom versions
-        # of these Jacboians.
-        self._freeing_jacobian = autograd.jacobian(self._freeing_transform)
-        self._unfreeing_jacobian = autograd.jacobian(self._unfreeing_transform)
+        # of these Jacobians.
+        self._freeing_jacobian = jax.jacobian(self._freeing_transform)
+        self._unfreeing_jacobian = jax.jacobian(self._unfreeing_transform)
 
         self.free_default = free_default
 
