@@ -4,6 +4,7 @@ import itertools
 import json
 from scipy.sparse import coo_matrix, block_diag
 import jax.numpy as np
+import numpy as onp
 
 from .base_patterns import Pattern
 
@@ -551,7 +552,7 @@ class PatternArray(Pattern):
         indexing into the array of shape ``__array_shape``.
         """
         assert len(item) == len(self.__array_shape)
-        linear_item = np.ravel_multi_index(item, self.__array_shape) * flat_length
+        linear_item = onp.ravel_multi_index(item, self.__array_shape) * flat_length
         return slice(linear_item, linear_item + flat_length)
 
     def fold(self, flat_val, free=None, validate_value=None):
