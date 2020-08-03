@@ -3,6 +3,7 @@ import autograd
 import autograd.numpy as np
 import autograd.numpy.random as npr
 from autograd.test_util import check_grads
+import copy
 from paragami import autograd_supplement_lib
 import autograd.scipy as sp
 from numpy.testing import assert_array_almost_equal
@@ -27,7 +28,7 @@ class TestAutogradSupplement(unittest.TestCase):
     def test_replace(self):
         dim = 10
         x = np.random.random(dim)
-        x_orig = deepcopy(x)
+        x_orig = copy.deepcopy(x)
 
         inds = [1, 3, 5]
         x_sub = np.random.random(len(inds))
