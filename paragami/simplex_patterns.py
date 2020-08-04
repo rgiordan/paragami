@@ -2,6 +2,7 @@
 from .base_patterns import Pattern
 from .pattern_containers import register_pattern_json
 
+import jax
 import jax.numpy as np
 import jax.scipy as sp
 from scipy.sparse import coo_matrix, block_diag
@@ -12,15 +13,15 @@ import json
 import warnings
 
 
-# def logsumexp(mat, axis):
-#     """Calculate logsumexp along the axis ``axis`` without dropping the axis.
-#     """
-#     if not type(axis) is int:
-#         raise ValueError(
-#             'This version of logsumexp is designed for only one axis.')
-#     mat_max = np.max(mat, axis=axis, keepdims=True)
-#     exp_mat_norm = np.exp(mat - mat_max)
-#     return np.log(np.sum(exp_mat_norm, axis=axis, keepdims=True)) + mat_max
+def logsumexp(mat, axis):
+    """Calculate logsumexp along the axis ``axis`` without dropping the axis.
+    """
+    if not type(axis) is int:
+        raise ValueError(
+            'This version of logsumexp is designed for only one axis.')
+    mat_max = np.max(mat, axis=axis, keepdims=True)
+    exp_mat_norm = np.exp(mat - mat_max)
+    return np.log(np.sum(exp_mat_norm, axis=axis, keepdims=True)) + mat_max
 
 
 def _constrain_simplex_matrix(free_mat):
@@ -29,9 +30,6 @@ def _constrain_simplex_matrix(free_mat):
     reference_col = np.expand_dims(np.full(free_mat.shape[0:-1], 0), axis=-1)
     free_mat_aug = np.concatenate([reference_col, free_mat], axis=-1)
 
-    # Note that autograd needs to update their logsumexp to be in special
-    # not misc before this can be changed.  Furthermore, logsumexp is
-    # not even available in the pypi version of jax.
     log_norm = jax.scipy.special.logsumexp(free_mat_aug, axis=-1)
     return np.exp(free_mat_aug - log_norm)
 
