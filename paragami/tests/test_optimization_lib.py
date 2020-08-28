@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 
-import autograd
-import autograd.numpy as np
-from autograd.test_util import check_grads
+# import autograd
+# import autograd.numpy as np
+# from autograd.test_util import check_grads
+
+import jax
+import jax.numpy as np
+#from jax.test_util import check_grads
+
+import numpy as onp
+
 import copy
 import itertools
 from numpy.testing import assert_array_almost_equal
@@ -20,7 +27,7 @@ import warnings
 class TestPreconditionedFunction(unittest.TestCase):
     def test_get_matrix_from_operator(self):
         dim = 3
-        a = np.random.random((dim, dim))
+        a = onp.random.random((dim, dim))
         def a_mult(vec):
             return a @ vec
 
@@ -48,10 +55,10 @@ class TestPreconditionedFunction(unittest.TestCase):
 
     def test_transform_eigenspace(self):
         dim = 6
-        a = np.random.random((dim, dim))
+        a = onp.random.random((dim, dim))
         a = 0.5 * (a.T + a) + np.eye(dim)
         eigvals, eigvecs = np.linalg.eigh(a)
-        vec = np.random.random(dim)
+        vec = onp.random.random(dim)
 
         # Test basic transforms.
         a_mult = transform_eigenspace(eigvecs, eigvals, lambda x: x)
@@ -105,12 +112,16 @@ class TestPreconditionedFunction(unittest.TestCase):
         # Define a function of theta alone.
         lam0 = copy.deepcopy(model.lam)
         f = lambda x: model.get_objective(x, lam0)
-        f_grad = autograd.grad(f)
-        f_hessian = autograd.hessian(f)
+        # f_grad = autograd.grad(f)
+        # f_hessian = autograd.hessian(f)
+        f_grad = jax.grad(f)
+        f_hessian = jax.hessian(f)
 
         f_c = paragami.PreconditionedFunction(f)
-        f_c_grad = autograd.grad(f_c)
-        f_c_hessian = autograd.hessian(f_c)
+        # f_c_grad = autograd.grad(f_c)
+        # f_c_hessian = autograd.hessian(f_c)
+        f_c_grad = jax.grad(f_c)
+        f_c_hessian = jax.hessian(f_c)
 
         dim = model.theta_pattern.shape()[0]
         theta = np.arange(0, dim) / 5.0
@@ -257,7 +268,7 @@ class TestPreconditionedFunction(unittest.TestCase):
     def test_matrix_sqrt(self):
         dim = 5
         mat = dim * np.eye(dim)
-        vec = np.random.random(dim)
+        vec = onp.random.random(dim)
         mat = mat + np.outer(vec, vec)
         self._test_matrix_sqrt(mat)
 
@@ -267,16 +278,16 @@ class TestOptimizationObjective(unittest.TestCase):
         def objective_fun(x):
             return np.sum(x ** 4)
 
-        x0 = np.random.random(5)
+        x0 = onp.random.random(5)
         obj = paragami.OptimizationObjective(
             objective_fun, print_every=0)
         assert_array_almost_equal(objective_fun(x0), obj.f(x0))
         assert_array_almost_equal(
-            autograd.grad(objective_fun)(x0), obj.grad(x0))
+            jax.grad(objective_fun)(x0), obj.grad(x0))
         assert_array_almost_equal(
-            autograd.hessian(objective_fun)(x0), obj.hessian(x0))
+            jax.hessian(objective_fun)(x0), obj.hessian(x0))
         assert_array_almost_equal(
-            autograd.hessian_vector_product(objective_fun)(
+            jax.hessian_vector_product(objective_fun)(
                 x0, x0),
             obj.hessian_vector_product(x0, x0))
 
