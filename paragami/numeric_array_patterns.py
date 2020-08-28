@@ -278,7 +278,8 @@ class NumericArrayPattern(Pattern):
             _unconstrain_array_jacobian(folded_val, self._lb, self._ub)
         jac_array = np.atleast_1d(jac_array).flatten()
         if sparse:
-            return osp.sparse.diags(jac_array)
+            # Set offsets so you don't get an error with length-one arrays.
+            return osp.sparse.diags([jac_array], offsets=[0])
         else:
             return np.diag(jac_array)
 
@@ -289,7 +290,8 @@ class NumericArrayPattern(Pattern):
                 self._lb, self._ub)
         jac_array = np.atleast_1d(jac_array).flatten()
         if sparse:
-            return osp.sparse.diags(jac_array)
+            # Set offsets so you don't get an error with length-one arrays.
+            return osp.sparse.diags([jac_array], offsets=[0])
         else:
             return np.diag(jac_array)
 
