@@ -1,3 +1,8 @@
+# Force double precision Jax
+import jax
+from jax.config import config
+config.update("jax_enable_x64", True)
+
 from paragami.pattern_containers import \
     PatternDict, PatternArray, \
     register_pattern_json, get_pattern_from_json, save_folded, load_folded

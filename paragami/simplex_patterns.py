@@ -30,7 +30,7 @@ def _constrain_simplex_matrix(free_mat):
     reference_col = np.expand_dims(np.full(free_mat.shape[0:-1], 0), axis=-1)
     free_mat_aug = np.concatenate([reference_col, free_mat], axis=-1)
 
-    log_norm = jax.scipy.special.logsumexp(free_mat_aug, axis=-1)
+    log_norm = jax.scipy.special.logsumexp(free_mat_aug, axis=-1, keepdims=True)
     return np.exp(free_mat_aug - log_norm)
 
 
@@ -106,8 +106,8 @@ class SimplexArrayPattern(Pattern):
         self.__shape = self.__array_shape + (self.__simplex_size, )
         self.__free_shape = self.__array_shape + (self.__simplex_size - 1, )
         self.default_validate = default_validate
-        super().__init__(np.prod(self.__shape),
-                         np.prod(self.__free_shape),
+        super().__init__(np.prod(np.array(self.__shape)),
+                         np.prod(np.array(self.__free_shape)),
                          free_default=free_default)
 
     def __str__(self):

@@ -149,7 +149,7 @@ class NumericArrayPattern(Pattern):
             raise ValueError(
                 'Upper bound ub must strictly exceed lower bound lb')
 
-        free_flat_length = flat_length = int(np.product(self._shape))
+        free_flat_length = flat_length = int(np.product(np.array(self._shape)))
 
         super().__init__(flat_length, free_flat_length,
                          free_default=free_default)
