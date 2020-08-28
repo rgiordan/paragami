@@ -323,8 +323,9 @@ class PatternDict(Pattern):
     def _update_flat_length(self, free):
         # This is a little wasteful with the benefit of being less error-prone
         # than adding and subtracting lengths as keys are changed.
-        return np.sum([pattern.flat_length(free) for pattern_name, pattern in
-                       self.__pattern_dict.items()])
+        return np.sum(
+            np.array([ pattern.flat_length(free) for pattern_name, pattern in
+                       self.__pattern_dict.items()]))
 
     def unfreeing_jacobian(self, folded_val, sparse=True):
         jacobians = []
@@ -449,7 +450,7 @@ class PatternArray(Pattern):
         self.__array_shape = tuple(array_shape)
         self.__array_ranges = [range(0, t) for t in self.__array_shape]
 
-        num_elements = np.prod(self.__array_shape)
+        num_elements = np.prod(np.array(self.__array_shape))
         self.__base_pattern = base_pattern
 
         # Check whether the base_pattern takes values that are numpy arrays.

@@ -15,6 +15,19 @@ import paragami
 #from autograd.test_util import check_grads
 from jax.test_util import check_grads
 
+
+import traceback
+import warnings
+import sys
+
+def warn_with_traceback(message, category, filename, lineno, file=None, line=None):
+
+    log = file if hasattr(file,'write') else sys.stderr
+    traceback.print_stack(file=log)
+    log.write(warnings.formatwarning(message, category, filename, lineno, line))
+
+warnings.showwarning = warn_with_traceback
+
 # A pattern that matches no actual types for causing errors to test.
 class BadTestPattern(paragami.base_patterns.Pattern):
     def __init__(self):
