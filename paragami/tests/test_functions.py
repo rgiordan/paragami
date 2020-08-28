@@ -3,8 +3,14 @@
 import unittest
 from numpy.testing import assert_array_almost_equal
 
-import autograd.numpy as np
-from autograd.test_util import check_grads
+#import autograd.numpy as np
+#from autograd.test_util import check_grads
+import jax
+import jax.numpy as np
+from jax.test_util import check_grads
+
+import numpy as onp
+
 from copy import deepcopy
 import itertools
 import paragami
@@ -103,9 +109,9 @@ class TestFlatteningAndFolding(unittest.TestCase):
                 assert_array_almost_equal(
                     pattern.flatten(orig_val, free=free), trans_val)
 
-        patterns_array = np.atleast_1d(patterns)
-        free_array = np.atleast_1d(free)
-        retnums_array = np.atleast_1d(retnums)
+        patterns_array = onp.atleast_1d(patterns)
+        free_array = onp.atleast_1d(free)
+        retnums_array = onp.atleast_1d(retnums)
 
         orig_rets = original_fun()
         trans_rets = fun_trans()
@@ -114,7 +120,7 @@ class TestFlatteningAndFolding(unittest.TestCase):
 
             # Check that the non-transformed return values are the same.
             for ind in range(len(orig_rets)):
-                if not np.isin(ind, retnums):
+                if not onp.isin(ind, retnums):
                     assert_array_almost_equal(
                         orig_rets[ind], trans_rets[ind])
 
@@ -460,9 +466,10 @@ class TestFlatteningAndFolding(unittest.TestCase):
         for free in [True, False]:
             tf1_flat = paragami.FlattenFunctionInput(tf1, pattern, free)
             param_val_flat = pattern.flatten(param_val, free=free)
-            check_grads(
-                tf1_flat, modes=['rev', 'fwd'], order=2)(param_val_flat)
+            # check_grads(
+            #     tf1_flat, modes=['rev', 'fwd'], order=2)(param_val_flat)
 
+            check_grads(tf1_flat, (param_val_flat, ), order=2)
 
 if __name__ == '__main__':
     unittest.main()
