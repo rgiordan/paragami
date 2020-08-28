@@ -1,6 +1,7 @@
 from .base_patterns import Pattern
 from .pattern_containers import register_pattern_json
 import jax.numpy as np
+import numpy as onp
 import copy
 import itertools
 import json
@@ -179,10 +180,10 @@ class NumericArrayPattern(Pattern):
 
     def empty(self, valid):
         if valid:
-            return np.full(
+            return onp.full(
                 self._shape, _get_inbounds_value(self._lb, self._ub))
         else:
-            return np.empty(self._shape)
+            return onp.empty(self._shape)
 
     def _validate_folded_shape(self, folded_val):
         if folded_val.shape != self.shape():

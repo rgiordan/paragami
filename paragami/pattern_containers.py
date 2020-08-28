@@ -457,7 +457,7 @@ class PatternArray(Pattern):
         # If they are, then the unfolded value will be a single numpy array
         # of shape __array_shape + base_pattern.empty().shape.
         empty_pattern = self.__base_pattern.empty(valid=False)
-        if type(empty_pattern) is np.ndarray:
+        if type(empty_pattern) is onp.ndarray:
             self.__folded_pattern_shape = empty_pattern.shape
         else:
             # autograd's numpy does not seem to support object arrays.
@@ -470,10 +470,11 @@ class PatternArray(Pattern):
             # >>> print(bar[0]['a']) # Gives an index error.
             #
 
-            pass
-            # raise NotImplementedError(
-            #     'PatternArray does not support patterns whose folded ' +
-            #     'values are not numpy.ndarray types.')
+            # pass
+            raise NotImplementedError(
+                'PatternArray does not support patterns whose folded ' +
+                'values are not numpy.ndarray types.  ',
+                'Got type ' + str(type(empty_pattern)))
 
         self.__shape = tuple(self.__array_shape) + empty_pattern.shape
 
@@ -529,7 +530,7 @@ class PatternArray(Pattern):
 
     def empty(self, valid):
         empty_pattern = self.__base_pattern.empty(valid=valid)
-        repeated_array = np.array(
+        repeated_array = onp.array(
             [empty_pattern
              for item in itertools.product(*self.__array_ranges)])
         return np.reshape(repeated_array, self.__shape)

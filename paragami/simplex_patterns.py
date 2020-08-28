@@ -7,6 +7,7 @@ import jax.numpy as np
 import jax.scipy as sp
 from scipy.sparse import coo_matrix, block_diag
 
+import numpy as onp
 import itertools
 
 import json
@@ -132,9 +133,9 @@ class SimplexArrayPattern(Pattern):
 
     def empty(self, valid):
         if valid:
-            return np.full(self.__shape, 1.0 / self.__simplex_size)
+            return onp.full(self.__shape, 1.0 / self.__simplex_size)
         else:
-            return np.empty(self.__shape)
+            return onp.empty(self.__shape)
 
     def _validate_folded_shape(self, folded_val):
         if folded_val.shape != self.__shape:

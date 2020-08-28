@@ -3,6 +3,7 @@ from .pattern_containers import register_pattern_json
 
 import jax
 import jax.numpy as np
+import numpy as onp
 
 import math
 
@@ -234,9 +235,9 @@ class PSDSymmetricMatrixPattern(Pattern):
 
     def empty(self, valid):
         if valid:
-            return np.eye(self.__size) * (self.__diag_lb + 1)
+            return onp.eye(self.__size) * (self.__diag_lb + 1)
         else:
-            return np.empty((self.__size, self.__size))
+            return onp.empty((self.__size, self.__size))
 
     def _validate_folded_shape(self, folded_val):
         expected_shape = (self.__size, self.__size)

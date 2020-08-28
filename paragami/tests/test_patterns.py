@@ -46,7 +46,7 @@ class BadTestPattern(paragami.base_patterns.Pattern):
         return 0
 
     def empty(self):
-        return 0
+        return 0.0
 
     def validate_folded(self, folded_val, validate_value=None):
         return True, ''
@@ -294,17 +294,17 @@ class TestBasicPatterns(unittest.TestCase):
 
         # Test scalar subclass.
         pattern = paragami.NumericScalarPattern()
-        _test_pattern(self, pattern, 2)
-        _test_pattern(self, pattern, [2])
+        _test_pattern(self, pattern, 2.0)
+        _test_pattern(self, pattern, np.array([2.0]))
 
         pattern = paragami.NumericScalarPattern(lb=-1)
-        _test_pattern(self, pattern, 2)
+        _test_pattern(self, pattern, 2.0)
 
         pattern = paragami.NumericScalarPattern(ub=3)
-        _test_pattern(self, pattern, 2)
+        _test_pattern(self, pattern, 2.0)
 
         pattern = paragami.NumericScalarPattern(lb=-1, ub=3)
-        _test_pattern(self, pattern, 2)
+        _test_pattern(self, pattern, 2.0)
 
         # Test vector subclass.
         valid_vec = np.random.random(3)
@@ -334,8 +334,8 @@ class TestBasicPatterns(unittest.TestCase):
             paragami.NumericArrayPattern((1, 2)))
 
         self.assertTrue(
-            paragami.NumericArrayPattern((1, 2), lb=2, ub=4) !=
-            paragami.NumericArrayPattern((1, 2), lb=2))
+            paragami.NumericArrayPattern((1, 2), lb=2.0, ub=4.0) !=
+            paragami.NumericArrayPattern((1, 2), lb=2.0))
 
         # Check that singletons work.
         pattern = paragami.NumericArrayPattern(shape=(1, ))
