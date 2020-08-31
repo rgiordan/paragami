@@ -22,6 +22,7 @@ from paragami.optimization_lib import transform_eigenspace
 from paragami.optimization_lib import truncate_eigenvalues
 from paragami.optimization_lib import _get_matrix_from_operator
 
+
 import warnings
 
 class TestPreconditionedFunction(unittest.TestCase):
@@ -264,6 +265,7 @@ class TestPreconditionedFunction(unittest.TestCase):
                                     test_ev_max + 1e-8)
                 else:
                     assert_array_almost_equal(ev_max, np.max(eig_vals_test))
+
 
     def test_matrix_sqrt(self):
         dim = 5

@@ -20,13 +20,15 @@ import traceback
 import warnings
 import sys
 
-def warn_with_traceback(message, category, filename, lineno, file=None, line=None):
 
+_TRACE_WARNINGS = False
+def warn_with_traceback(message, category, filename, lineno, file=None, line=None):
     log = file if hasattr(file,'write') else sys.stderr
     traceback.print_stack(file=log)
     log.write(warnings.formatwarning(message, category, filename, lineno, line))
 
-warnings.showwarning = warn_with_traceback
+if _TRACE_WARNINGS:
+    warnings.showwarning = warn_with_traceback
 
 # A pattern that matches no actual types for causing errors to test.
 class BadTestPattern(paragami.base_patterns.Pattern):
@@ -151,13 +153,19 @@ def _test_pattern(testcase, pattern, valid_value,
 
     ############################################
     # Test the freeing and unfreeing Jacobians.
+
+    # Note that you cannot run jit with validate_value=True because then
+    # the control flow depends on the inlut.
+    @jax.jit
     def freeing_transform(flat_val):
         return pattern.flatten(
-            pattern.fold(flat_val, free=False), free=True)
+            pattern.fold(flat_val, free=False, validate_value=False),
+            free=True, validate_value=False)
 
     def unfreeing_transform(free_flat_val):
         return pattern.flatten(
-            pattern.fold(free_flat_val, free=True), free=False)
+            pattern.fold(free_flat_val, free=True, validate_value=False),
+            free=False, validate_value=False)
 
     ad_freeing_jacobian = jax.jacobian(freeing_transform)
     ad_unfreeing_jacobian = jax.jacobian(unfreeing_transform)
