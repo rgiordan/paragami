@@ -302,7 +302,7 @@ class TestBasicPatterns(unittest.TestCase):
 
         # Test scalar subclass.
         pattern = paragami.NumericScalarPattern()
-        _test_pattern(self, pattern, 2.0)
+        #_test_pattern(self, pattern, 2.0)
         _test_pattern(self, pattern, np.array([2.0]))
 
         pattern = paragami.NumericScalarPattern(lb=-1)
@@ -420,7 +420,7 @@ class TestBasicPatterns(unittest.TestCase):
 
         flat_val = pattern.flatten(np.eye(3), free=False)
         with self.assertRaisesRegex(ValueError, 'Wrong length'):
-            pattern.fold(flat_val[-1], free=False)
+            pattern.fold(np.array([ flat_val[-1] ]), free=False)
 
         flat_val = 0.25 * flat_val
         with self.assertRaisesRegex(ValueError,
@@ -666,4 +666,4 @@ class TestHelperFunctions(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(module="test_patterns")

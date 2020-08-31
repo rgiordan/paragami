@@ -265,7 +265,7 @@ class PatternDict(Pattern):
 
     def fold(self, flat_val, free=None, validate_value=None):
         free = self._free_with_default(free)
-        flat_val = np.atleast_1d(flat_val)
+        #flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
         flat_length = self.flat_length(free)
@@ -559,7 +559,7 @@ class PatternArray(Pattern):
 
     def fold(self, flat_val, free=None, validate_value=None):
         free = self._free_with_default(free)
-        flat_val = np.atleast_1d(flat_val)
+        #flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
         if flat_val.size != self.flat_length(free):
