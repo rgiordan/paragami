@@ -65,8 +65,6 @@ def _vectorize_ld_matrix(mat):
     return mat[np.tril_indices(nrow)]
 
 
-
-
 def _unvectorize_ld_matrix(vec):
     """
     Invert the mapping of `_vectorize_ld_matrix`.
@@ -235,9 +233,9 @@ class PSDSymmetricMatrixPattern(Pattern):
 
     def empty(self, valid):
         if valid:
-            return onp.eye(self.__size) * (self.__diag_lb + 1)
+            return np.eye(self.__size) * (self.__diag_lb + 1)
         else:
-            return onp.empty((self.__size, self.__size))
+            return np.empty((self.__size, self.__size))
 
     def _validate_folded_shape(self, folded_val):
         expected_shape = (self.__size, self.__size)

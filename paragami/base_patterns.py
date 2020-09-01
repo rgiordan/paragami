@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 import jax
 import json
-import numpy as np
+import jax.numpy as np
+import numpy as onp
 from scipy.sparse import coo_matrix
 
 class Pattern(ABC):
@@ -209,7 +210,7 @@ class Pattern(ABC):
         else:
             return self._flat_length
 
-    def random(self):
+    def random(self, key=jax.random.PRNGKey(42)):
         """Return an random, valid parameter in its folded shape.
 
         .. note::
@@ -222,7 +223,10 @@ class Pattern(ABC):
         folded_val : Folded value
             A random parameter value in its original folded shape.
         """
-        return self.fold(np.random.random(self._free_flat_length), free=True)
+
+        free_random = jax.random.uniform(
+            key, shape=(self._free_flat_length, ), dtype='float64')
+        return self.fold(free_random, free=True)
 
     def empty_bool(self, value):
         """Return folded shape containing booleans.

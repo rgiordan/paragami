@@ -3,7 +3,8 @@ import jax
 import copy
 import unittest
 from numpy.testing import assert_array_almost_equal
-import numpy as np
+import jax.numpy as np
+import numpy as onp
 import scipy as sp
 
 import itertools
@@ -29,6 +30,14 @@ def warn_with_traceback(message, category, filename, lineno, file=None, line=Non
 
 if _TRACE_WARNINGS:
     warnings.showwarning = warn_with_traceback
+
+
+def jax_random(shape):
+    key = jax.random.PRNGKey(42)
+    if not type(shape) is tuple:
+        shape = (shape, )
+    return jax.random.uniform(key, shape=shape, dtype='float64')
+
 
 # A pattern that matches no actual types for causing errors to test.
 class BadTestPattern(paragami.base_patterns.Pattern):
@@ -60,15 +69,17 @@ class BadTestPattern(paragami.base_patterns.Pattern):
 def _test_array_flat_indices(testcase, pattern):
     free_len = pattern.flat_length(free=True)
     flat_len = pattern.flat_length(free=False)
-    manual_jac = np.zeros((free_len, flat_len))
+
+    # We'll be updating manual_jac componentwise.
+    manual_jac = onp.zeros((free_len, flat_len))
 
     for ind in range(flat_len):
-        bool_vec = np.full(flat_len, False, dtype='bool')
+        bool_vec = onp.full(flat_len, False, dtype='bool')
         bool_vec[ind] = True
-        x_bool = pattern.fold(bool_vec, free=False, validate_value=False)
+        x_bool = pattern.fold(np.array(bool_vec), free=False, validate_value=False)
         flat_ind = pattern.flat_indices(x_bool, free=False)
         free_ind = pattern.flat_indices(x_bool, free=True)
-        manual_jac[np.ix_(free_ind, flat_ind)] = 1
+        manual_jac[onp.ix_(free_ind, flat_ind)] = 1
 
     flat_to_free_jac = pattern.freeing_jacobian(
         pattern.empty(valid=True), sparse=False)
@@ -76,7 +87,7 @@ def _test_array_flat_indices(testcase, pattern):
     # As a sanity check, make sure there are an appropriate number of
     # non-zero entries in the Jacobian.
     num_nonzeros = 0
-    it = np.nditer(flat_to_free_jac, flags=['multi_index'])
+    it = onp.nditer(flat_to_free_jac, flags=['multi_index'])
     while not it.finished:
         # If the true Jacobian is non-zero, make sure we have indicated
         # dependence in ``flat_indices``.  Note that this allows
@@ -211,7 +222,7 @@ def _test_pattern(testcase, pattern, valid_value,
 class TestBasicPatterns(unittest.TestCase):
     def test_simplex_jacobian(self):
         dim = 5
-        simplex = np.random.random(dim)
+        simplex = jax_random(dim)
         simplex = simplex / np.sum(simplex)
 
         jac_ad = \
@@ -231,7 +242,7 @@ class TestBasicPatterns(unittest.TestCase):
     def test_simplex_array_patterns(self):
         def test_shape_and_size(simplex_size, array_shape):
             shape = array_shape + (simplex_size, )
-            valid_value = np.random.random(shape) + 0.1
+            valid_value = jax_random(shape) + 0.1
             valid_value = \
                 valid_value / np.sum(valid_value, axis=-1, keepdims=True)
 
@@ -264,10 +275,10 @@ class TestBasicPatterns(unittest.TestCase):
             pattern.flatten(np.full((2, 3, 4), 0.2), free=False)
 
         with self.assertRaisesRegex(ValueError, 'Some values are negative'):
-            bad_folded = np.full((2, 3, 5), 0.2)
+            bad_folded = onp.full((2, 3, 5), 0.2)
             bad_folded[0, 0, 0] = -0.1
             bad_folded[0, 0, 1] = 0.5
-            pattern.flatten(bad_folded, free=False)
+            pattern.flatten(np.array(bad_folded), free=False)
 
         with self.assertRaisesRegex(ValueError, 'sum to one'):
             pattern.flatten(np.full((2, 3, 5), 0.1), free=False)
@@ -287,7 +298,7 @@ class TestBasicPatterns(unittest.TestCase):
 
     def test_numeric_array_patterns(self):
         for test_shape in [(1, ), (2, ), (2, 3), (2, 3, 4)]:
-            valid_value = np.random.random(test_shape)
+            valid_value = jax_random(test_shape)
             pattern = paragami.NumericArrayPattern(test_shape)
             _test_pattern(self, pattern, valid_value)
 
@@ -317,7 +328,7 @@ class TestBasicPatterns(unittest.TestCase):
         # _test_pattern(self, pattern, 2.0)
 
         # Test vector subclass.
-        valid_vec = np.random.random(3)
+        valid_vec = jax_random(3)
         pattern = paragami.NumericVectorPattern(length=3)
         _test_pattern(self, pattern, valid_vec)
 
@@ -349,7 +360,7 @@ class TestBasicPatterns(unittest.TestCase):
 
         # Check that singletons work.
         pattern = paragami.NumericArrayPattern(shape=(1, ))
-        _test_pattern(self, pattern, 1.0)
+        _test_pattern(self, pattern, np.array([1.0]))
 
         # Test invalid values.
         with self.assertRaisesRegex(
@@ -359,9 +370,9 @@ class TestBasicPatterns(unittest.TestCase):
         pattern = paragami.NumericArrayPattern((1, ), lb=-1, ub=1)
         self.assertEqual((-1, 1), pattern.bounds())
         with self.assertRaisesRegex(ValueError, 'beneath lower bound'):
-            pattern.flatten(-2, free=True)
+            pattern.flatten(np.array([-2]), free=True)
         with self.assertRaisesRegex(ValueError, 'above upper bound'):
-            pattern.flatten(2, free=True)
+            pattern.flatten(np.array([2]), free=True)
         with self.assertRaisesRegex(ValueError, 'Wrong size'):
             pattern.flatten([0, 0], free=True)
         with self.assertRaisesRegex(ValueError,
@@ -411,9 +422,9 @@ class TestBasicPatterns(unittest.TestCase):
             pattern.flatten(0.25 * np.eye(3), free=False, validate_value=True)
 
         with self.assertRaisesRegex(ValueError, 'not symmetric'):
-            bad_mat = np.eye(3)
+            bad_mat = onp.eye(3)
             bad_mat[0, 1] = 0.1
-            pattern.flatten(bad_mat, free=False, validate_value=True)
+            pattern.flatten(np.array(bad_mat), free=False, validate_value=True)
 
         flat_val = pattern.flatten(pattern.random(), free=False)
         with self.assertRaisesRegex(
@@ -526,7 +537,7 @@ class TestContainerPatterns(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'is not valid'):
             dict_pattern.flatten(bad_dict, free=True)
 
-        free_val = np.random.random(dict_pattern.flat_length(True))
+        free_val = jax_random(dict_pattern.flat_length(True))
         with self.assertRaisesRegex(ValueError,
                                     'argument to fold must be a 1d vector'):
             dict_pattern.fold(np.atleast_2d(free_val), free=True)
@@ -571,9 +582,10 @@ class TestContainerPatterns(unittest.TestCase):
         self.assertTrue(array_pattern == pattern_array.base_pattern())
 
         # Test bad arguments.
-        with self.assertRaisesRegex(NotImplementedError,
-                                    'not numpy.ndarray types'):
-            paragami.PatternArray((2, 3), paragami.PatternDict())
+        # Check currently disabled.
+        # with self.assertRaisesRegex(NotImplementedError,
+        #                             'not numpy.ndarray types'):
+        #     paragami.PatternArray((2, 3), paragami.PatternDict())
 
         pattern_array = paragami.PatternArray((2, 3), array_pattern)
         with self.assertRaisesRegex(ValueError, 'Wrong number of dimensions'):
@@ -602,9 +614,9 @@ class TestJSONFiles(unittest.TestCase):
         pattern['mat'] = paragami.PSDSymmetricMatrixPattern(5)
 
         val_folded = pattern.random()
-        extra = np.random.random(5)
+        extra = jax_random(5)
 
-        outfile_name = '/tmp/paragami_test_' + str(np.random.randint(1e6))
+        outfile_name = '/tmp/paragami_test_' + str(onp.random.randint(1e6))
 
         paragami.save_folded(outfile_name, val_folded, pattern, extra=extra)
 
@@ -649,11 +661,11 @@ class TestHelperFunctions(unittest.TestCase):
     #         paragami.simplex_patterns.logsumexp(mat, axis))
     #
     # def test_logsumexp(self):
-    #     mat = np.random.random((3, 3, 3))
+    #     mat = jax_random((3, 3, 3))
     #     self._test_logsumexp(mat, 0)
 
     # def test_pdmatrix_custom_autodiff(self):
-    #     x_vec = np.random.random(6)
+    #     x_vec = jax_random(6)
     #     x_mat = paragami.psdmatrix_patterns._unvectorize_ld_matrix(x_vec)
     #
     #     check_grads(

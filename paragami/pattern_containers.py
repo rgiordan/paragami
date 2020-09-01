@@ -265,7 +265,7 @@ class PatternDict(Pattern):
 
     def fold(self, flat_val, free=None, validate_value=None):
         free = self._free_with_default(free)
-        #flat_val = np.atleast_1d(flat_val)
+        flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
         flat_length = self.flat_length(free)
@@ -457,24 +457,27 @@ class PatternArray(Pattern):
         # If they are, then the unfolded value will be a single numpy array
         # of shape __array_shape + base_pattern.empty().shape.
         empty_pattern = self.__base_pattern.empty(valid=False)
-        if type(empty_pattern) is onp.ndarray:
-            self.__folded_pattern_shape = empty_pattern.shape
-        else:
-            # autograd's numpy does not seem to support object arrays.
-            # The following snippet works with numpy 1.14.2 but not
-            # autograd's numpy (as of commit 5d49ee anyway).
-            #
-            # >>> import autograd.numpy as np
-            # >>> foo = OrderedDict(a=5)
-            # >>> bar = np.array([foo for i in range(3)])
-            # >>> print(bar[0]['a']) # Gives an index error.
-            #
+        self.__folded_pattern_shape = empty_pattern.shape
 
-            # pass
-            raise NotImplementedError(
-                'PatternArray does not support patterns whose folded ' +
-                'values are not numpy.ndarray types.  ',
-                'Got type ' + str(type(empty_pattern)))
+        # Not currently sure how to check this correctly.
+        # if type(empty_pattern) is np.ndarray:
+        #     self.__folded_pattern_shape = empty_pattern.shape
+        # else:
+        #     # autograd's numpy does not seem to support object arrays.
+        #     # The following snippet works with numpy 1.14.2 but not
+        #     # autograd's numpy (as of commit 5d49ee anyway).
+        #     #
+        #     # >>> import autograd.numpy as np
+        #     # >>> foo = OrderedDict(a=5)
+        #     # >>> bar = np.array([foo for i in range(3)])
+        #     # >>> print(bar[0]['a']) # Gives an index error.
+        #     #
+        #
+        #     # pass
+        #     raise NotImplementedError(
+        #         'PatternArray does not support patterns whose folded ' +
+        #         'values are not jax.numpy.ndarray types.  ',
+        #         'Got type ' + str(type(empty_pattern)))
 
         self.__shape = tuple(self.__array_shape) + empty_pattern.shape
 
@@ -530,7 +533,7 @@ class PatternArray(Pattern):
 
     def empty(self, valid):
         empty_pattern = self.__base_pattern.empty(valid=valid)
-        repeated_array = onp.array(
+        repeated_array = np.array(
             [empty_pattern
              for item in itertools.product(*self.__array_ranges)])
         return np.reshape(repeated_array, self.__shape)
@@ -559,7 +562,7 @@ class PatternArray(Pattern):
 
     def fold(self, flat_val, free=None, validate_value=None):
         free = self._free_with_default(free)
-        #flat_val = np.atleast_1d(flat_val)
+        flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
         if flat_val.size != self.flat_length(free):

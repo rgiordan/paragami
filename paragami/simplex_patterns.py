@@ -133,9 +133,9 @@ class SimplexArrayPattern(Pattern):
 
     def empty(self, valid):
         if valid:
-            return onp.full(self.__shape, 1.0 / self.__simplex_size)
+            return np.full(self.__shape, 1.0 / self.__simplex_size)
         else:
-            return onp.empty(self.__shape)
+            return np.empty(self.__shape)
 
     def _validate_folded_shape(self, folded_val):
         if folded_val.shape != self.__shape:

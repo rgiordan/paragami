@@ -180,10 +180,10 @@ class NumericArrayPattern(Pattern):
 
     def empty(self, valid):
         if valid:
-            return onp.full(
+            return np.full(
                 self._shape, _get_inbounds_value(self._lb, self._ub))
         else:
-            return onp.empty(self._shape)
+            return np.empty(self._shape)
 
     def _validate_folded_shape(self, folded_val):
         if folded_val.shape != self.shape():
@@ -195,7 +195,7 @@ class NumericArrayPattern(Pattern):
             return True, ''
 
     def validate_folded(self, folded_val, validate_value=None):
-        #folded_val = np.atleast_1d(folded_val)
+        folded_val = np.atleast_1d(folded_val)
         shape_ok, err_msg = self._validate_folded_shape(folded_val)
         if not shape_ok:
             return shape_ok, err_msg
@@ -210,7 +210,7 @@ class NumericArrayPattern(Pattern):
 
     def fold(self, flat_val, free=None, validate_value=None):
         free = self._free_with_default(free)
-        #flat_val = np.atleast_1d(flat_val)
+        flat_val = np.atleast_1d(flat_val)
 
         if flat_val.ndim != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
@@ -236,7 +236,7 @@ class NumericArrayPattern(Pattern):
 
     def flatten(self, folded_val, free=None, validate_value=None):
         free = self._free_with_default(free)
-        #folded_val = np.atleast_1d(folded_val)
+        folded_val = np.atleast_1d(folded_val)
         valid, msg = self.validate_folded(folded_val, validate_value)
         if not valid:
             raise ValueError(msg)
@@ -265,7 +265,7 @@ class NumericArrayPattern(Pattern):
             return np.array([], dtype=int)
 
         free = self._free_with_default(free)
-        #folded_bool = np.atleast_1d(folded_bool)
+        folded_bool = np.atleast_1d(folded_bool)
         shape_ok, err_msg = self._validate_folded_shape(folded_bool)
         if not shape_ok:
             raise ValueError(err_msg)
@@ -277,7 +277,7 @@ class NumericArrayPattern(Pattern):
     def freeing_jacobian(self, folded_val, sparse=True):
         jac_array = \
             _unconstrain_array_jacobian(folded_val, self._lb, self._ub)
-        #jac_array = np.atleast_1d(jac_array).flatten()
+        jac_array = np.atleast_1d(jac_array).flatten()
         jac_array = jac_array.flatten()
         if sparse:
             # Set offsets so you don't get an error with length-one arrays.
@@ -290,7 +290,7 @@ class NumericArrayPattern(Pattern):
             _constrain_array_jacobian(
                 _unconstrain_array(folded_val, self._lb, self._ub),
                 self._lb, self._ub)
-        #jac_array = np.atleast_1d(jac_array).flatten()
+        jac_array = np.atleast_1d(jac_array).flatten()
         jac_array = jac_array.flatten()
         if sparse:
             # Set offsets so you don't get an error with length-one arrays.
