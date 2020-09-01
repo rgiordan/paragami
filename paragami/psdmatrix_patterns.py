@@ -81,12 +81,12 @@ def _unvectorize_ld_matrix(vec):
 
     [ v1, v2, ..., vn ]
 
-    to the symmetric matrix
+    to the lower diagonal matrix
 
-    [ v1 ...          ]
-    [ v2 v3 ...       ]
-    [ v4 v5 v6 ...    ]
-    [ ...             ]
+    [ v1 0  ...          ]
+    [ v2 v3 0  ...       ]
+    [ v4 v5 v6 0  ...    ]
+    [ ...                ]
 
     where the values above the diagonal are determined by symmetry.
     """
@@ -98,7 +98,9 @@ def _unvectorize_ld_matrix(vec):
     inds = np.tril_indices(mat_size)
     return(jax.ops.index_update(mat, inds, vec))
 
-# Because we cannot use jax with array assignment, define the
+# Autograd version:
+
+# Because we cannot use autograd with array assignment, define the
 # vector jacobian product and jacobian vector products of
 # _unvectorize_ld_matrix.
 
@@ -302,7 +304,7 @@ class PSDSymmetricMatrixPattern(Pattern):
 
     def fold(self, flat_val, free=None, validate_value=None):
         free = self._free_with_default(free)
-        #flat_val = np.atleast_1d(flat_val)
+        flat_val = np.atleast_1d(flat_val)
         if len(flat_val.shape) != 1:
             raise ValueError('The argument to fold must be a 1d vector.')
         if flat_val.size != self.flat_length(free):

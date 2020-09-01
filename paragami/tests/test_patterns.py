@@ -166,20 +166,21 @@ def _test_pattern(testcase, pattern, valid_value,
     # Test the freeing and unfreeing Jacobians.
 
     # Note that you cannot run jit with validate_value=True because then
-    # the control flow depends on the inlut.
+    # the control flow depends on the input.
     @jax.jit
     def freeing_transform(flat_val):
         return pattern.flatten(
             pattern.fold(flat_val, free=False, validate_value=False),
             free=True, validate_value=False)
 
+    @jax.jit
     def unfreeing_transform(free_flat_val):
         return pattern.flatten(
             pattern.fold(free_flat_val, free=True, validate_value=False),
             free=False, validate_value=False)
 
-    ad_freeing_jacobian = jax.jacobian(freeing_transform)
-    ad_unfreeing_jacobian = jax.jacobian(unfreeing_transform)
+    ad_freeing_jacobian = jax.jit(jax.jacobian(freeing_transform))
+    ad_unfreeing_jacobian = jax.jit(jax.jacobian(unfreeing_transform))
 
     for sparse in [True, False]:
         flat_val = pattern.flatten(valid_value, free=False)
