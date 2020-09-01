@@ -182,7 +182,7 @@ class PSDSymmetricMatrixPattern(Pattern):
         Whether or not the matrix is automatically checked for symmetry
         positive-definiteness, and the diagonal lower bound.
     """
-    def __init__(self, size, diag_lb=0.0, default_validate=True,
+    def __init__(self, size, diag_lb=0.0, default_validate=False,
                  free_default=None):
         """
         Parameters
