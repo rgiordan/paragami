@@ -62,10 +62,10 @@ class TransformFunctionInput:
         """
 
         self._fun = original_fun
-        self._patterns = np.atleast_1d(patterns)
+        self._patterns = onp.atleast_1d(patterns)
         if argnums is None:
             argnums = np.arange(0, len(self._patterns))
-        self._argnums = np.atleast_1d(argnums)
+        self._argnums = onp.atleast_1d(argnums)
         self._argnum_sort = np.argsort(self._argnums)
         self.free = np.broadcast_to(free, self._patterns.shape)
         self._original_is_flat = original_is_flat
@@ -181,10 +181,10 @@ class TransformFunctionOutput:
         """
 
         self._fun = original_fun
-        self._patterns = np.atleast_1d(patterns)
+        self._patterns = onp.atleast_1d(patterns)
         if retnums is None:
             retnums = np.arange(0, len(self._patterns))
-        self._retnums = np.atleast_1d(retnums)
+        self._retnums = onp.atleast_1d(retnums)
         self._retnum_sort = np.argsort(self._retnums)
         self.free = np.broadcast_to(free, self._patterns.shape)
         self._original_is_flat = original_is_flat

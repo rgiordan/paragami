@@ -109,9 +109,9 @@ class TestFlatteningAndFolding(unittest.TestCase):
                 assert_array_almost_equal(
                     pattern.flatten(orig_val, free=free), trans_val)
 
-        patterns_array = np.atleast_1d(patterns)
-        free_array = np.atleast_1d(free)
-        retnums_array = np.atleast_1d(retnums)
+        patterns_array = onp.atleast_1d(patterns)
+        free_array = onp.atleast_1d(free)
+        retnums_array = onp.atleast_1d(retnums)
 
         orig_rets = original_fun()
         trans_rets = fun_trans()
