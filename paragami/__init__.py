@@ -18,7 +18,7 @@ from paragami.simplex_patterns import SimplexArrayPattern
 from paragami.optimization_lib import \
     PreconditionedFunction, \
     OptimizationObjective
-import paragami.autograd_supplement_lib
+#import paragami.autograd_supplement_lib
 
 from ._version import get_versions
 __version__ = get_versions()['version']

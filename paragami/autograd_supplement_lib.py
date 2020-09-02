@@ -4,9 +4,14 @@
 # Most of these are copied with minimal modification from
 # https://github.com/HIPS/autograd/blob/65c21e2/autograd/numpy/linalg.py
 
-import autograd
-import autograd.numpy as np
-import autograd.scipy as sp
+# import autograd
+# import autograd.numpy as np
+# import autograd.scipy as sp
+
+import jax
+import jax.numpy as np
+import jax.scipy as sp
+
 import scipy as osp
 from scipy import sparse
 from autograd.core import primitive, defvjp, defjvp
@@ -15,16 +20,23 @@ from autograd.numpy.linalg import slogdet, solve, inv
 from functools import partial
 
 
+# Jax
+def get_jac_hvp_fun(f):
+    def hvp(x, v):
+        return jax.jvp(jax.grad(f), (x, ), (v, ))[1]
+    return hvp
 
-defjvp(sp.special.gammasgn, None)
-defjvp(sp.special.polygamma,
-    None, lambda g, ans, n, x: g * sp.special.polygamma(n + 1, x))
-defjvp(sp.special.psi,       lambda g, ans, x: g * sp.special.polygamma(1, x))
-defjvp(sp.special.digamma,   lambda g, ans, x: g * sp.special.polygamma(1, x))
-defjvp(sp.special.gamma,     lambda g, ans, x: g * ans * sp.special.psi(x))
-defjvp(sp.special.gammaln,   lambda g, ans, x: g * sp.special.psi(x))
-defjvp(sp.special.rgamma,
-    lambda g, ans, x: g * sp.special.psi(x) / -sp.special.gamma(x))
+
+
+# defjvp(sp.special.gammasgn, None)
+# defjvp(sp.special.polygamma,
+#     None, lambda g, ans, n, x: g * sp.special.polygamma(n + 1, x))
+# defjvp(sp.special.psi,       lambda g, ans, x: g * sp.special.polygamma(1, x))
+# defjvp(sp.special.digamma,   lambda g, ans, x: g * sp.special.polygamma(1, x))
+# defjvp(sp.special.gamma,     lambda g, ans, x: g * ans * sp.special.psi(x))
+# defjvp(sp.special.gammaln,   lambda g, ans, x: g * sp.special.psi(x))
+# defjvp(sp.special.rgamma,
+#     lambda g, ans, x: g * sp.special.psi(x) / -sp.special.gamma(x))
 # defjvp(sp.special.multigammaln,
 #        lambda g, ans, a, d:
 #         g * np.sum(sp.special.digamma(np.expand_dims(a, -1) - np.arange(d)/2.), -1),
@@ -99,11 +111,11 @@ def get_sparse_product(z_mat):
 
     @primitive
     def z_mult(b):
-        return z_mat @ check_b(b)
+        return np.matmul(z_mat, check_b(b))
 
     @primitive
     def zt_mult(b):
-        return z_mat.T @ check_b(b)
+        return np.matmul(z_mat.T, check_b(b))
 
     def z_mult_jvp(g, ans, b):
         return z_mult(g) # z_mat @ g

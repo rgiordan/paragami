@@ -1,12 +1,13 @@
 import jax
 import jax.numpy as np
+import numpy as onp
 import copy
 import scipy as osp
 import scipy.sparse
 import warnings
 
 from .autograd_supplement_lib import \
-    get_sparse_product, get_differentiable_solver
+    get_sparse_product, get_differentiable_solver, get_jac_hvp_fun
 
 ###############################
 # Preconditioned objectives.  #
@@ -136,10 +137,10 @@ def _get_matrix_from_operator(mult_fun, dim):
     mat = []
     for i in range(dim):
         # Re-instantiate to make sure that mult_fun is not returning a reference.
-        vec = np.zeros(dim)
+        vec = onp.zeros(dim)
         vec[i] = 1.0
         mat.append(mult_fun(vec))
-    return np.vstack(mat).T
+    return onp.vstack(mat).T
 
 
 class PreconditionedFunction():
@@ -198,15 +199,17 @@ class PreconditionedFunction():
         """Set the preconditioner with a matrix.
         """
         if osp.sparse.issparse(a):
-            if a_inv is None:
-                a_inv = osp.sparse.linalg.inv(a)
-            a_times, _ = get_sparse_product(a)
-            a_inv_times, _ = get_sparse_product(a_inv)
-            self.set_preconditioner_functions(a_times, a_inv_times)
+            raise NotImplemented(
+                'Sparse preconditioners are not implemented yet with jax')
+            # if a_inv is None:
+            #     a_inv = osp.sparse.linalg.inv(a)
+            # a_times, _ = get_sparse_product(a)
+            # a_inv_times, _ = get_sparse_product(a_inv)
+            # self.set_preconditioner_functions(a_times, a_inv_times)
 
         else:
             def a_times(vec):
-                return a @ vec
+                return np.matmul(a, vec)
 
             if a_inv is None:
                 # On one hand, this is a numerically instable way to solve a
@@ -216,7 +219,7 @@ class PreconditionedFunction():
                 a_inv = np.linalg.inv(a)
 
             def a_inv_times(vec):
-                return a_inv @ vec
+                return np.matmul(a_inv, vec)
 
             self.set_preconditioner_functions(a_times, a_inv_times)
 
@@ -379,8 +382,10 @@ class OptimizationObjective():
         self._objective_fun = objective_fun
         self.grad = jax.grad(self._objective_fun)
         self.hessian = jax.hessian(self._objective_fun)
-        self.hessian_vector_product = \
-            jax.hessian_vector_product(self._objective_fun)
+        # self.hessian_vector_product = \
+        #     jax.hessian_vector_product(self._objective_fun)
+
+        self.hessian_vector_product = get_jac_hvp_fun(self._objective_fun)
 
         self.set_print_every(print_every)
         self.set_log_every(log_every)

@@ -23,14 +23,21 @@ from paragami.optimization_lib import truncate_eigenvalues
 from paragami.optimization_lib import _get_matrix_from_operator
 
 
+def jax_random(shape):
+    key = jax.random.PRNGKey(42)
+    if not type(shape) is tuple:
+        shape = (shape, )
+    return jax.random.uniform(key, shape=shape, dtype='float64')
+
+
 import warnings
 
 class TestPreconditionedFunction(unittest.TestCase):
     def test_get_matrix_from_operator(self):
         dim = 3
-        a = onp.random.random((dim, dim))
+        a = jax_random((dim, dim))
         def a_mult(vec):
-            return a @ vec
+            return np.matmul(a, vec)
 
         a_test = _get_matrix_from_operator(a_mult, dim)
         assert_array_almost_equal(a, a_test)
@@ -43,23 +50,26 @@ class TestPreconditionedFunction(unittest.TestCase):
         assert_array_almost_equal(evs, evs_trunc)
 
         evs_trunc = truncate_eigenvalues(evs, 2.5, None)
-        trunc = evs <= 2.5
-        not_trunc = evs > 2.5
-        assert_array_almost_equal(2.5, evs_trunc[trunc])
-        assert_array_almost_equal(evs[not_trunc], evs_trunc[not_trunc])
+        trunc = onp.array(evs <= 2.5)
+        not_trunc = onp.array(evs > 2.5)
+
+        assert_array_almost_equal(2.5, evs_trunc[(trunc)])
+        assert_array_almost_equal(
+            evs[(not_trunc)], evs_trunc[(not_trunc)])
 
         evs_trunc = truncate_eigenvalues(evs, None, 5.5)
-        trunc = evs >= 5.5
-        not_trunc = evs < 5.5
-        assert_array_almost_equal(5.5, evs_trunc[trunc])
-        assert_array_almost_equal(evs[not_trunc], evs_trunc[not_trunc])
+        trunc = onp.array(evs >= 5.5)
+        not_trunc = onp.array(evs < 5.5)
+        assert_array_almost_equal(5.5, evs_trunc[(trunc)])
+        assert_array_almost_equal(
+            evs[(not_trunc)], evs_trunc[(not_trunc)])
 
     def test_transform_eigenspace(self):
         dim = 6
-        a = onp.random.random((dim, dim))
+        a = jax_random((dim, dim))
         a = 0.5 * (a.T + a) + np.eye(dim)
         eigvals, eigvecs = np.linalg.eigh(a)
-        vec = onp.random.random(dim)
+        vec = jax_random(dim)
 
         # Test basic transforms.
         a_mult = transform_eigenspace(eigvecs, eigvals, lambda x: x)
@@ -71,7 +81,7 @@ class TestPreconditionedFunction(unittest.TestCase):
         a_sqrt_mult = transform_eigenspace(eigvecs, eigvals, np.sqrt)
 
         for i in range(dim):
-            vec2 = np.zeros(dim)
+            vec2 = onp.zeros(dim)
             vec2[i] = 1
             assert_array_almost_equal(
                 vec2.T @ a @ vec, a_sqrt_mult(vec2).T @ a_sqrt_mult(vec))
@@ -152,9 +162,11 @@ class TestPreconditionedFunction(unittest.TestCase):
                 theta, f_c.unprecondition(a_inv @ theta))
             assert_array_almost_equal(f(theta), f_c(a_inv @ theta))
             assert_array_almost_equal(
-                a @ f_grad(theta), f_c_grad(a_inv @ theta))
+                a @ f_grad(theta),
+                f_c_grad(np.matmul(a_inv, theta)))
             assert_array_almost_equal(
-                a @ f_hessian(theta) @ a.T, f_c_hessian(a_inv @ theta))
+                a @ f_hessian(theta) @ a.T,
+                f_c_hessian(np.matmul(a_inv, theta)))
 
         # Check that the default is the identity.
         test_f_c_values(np.eye(dim))
@@ -167,14 +179,14 @@ class TestPreconditionedFunction(unittest.TestCase):
         f_c.set_preconditioner_matrix(a, np.linalg.inv(a))
         test_f_c_values(a)
 
-        a_sp = sp.sparse.csc_matrix(a)
-        a_inv = np.linalg.inv(a)
-        a_inv_sp = sp.sparse.csc_matrix(a_inv)
-        f_c.set_preconditioner_matrix(a_sp)
-        test_f_c_values(a)
-
-        f_c.set_preconditioner_matrix(a_sp, a_inv_sp)
-        test_f_c_values(a)
+        # a_sp = sp.sparse.csc_matrix(a)
+        # a_inv = np.linalg.inv(a)
+        # a_inv_sp = sp.sparse.csc_matrix(a_inv)
+        # f_c.set_preconditioner_matrix(a_sp)
+        # test_f_c_values(a)
+        #
+        # f_c.set_preconditioner_matrix(a_sp, a_inv_sp)
+        # test_f_c_values(a)
 
         # Test with an incorrect inverse.
         f_c.set_preconditioner_matrix(a, np.linalg.inv(a) + 2)
@@ -270,7 +282,7 @@ class TestPreconditionedFunction(unittest.TestCase):
     def test_matrix_sqrt(self):
         dim = 5
         mat = dim * np.eye(dim)
-        vec = onp.random.random(dim)
+        vec = jax_random(dim)
         mat = mat + np.outer(vec, vec)
         self._test_matrix_sqrt(mat)
 
@@ -280,17 +292,17 @@ class TestOptimizationObjective(unittest.TestCase):
         def objective_fun(x):
             return np.sum(x ** 4)
 
-        x0 = onp.random.random(5)
+        x0 = jax_random(5)
         obj = paragami.OptimizationObjective(
             objective_fun, print_every=0)
         assert_array_almost_equal(objective_fun(x0), obj.f(x0))
         assert_array_almost_equal(
             jax.grad(objective_fun)(x0), obj.grad(x0))
+        h0 = obj.hessian(x0)
         assert_array_almost_equal(
-            jax.hessian(objective_fun)(x0), obj.hessian(x0))
+            jax.hessian(objective_fun)(x0), h0)
         assert_array_almost_equal(
-            jax.hessian_vector_product(objective_fun)(
-                x0, x0),
+            h0 @ x0,
             obj.hessian_vector_product(x0, x0))
 
         def test_print_and_log(num_evals, expected_prints, expected_logs):
