@@ -262,4 +262,5 @@ class TestGroupedSum(unittest.TestCase):
         check(np.random.random((n_obs, 3, 2)))
 
 if __name__ == '__main__':
-    unittest.main()
+    print('Skipping autograd_suppelement tests for Jax')
+    #unittest.main()
