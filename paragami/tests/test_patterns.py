@@ -128,17 +128,26 @@ def _test_pattern(testcase, pattern, valid_value,
     ###############################
     # Test folding and unfolding.
     for free in [True, False, None]:
+        # Jit not working here for some reason.
+        #@jax.jit
+        def flatten_jit(val):
+            return pattern.flatten(val, free=free)
+
+        #@jax.jit
+        def fold_jit(val):
+            return pattern.fold(val, free=free)
+
         for free_default in [True, False, None]:
             pattern.free_default = free_default
             if (free_default is None) and (free is None):
                 with testcase.assertRaises(ValueError):
-                    flat_val = pattern.flatten(valid_value, free=free)
+                    flat_val = flatten_jit(valid_value)
                 with testcase.assertRaises(ValueError):
-                    folded_val = pattern.fold(flat_val, free=free)
+                    folded_val = fold_jit(flat_val)
             else:
-                flat_val = pattern.flatten(valid_value, free=free)
+                flat_val = flatten_jit(valid_value)
                 testcase.assertEqual(len(flat_val), pattern.flat_length(free))
-                folded_val = pattern.fold(flat_val, free=free)
+                folded_val = fold_jit(flat_val)
                 check_equal(valid_value, folded_val)
                 if hasattr(valid_value, 'shape'):
                     testcase.assertEqual(valid_value.shape, folded_val.shape)
@@ -312,21 +321,19 @@ class TestBasicPatterns(unittest.TestCase):
             pattern = paragami.NumericArrayPattern(test_shape, lb=-1, ub=2)
             _test_pattern(self, pattern, valid_value)
 
-        # TODO: figure out what to do without atleast_1d.
-
         # # Test scalar subclass.
-        # pattern = paragami.NumericScalarPattern()
-        # _test_pattern(self, pattern, 2.0)
-        # # _test_pattern(self, pattern, np.array([2.0]))
-        #
-        # pattern = paragami.NumericScalarPattern(lb=-1)
-        # _test_pattern(self, pattern, 2.0)
-        #
-        # pattern = paragami.NumericScalarPattern(ub=3)
-        # _test_pattern(self, pattern, 2.0)
-        #
-        # pattern = paragami.NumericScalarPattern(lb=-1, ub=3)
-        # _test_pattern(self, pattern, 2.0)
+        pattern = paragami.NumericScalarPattern()
+        _test_pattern(self, pattern, 2.0)
+        _test_pattern(self, pattern, np.array([2.0]))
+
+        pattern = paragami.NumericScalarPattern(lb=-1)
+        _test_pattern(self, pattern, 2.0)
+
+        pattern = paragami.NumericScalarPattern(ub=3)
+        _test_pattern(self, pattern, 2.0)
+
+        pattern = paragami.NumericScalarPattern(lb=-1, ub=3)
+        _test_pattern(self, pattern, 2.0)
 
         # Test vector subclass.
         valid_vec = jax_random(3)

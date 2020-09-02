@@ -345,35 +345,28 @@ class NumericVectorPattern(NumericArrayPattern):
             'free_default': self.free_default }
 
 
-# Without atleast_1d, this subclass is a pain in the butt.
-# class NumericScalarPattern(NumericArrayPattern):
-#     """A pattern for a (optionally bounded) numeric scalar.
-#
-#     See Also
-#     ------------
-#     NumericArrayPattern
-#     """
-#     def __init__(self, lb=-float("inf"), ub=float("inf"),
-#                  default_validate=True, free_default=None):
-#         super().__init__(shape=(1, ), lb=lb, ub=ub,
-#                          default_validate=default_validate,
-#                          free_default=free_default)
-#
-#     def _validate_folded_shape(self, folded_val):
-#         if not np.isscalar(folded_val):
-#             return False, 'Expected scalar, got ' + str(folded_val)
-#         else:
-#             return True, ''
-#
-#     def as_dict(self):
-#         return {
-#             'pattern': self.json_typename(),
-#             'lb': self._lb,
-#             'ub': self._ub,
-#             'default_validate': self.default_validate,
-#             'free_default': self.free_default}
+class NumericScalarPattern(NumericArrayPattern):
+    """A pattern for a (optionally bounded) numeric scalar.
+
+    See Also
+    ------------
+    NumericArrayPattern
+    """
+    def __init__(self, lb=-float("inf"), ub=float("inf"),
+                 default_validate=True, free_default=None):
+        super().__init__(shape=(1, ), lb=lb, ub=ub,
+                         default_validate=default_validate,
+                         free_default=free_default)
+
+    def as_dict(self):
+        return {
+            'pattern': self.json_typename(),
+            'lb': self._lb,
+            'ub': self._ub,
+            'default_validate': self.default_validate,
+            'free_default': self.free_default}
 
 
 register_pattern_json(NumericVectorPattern)
-#register_pattern_json(NumericScalarPattern)
+register_pattern_json(NumericScalarPattern)
 register_pattern_json(NumericArrayPattern)
