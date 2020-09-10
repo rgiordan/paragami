@@ -291,15 +291,30 @@ class PSDSymmetricMatrixPattern(Pattern):
             validate_value = self.default_validate
 
         if validate_value:
-            if np.any(np.diag(folded_val) < self.__diag_lb):
-                error_string = \
-                    'Diagonal is less than the lower bound {}.'.format(
-                        self.__diag_lb)
-                return False, error_string
-            if not (folded_val.transpose() == folded_val).all():
-                return False, 'Matrix is not symmetric.'
+            diag_min = np.min(np.diag(folded_val))
+            error_string = \
+                f'Diagonal is less than the lower bound {self.__diag_lb}.'
+            lb_result = jax.lax.cond(
+                diag_min < self.__diag_lb,
+                true_fun=lambda _: ( False, error_string ),
+                false_fun=lambda _: ( True, '' ),
+                operand=[]
+            )
 
-        return True, ''
+            error_string = 'Matrix is not symmetric.'
+            trans_result = jax.lax.cond(
+                (folded_val.transpose() == folded_val).all(),
+                true_fun=lambda _: ( True, '' ),
+                false_fun=lambda _: ( False, error_string ),
+                operand=[]
+            )
+
+            return jax.lax.cond(
+                lb_result[0] and trans_result[0],
+                true_fun=lambda _: ( True, '' ),
+                false_fun=lambda _: (False, lb_result[1] + ' '  + trans_result[1]),
+                operand=[]
+            )
 
     def flatten(self, folded_val, free=None, validate_value=None):
         free = self._free_with_default(free)
