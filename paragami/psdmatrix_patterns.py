@@ -281,6 +281,8 @@ class PSDSymmetricMatrixPattern(Pattern):
             A message describing the reason the value is invalid or an empty
             string if the value is valid.
         """
+        # print('Warning: folded validation disabled for PSD matrix')
+        # return True, ''
         shape_ok, err_msg = self._validate_folded_shape(folded_val)
         if not shape_ok:
             raise ValueError(err_msg)
