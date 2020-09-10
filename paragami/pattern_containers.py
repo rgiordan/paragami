@@ -450,6 +450,13 @@ class PatternArray(Pattern):
         self.__array_shape = tuple(array_shape)
         self.__array_ranges = [range(0, t) for t in self.__array_shape]
 
+        # TODO: do this better.
+        # This is not very efficient, since you have to create a whole
+        # extra array in memory, but it allows us to use jax.lax.map in
+        # a straightforward way.
+        self.__array_indices = \
+            np.array([ i for i in itertools.product(*self.__array_ranges) ])
+
         num_elements = np.prod(np.array(self.__array_shape))
         self.__base_pattern = base_pattern
 
@@ -523,19 +530,24 @@ class PatternArray(Pattern):
                 False, \
                 'Wrong shape.  Expected {}, got {}.'.format(
                     folded_val.shape, self.__shape)
-        for item in itertools.product(*self.__array_ranges):
-            valid, msg = self.__base_pattern.validate_folded(
-                folded_val[item], validate_value=validate_value)
-            if not valid:
-                err_msg = 'Bad value in location {}: {}'.format(item, msg)
-                return False, err_msg
+
+        # Have to think more carefully how to do this with jax.
+        # for item in itertools.product(*self.__array_ranges):
+        #     valid, msg = self.__base_pattern.validate_folded(
+        #         folded_val[item], validate_value=validate_value)
+        #     if not valid:
+        #         err_msg = 'Bad value in location {}: {}'.format(item, msg)
+        #         return False, err_msg
         return True, ''
 
     def empty(self, valid):
         empty_pattern = self.__base_pattern.empty(valid=valid)
-        repeated_array = np.array(
-            [empty_pattern
-             for item in itertools.product(*self.__array_ranges)])
+        # repeated_array = np.array(
+        #     [empty_pattern
+        #      for item in itertools.product(*self.__array_ranges)])
+        repeated_array = jax.lax.map(
+            lambda item : empty_pattern,
+            self.__array_indices)
         return np.reshape(repeated_array, self.__shape)
 
     def _stacked_obs_slice(self, item, flat_length):
@@ -572,11 +584,19 @@ class PatternArray(Pattern):
             raise ValueError(error_string)
 
         flat_length = self.__base_pattern.flat_length(free)
-        folded_array = np.array([
-            self.__base_pattern.fold(
-                flat_val[self._stacked_obs_slice(item, flat_length)],
-                free=free, validate_value=validate_value)
-            for item in itertools.product(*self.__array_ranges)])
+        # folded_array = np.array([
+        #     self.__base_pattern.fold(
+        #         flat_val[self._stacked_obs_slice(item, flat_length)],
+        #         free=free, validate_value=validate_value)
+        #     for item in itertools.product(*self.__array_ranges)])
+
+        folded_array = jax.lax.map(
+            lambda item:
+                self.__base_pattern.fold(
+                    flat_val[self._stacked_obs_slice(item, flat_length)],
+                    free=free, validate_value=validate_value),
+            self.__array_indices
+        )
 
         folded_val = np.reshape(folded_array, self.__shape)
 
@@ -594,10 +614,18 @@ class PatternArray(Pattern):
         if not valid:
             raise ValueError(msg)
 
-        return np.hstack(np.array([
-            self.__base_pattern.flatten(
-                folded_val[item], free=free, validate_value=validate_value)
-            for item in itertools.product(*self.__array_ranges)]))
+        flattened_array = jax.lax.map(
+            lambda item:
+                self.__base_pattern.flatten(
+                    folded_val[item], free=free, validate_value=validate_value),
+            self.__array_indices
+        )
+
+        return np.hstack(flattened_array)
+        # return np.hstack(np.array([
+        #     self.__base_pattern.flatten(
+        #         folded_val[item], free=free, validate_value=validate_value)
+        #     for item in itertools.product(*self.__array_ranges)]))
 
     def flat_length(self, free=None):
         free = self._free_with_default(free)
@@ -607,11 +635,17 @@ class PatternArray(Pattern):
         base_flat_length = self.__base_pattern.flat_length(free=True)
         base_freeflat_length = self.__base_pattern.flat_length(free=True)
 
-        jacobians = []
-        for item in itertools.product(*self.__array_ranges):
-            jac = self.__base_pattern.unfreeing_jacobian(
-                folded_val[item], sparse=True)
-            jacobians.append(jac)
+        # jacobians = []
+        # for item in itertools.product(*self.__array_ranges):
+        #     jac = self.__base_pattern.unfreeing_jacobian(
+        #         folded_val[item], sparse=True)
+        #     jacobians.append(jac)
+        jacobians = jax.lax.map(
+            lambda item:
+                self.__base_pattern.unfreeing_jacobian(
+                    folded_val[item], sparse=True)
+            self.__array_indices
+        )
         sp_jac = block_diag(jacobians, format='coo')
 
         if sparse:
@@ -623,11 +657,17 @@ class PatternArray(Pattern):
         base_flat_length = self.__base_pattern.flat_length(free=True)
         base_freeflat_length = self.__base_pattern.flat_length(free=True)
 
-        jacobians = []
-        for item in itertools.product(*self.__array_ranges):
-            jac = self.__base_pattern.freeing_jacobian(
-                folded_val[item], sparse=True)
-            jacobians.append(jac)
+        # jacobians = []
+        # for item in itertools.product(*self.__array_ranges):
+        #     jac = self.__base_pattern.freeing_jacobian(
+        #         folded_val[item], sparse=True)
+        #     jacobians.append(jac)
+        jacobians = jax.lax.map(
+            lambda item:
+                self.__base_pattern.freeing_jacobian(
+                    folded_val[item], sparse=True)
+            self.__array_indices
+        )
         sp_jac = block_diag(jacobians, format='coo')
 
         if sparse:

@@ -147,11 +147,18 @@ def _pack_posdef_matrix(mat, diag_lb=0.0):
         _log_matrix_diagonal(np.linalg.cholesky(mat_lb)))
 
 
-def _unpack_posdef_matrix(free_vec, diag_lb=0.0):
+def _unpack_posdef_matrix(free_vec, diag_lb=None):
     mat_chol = _exp_matrix_diagonal(_unvectorize_ld_matrix(free_vec))
     mat = np.matmul(mat_chol, mat_chol.T)
-    k = mat.shape[0]
-    return mat + np.diag(np.full(k, diag_lb))
+    if diag_lb is not None:
+        dim = mat.shape[0]
+        diag_inds = (np.arange(dim), np.arange(dim))
+        mat = jax.ops.index_update(mat, diag_inds, np.diag(mat) + diag_lb)
+        return mat
+    else:
+        return mat
+
+    #return mat + np.diag(np.full(k, diag_lb))
     # return mat + np.make_diagonal(
     #     np.full(k, diag_lb), offset=0, axis1=-1, axis2=-2)
 
