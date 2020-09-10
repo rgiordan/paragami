@@ -534,12 +534,12 @@ class PatternArray(Pattern):
                     folded_val.shape, self.__shape)
 
         # Have to think more carefully how to do this with jax.
-        # for item in itertools.product(*self.__array_ranges):
-        #     valid, msg = self.__base_pattern.validate_folded(
-        #         folded_val[item], validate_value=validate_value)
-        #     if not valid:
-        #         err_msg = 'Bad value in location {}: {}'.format(item, msg)
-        #         return False, err_msg
+        for item in itertools.product(*self.__array_ranges):
+            valid, msg = self.__base_pattern.validate_folded(
+                folded_val[item], validate_value=validate_value)
+            if not valid:
+                err_msg = 'Bad value in location {}: {}'.format(item, msg)
+                return False, err_msg
         return True, ''
 
     def empty(self, valid):
