@@ -643,7 +643,7 @@ class PatternArray(Pattern):
         jacobians = jax.lax.map(
             lambda item:
                 self.__base_pattern.unfreeing_jacobian(
-                    folded_val[item], sparse=True)
+                    folded_val[item], sparse=True),
             self.__array_indices
         )
         sp_jac = block_diag(jacobians, format='coo')
@@ -665,7 +665,7 @@ class PatternArray(Pattern):
         jacobians = jax.lax.map(
             lambda item:
                 self.__base_pattern.freeing_jacobian(
-                    folded_val[item], sparse=True)
+                    folded_val[item], sparse=True),
             self.__array_indices
         )
         sp_jac = block_diag(jacobians, format='coo')
