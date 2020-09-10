@@ -3,6 +3,7 @@ import itertools
 
 import json
 from scipy.sparse import coo_matrix, block_diag
+import jax
 import jax.numpy as np
 import numpy as onp
 
@@ -455,7 +456,8 @@ class PatternArray(Pattern):
         # extra array in memory, but it allows us to use jax.lax.map in
         # a straightforward way.
         self.__array_indices = \
-            np.array([ i for i in itertools.product(*self.__array_ranges) ])
+            onp.array([ i for i in itertools.product(*self.__array_ranges) ])
+        self.__array_indices = np.array(self.__array_indices)
 
         num_elements = np.prod(np.array(self.__array_shape))
         self.__base_pattern = base_pattern
@@ -569,8 +571,13 @@ class PatternArray(Pattern):
         indexing into the array of shape ``__array_shape``.
         """
         assert len(item) == len(self.__array_shape)
+        # linear_item = onp.ravel_multi_index(item, self.__array_shape) * flat_length
+        # return slice(linear_item, linear_item + flat_length)
+        # Man maybe we just need to do this ourselves
         linear_item = onp.ravel_multi_index(item, self.__array_shape) * flat_length
-        return slice(linear_item, linear_item + flat_length)
+        return np.arange(linear_item, linear_item + flat_length)
+        #return slice(linear_item, linear_item + flat_length)
+
 
     def fold(self, flat_val, free=None, validate_value=None):
         free = self._free_with_default(free)
@@ -590,13 +597,24 @@ class PatternArray(Pattern):
         #         free=free, validate_value=validate_value)
         #     for item in itertools.product(*self.__array_ranges)])
 
+        # Ugh, let's try building this explicitly first
+        slices_array = np.array([
+            self._stacked_obs_slice(item, flat_length)
+            for item in self.__array_indices
+        ])
         folded_array = jax.lax.map(
-            lambda item:
+            lambda item_slice:
                 self.__base_pattern.fold(
-                    flat_val[self._stacked_obs_slice(item, flat_length)],
+                    flat_val[item_slice],
                     free=free, validate_value=validate_value),
-            self.__array_indices
+            slices_array
         )
+
+        # folded_array = np.array([
+        #     self.__base_pattern.fold(
+        #         flat_val[item_slice],
+        #         free=free, validate_value=validate_value)
+        #     for item_slice in slices_array ])
 
         folded_val = np.reshape(folded_array, self.__shape)
 
