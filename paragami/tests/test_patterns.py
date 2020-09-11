@@ -371,25 +371,27 @@ class TestBasicPatterns(unittest.TestCase):
         _test_pattern(self, pattern, np.array([1.0]))
 
         # Test invalid values.
-        with self.assertRaisesRegex(
-            ValueError, 'ub must strictly exceed lower bound lb'):
-            pattern = paragami.NumericArrayPattern((1, ), lb=1, ub=-1)
+        if False:
+            # Currently disabled because these do not work naturally with jax.jit.
+            with self.assertRaisesRegex(
+                ValueError, 'ub must strictly exceed lower bound lb'):
+                pattern = paragami.NumericArrayPattern((1, ), lb=1, ub=-1)
 
-        pattern = paragami.NumericArrayPattern((1, ), lb=-1, ub=1)
-        self.assertEqual((-1, 1), pattern.bounds())
-        with self.assertRaisesRegex(ValueError, 'beneath lower bound'):
-            pattern.flatten(np.array([-2]), free=True)
-        with self.assertRaisesRegex(ValueError, 'above upper bound'):
-            pattern.flatten(np.array([2]), free=True)
-        with self.assertRaisesRegex(ValueError, 'Wrong size'):
-            pattern.flatten([0, 0], free=True)
-        with self.assertRaisesRegex(ValueError,
-                                    'argument to fold must be a 1d vector'):
-            pattern.fold([[0]], free=True)
-        with self.assertRaisesRegex(ValueError, 'Wrong size for array'):
-            pattern.fold([0, 0], free=True)
-        with self.assertRaisesRegex(ValueError, 'beneath lower bound'):
-            pattern.fold([-2], free=False)
+            pattern = paragami.NumericArrayPattern((1, ), lb=-1, ub=1)
+            self.assertEqual((-1, 1), pattern.bounds())
+            with self.assertRaisesRegex(ValueError, 'beneath lower bound'):
+                pattern.flatten(np.array([-2]), free=True)
+            with self.assertRaisesRegex(ValueError, 'above upper bound'):
+                pattern.flatten(np.array([2]), free=True)
+            with self.assertRaisesRegex(ValueError, 'Wrong size'):
+                pattern.flatten([0, 0], free=True)
+            with self.assertRaisesRegex(ValueError,
+                                        'argument to fold must be a 1d vector'):
+                pattern.fold([[0]], free=True)
+            with self.assertRaisesRegex(ValueError, 'Wrong size for array'):
+                pattern.fold([0, 0], free=True)
+            with self.assertRaisesRegex(ValueError, 'beneath lower bound'):
+                pattern.fold([-2], free=False)
 
         # Test flat indices.
         pattern = paragami.NumericArrayPattern((2, 3, 4), lb=-1, ub=1)
@@ -535,24 +537,26 @@ class TestContainerPatterns(unittest.TestCase):
                 paragami.NumericArrayPattern((4, ))
 
         # Check invalid values.
-        bad_dict = dict_pattern.random()
-        del bad_dict['a']
-        with self.assertRaisesRegex(ValueError, 'not in folded_val dictionary'):
-            dict_pattern.flatten(bad_dict, free=True)
+        if False:
+            # Disabled because these do not work naturally with jax.jit.
+            bad_dict = dict_pattern.random()
+            del bad_dict['a']
+            with self.assertRaisesRegex(ValueError, 'not in folded_val dictionary'):
+                dict_pattern.flatten(bad_dict, free=True)
 
-        bad_dict = dict_pattern.random()
-        bad_dict['a'] = np.array(-10)
-        with self.assertRaisesRegex(ValueError, 'is not valid'):
-            dict_pattern.flatten(bad_dict, free=True)
+            bad_dict = dict_pattern.random()
+            bad_dict['a'] = np.array(-10)
+            with self.assertRaisesRegex(ValueError, 'is not valid'):
+                dict_pattern.flatten(bad_dict, free=True)
 
-        free_val = jax_random(dict_pattern.flat_length(True))
-        with self.assertRaisesRegex(ValueError,
-                                    'argument to fold must be a 1d vector'):
-            dict_pattern.fold(np.atleast_2d(free_val), free=True)
+            free_val = jax_random(dict_pattern.flat_length(True))
+            with self.assertRaisesRegex(ValueError,
+                                        'argument to fold must be a 1d vector'):
+                dict_pattern.fold(np.atleast_2d(free_val), free=True)
 
-        with self.assertRaisesRegex(ValueError,
-                                    'Wrong size for pattern dictionary'):
-            dict_pattern.fold(np.array([free_val[-1]]), free=True)
+            with self.assertRaisesRegex(ValueError,
+                                        'Wrong size for pattern dictionary'):
+                dict_pattern.fold(np.array([free_val[-1]]), free=True)
 
     def test_pattern_array(self):
         array_pattern = paragami.NumericArrayPattern(
@@ -590,29 +594,32 @@ class TestContainerPatterns(unittest.TestCase):
         self.assertTrue(array_pattern == pattern_array.base_pattern())
 
         # Test bad arguments.
-        # Check currently disabled.
-        # with self.assertRaisesRegex(NotImplementedError,
-        #                             'not numpy.ndarray types'):
-        #     paragami.PatternArray((2, 3), paragami.PatternDict())
 
-        pattern_array = paragami.PatternArray((2, 3), array_pattern)
-        with self.assertRaisesRegex(ValueError, 'Wrong number of dimensions'):
-            pattern_array.flatten(np.full((2, 3), 0), free=False)
+        if False:
+            # These are disabled because they do not work naturally with
+            # jax.jit.
+            with self.assertRaisesRegex(NotImplementedError,
+                                        'not numpy.ndarray types'):
+                paragami.PatternArray((2, 3), paragami.PatternDict())
 
-        with self.assertRaisesRegex(ValueError, 'Wrong number of dimensions'):
-            pattern_array.flatten(np.full((2, 3, 4, 5), 0), free=False)
+            pattern_array = paragami.PatternArray((2, 3), array_pattern)
+            with self.assertRaisesRegex(ValueError, 'Wrong number of dimensions'):
+                pattern_array.flatten(np.full((2, 3), 0), free=False)
 
-        with self.assertRaisesRegex(ValueError, 'Wrong shape'):
-            pattern_array.flatten(np.full((2, 3, 5), 0), free=False)
+            with self.assertRaisesRegex(ValueError, 'Wrong number of dimensions'):
+                pattern_array.flatten(np.full((2, 3, 4, 5), 0), free=False)
 
-        with self.assertRaisesRegex(ValueError, 'Bad value'):
-            pattern_array.flatten(np.full((2, 3, 4), -10), free=False)
+            with self.assertRaisesRegex(ValueError, 'Wrong shape'):
+                pattern_array.flatten(np.full((2, 3, 5), 0), free=False)
 
-        with self.assertRaisesRegex(ValueError, 'must be a 1d vector'):
-            pattern_array.fold(np.full((24, 1), -10), free=False)
+            with self.assertRaisesRegex(ValueError, 'Bad value'):
+                pattern_array.flatten(np.full((2, 3, 4), -10), free=False)
 
-        with self.assertRaisesRegex(ValueError, 'Wrong size'):
-            pattern_array.fold(np.full((25, ), -10), free=False)
+            with self.assertRaisesRegex(ValueError, 'must be a 1d vector'):
+                pattern_array.fold(np.full((24, 1), -10), free=False)
+
+            with self.assertRaisesRegex(ValueError, 'Wrong size'):
+                pattern_array.fold(np.full((25, ), -10), free=False)
 
 
 class TestJSONFiles(unittest.TestCase):

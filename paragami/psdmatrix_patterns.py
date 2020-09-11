@@ -207,9 +207,17 @@ class PSDSymmetricMatrixPattern(Pattern):
         self.__size = int(size)
         self.__diag_lb = diag_lb
         self.default_validate = default_validate
+
         if diag_lb < 0:
-            raise ValueError(
-                'The diagonal lower bound diag_lb must be >-= 0.')
+            raise ValueError('The diagonal lower bound diag_lb must be >-= 0.')
+        # jax.lax.cond(
+        #     diag_lb < 0,
+        #     true_fun=lambda _: None,
+        #     false_fun=lambda _: raise_error(),
+        #     operand=[])
+        # if diag_lb < 0:
+        #     raise ValueError(
+        #         'The diagonal lower bound diag_lb must be >-= 0.')
 
         super().__init__(self.__size ** 2, int(size * (size + 1) / 2),
                          free_default=free_default)
@@ -292,35 +300,22 @@ class PSDSymmetricMatrixPattern(Pattern):
 
         if validate_value:
             diag_min = np.min(np.diag(folded_val))
-            error_string = \
-                f'Diagonal is less than the lower bound {self.__diag_lb}.'
-            lb_result = jax.lax.cond(
-                diag_min < self.__diag_lb,
-                true_fun=lambda _: ( False, error_string ),
-                false_fun=lambda _: ( True, '' ),
-                operand=[]
-            )
+            if diag_min < self.__diag_lb:
+                error_string = \
+                    f'Diagonal is less than the lower bound {self.__diag_lb}.'
+                return False, error_string
 
-            error_string = 'Matrix is not symmetric.'
-            trans_result = jax.lax.cond(
-                (folded_val.transpose() == folded_val).all(),
-                true_fun=lambda _: ( True, '' ),
-                false_fun=lambda _: ( False, error_string ),
-                operand=[]
-            )
+            if np.any(folded_val.transpose() != folded_val):
+                return False, 'Matrix is not symmetric.'
 
-            return jax.lax.cond(
-                lb_result[0] and trans_result[0],
-                true_fun=lambda _: ( True, '' ),
-                false_fun=lambda _: (False, lb_result[1] + ' '  + trans_result[1]),
-                operand=[]
-            )
+        return True, ''
+
 
     def flatten(self, folded_val, free=None, validate_value=None):
         free = self._free_with_default(free)
-        valid, msg = self.validate_folded(folded_val, validate_value)
-        if not valid:
-            raise ValueError(msg)
+        # valid, msg = self.validate_folded(folded_val, validate_value)
+        # if not valid:
+        #     raise ValueError(msg)
         if free:
             return _pack_posdef_matrix(folded_val, diag_lb=self.__diag_lb)
         else:
@@ -338,9 +333,9 @@ class PSDSymmetricMatrixPattern(Pattern):
             return _unpack_posdef_matrix(flat_val, diag_lb=self.__diag_lb)
         else:
             folded_val = np.reshape(flat_val, (self.__size, self.__size))
-            valid, msg = self.validate_folded(folded_val, validate_value)
-            if not valid:
-                raise ValueError(msg)
+            # valid, msg = self.validate_folded(folded_val, validate_value)
+            # if not valid:
+            #     raise ValueError(msg)
             return folded_val
 
     def flat_indices(self, folded_bool, free=None):
@@ -349,9 +344,9 @@ class PSDSymmetricMatrixPattern(Pattern):
             return np.array([], dtype=int)
 
         free = self._free_with_default(free)
-        shape_ok, err_msg = self._validate_folded_shape(folded_bool)
-        if not shape_ok:
-            raise ValueError(err_msg)
+        # shape_ok, err_msg = self._validate_folded_shape(folded_bool)
+        # if not shape_ok:
+        #     raise ValueError(err_msg)
         if not free:
             folded_indices = self.fold(
                 np.arange(self.flat_length(False), dtype=int),

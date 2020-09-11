@@ -1,5 +1,6 @@
 from .base_patterns import Pattern
 from .pattern_containers import register_pattern_json
+import jax
 import jax.numpy as np
 import numpy as onp
 import copy
@@ -202,6 +203,13 @@ class NumericArrayPattern(Pattern):
         if validate_value is None:
             validate_value = self.default_validate
         if validate_value:
+        #     return jax.lax.cond(
+        #         (np.min(folded_val) > self._lb) and
+        #         (np.max(folded_val) < self._ub),
+        #         true_fun=lambda _: ( True, '' ),
+        #         false_fun=lambda _: ( False, 'Value out of bounds.' ),
+        #         operand=[]
+        #     )
             if (np.array(folded_val < self._lb)).any():
                 return False, 'Value beneath lower bound.'
             if (np.array(folded_val > self._ub)).any():
@@ -229,17 +237,17 @@ class NumericArrayPattern(Pattern):
             return constrained_array.reshape(self._shape)
         else:
             folded_val = flat_val.reshape(self._shape)
-            valid, msg = self.validate_folded(folded_val, validate_value)
-            if not valid:
-                raise ValueError(msg)
+            #valid, msg = self.validate_folded(folded_val, validate_value)
+            #if not valid:
+            #    raise ValueError(msg)
             return folded_val
 
     def flatten(self, folded_val, free=None, validate_value=None):
         free = self._free_with_default(free)
         folded_val = np.atleast_1d(folded_val)
-        valid, msg = self.validate_folded(folded_val, validate_value)
-        if not valid:
-            raise ValueError(msg)
+        # valid, msg = self.validate_folded(folded_val, validate_value)
+        # if not valid:
+        #     raise ValueError(msg)
         if free:
             return \
                 _unconstrain_array(folded_val, self._lb, self._ub).flatten()
@@ -266,9 +274,9 @@ class NumericArrayPattern(Pattern):
 
         free = self._free_with_default(free)
         folded_bool = np.atleast_1d(folded_bool)
-        shape_ok, err_msg = self._validate_folded_shape(folded_bool)
-        if not shape_ok:
-            raise ValueError(err_msg)
+        # shape_ok, err_msg = self._validate_folded_shape(folded_bool)
+        # if not shape_ok:
+        #     raise ValueError(err_msg)
         if free:
             return self.__free_folded_indices[folded_bool]
         else:

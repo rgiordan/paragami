@@ -290,19 +290,19 @@ class PatternDict(Pattern):
                 pattern.fold(pattern_flat_val,
                              free=free,
                              validate_value=validate_value)
-        if not free:
-            valid, msg = self.validate_folded(
-                folded_val, validate_value=validate_value)
-            if not valid:
-                raise ValueError(msg)
+        # if not free:
+        #     valid, msg = self.validate_folded(
+        #         folded_val, validate_value=validate_value)
+        #     if not valid:
+        #         raise ValueError(msg)
         return folded_val
 
     def flatten(self, folded_val, free=None, validate_value=None):
         free = self._free_with_default(free)
-        valid, msg = self.validate_folded(
-            folded_val, validate_value=validate_value)
-        if not valid:
-            raise ValueError(msg)
+        # valid, msg = self.validate_folded(
+        #     folded_val, validate_value=validate_value)
+        # if not valid:
+        #     raise ValueError(msg)
 
         # flat_length = self.flat_length(free)
         # offset = 0
@@ -387,9 +387,9 @@ class PatternDict(Pattern):
 
     def flat_indices(self, folded_bool, free=None):
         free = self._free_with_default(free)
-        valid, msg = self.validate_folded(folded_bool, validate_value=False)
-        if not valid:
-            raise ValueError(msg)
+        # valid, msg = self.validate_folded(folded_bool, validate_value=False)
+        # if not valid:
+        #     raise ValueError(msg)
 
         flat_length = self.flat_length(free)
         offset = 0
@@ -629,11 +629,11 @@ class PatternArray(Pattern):
 
         folded_val = np.reshape(folded_array, self.__shape)
 
-        if not free:
-            valid, msg = self.validate_folded(
-                folded_val, validate_value=validate_value)
-            if not valid:
-                raise ValueError(msg)
+        # if not free:
+        #     valid, msg = self.validate_folded(
+        #         folded_val, validate_value=validate_value)
+        #     if not valid:
+        #         raise ValueError(msg)
         return folded_val
 
     def flatten(self, folded_val, free=None, validate_value=None):
@@ -642,10 +642,10 @@ class PatternArray(Pattern):
 
         # Removing this block saved little time.
         free = self._free_with_default(free)
-        valid, msg = self.validate_folded(
-            folded_val, validate_value=validate_value)
-        if not valid:
-            raise ValueError(msg)
+        # valid, msg = self.validate_folded(
+        #     folded_val, validate_value=validate_value)
+        # if not valid:
+        #     raise ValueError(msg)
 
         return np.hstack(np.array([
             self.__base_pattern.flatten(
@@ -718,9 +718,9 @@ class PatternArray(Pattern):
 
     def flat_indices(self, folded_bool, free=None):
         free = self._free_with_default(free)
-        valid, msg = self.validate_folded(folded_bool, validate_value=False)
-        if not valid:
-            raise ValueError(msg)
+        # valid, msg = self.validate_folded(folded_bool, validate_value=False)
+        # if not valid:
+        #     raise ValueError(msg)
 
         indices = []
         pattern_flat_length = self.__base_pattern.flat_length(free=free)
