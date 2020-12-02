@@ -541,7 +541,8 @@ class TestContainerPatterns(unittest.TestCase):
             # Disabled because these do not work naturally with jax.jit.
             bad_dict = dict_pattern.random()
             del bad_dict['a']
-            with self.assertRaisesRegex(ValueError, 'not in folded_val dictionary'):
+            with self.assertRaisesRegex(ValueError,
+                                        'not in folded_val dictionary'):
                 dict_pattern.flatten(bad_dict, free=True)
 
             bad_dict = dict_pattern.random()
