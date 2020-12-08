@@ -11,6 +11,7 @@ python3 setup.py sdist bdist_wheel
 # so paragami will not install correctly from test.pypi.org, even when it will work
 # on pypi.
 twine upload dist/*v0.x*
+(rgiordan and peace)
 
 # Check installability in a virtual environment!
 
