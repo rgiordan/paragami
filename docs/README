@@ -10,7 +10,7 @@ python3 setup.py sdist bdist_wheel
 # Upload to pypi.  Note that autograd doesn't install correctly on test.pypi.org,
 # so paragami will not install correctly from test.pypi.org, even when it will work
 # on pypi.
-twine upload dist/*v0.x*
+twine upload dist/*0.x*
 (rgiordan and peace)
 
 # Check installability in a virtual environment!
