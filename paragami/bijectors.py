@@ -26,17 +26,6 @@ def Constrain(par_free, par_bij, compute_log_det_jac=False):
         return par
 
 
-def PytreesL1(p1, p2):
-    diff_tree = jtu.tree_map(lambda x, y: jnp.sum(jnp.abs(x - y)), p1, p2)
-    return jtu.tree_reduce(lambda x, y: x + y, diff_tree, 0.0)
-
-
-def TestBijector(par, par_bij, tol=1e-8):
-    par_free = Unconstrain(par, par_bij)
-    par2 = Constrain(par_free, par_bij)
-    err = PytreesL1(par, par2)
-    assert(err < tol)
-
 
 def UnconstrainObjective(Fun, par_bij, include_log_det_jac=False):
     def FreeFun(par_free, *vargs, **kargs):
