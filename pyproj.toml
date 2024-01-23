@@ -1,0 +1,8 @@
+[build-system]
+requires = ["setuptools>=51"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "paragami"
+authors = [{name = "Ryan Giordano", email = "rgiordano@berkeley.edu"}]
+dynamic = ["version", "description"]

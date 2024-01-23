@@ -5,7 +5,7 @@ Credits
 Maintainer
 ----------
 
-* Ryan Giordano <rgiordan@gmail.com>
+* Ryan Giordano <rgiordano@berkeley.edu>
 
 Contributors
 ------------

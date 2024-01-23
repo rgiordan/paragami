@@ -1,4 +1,0 @@
-autograd
-numpy
-pytest
-scipy
